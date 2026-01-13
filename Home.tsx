@@ -1,0 +1,23 @@
+import Navbar from "@/components/Navbar";
+import HeroSection from "@/components/HeroSection";
+import HowItWorks from "@/components/HowItWorks";
+import ServicesPreview from "@/components/ServicesPreview";
+import PricingPreview from "@/components/PricingPreview";
+import Testimonials from "@/components/Testimonials";
+import Footer from "@/components/Footer";
+
+export default function Home() {
+  return (
+    <div className="min-h-screen flex flex-col bg-white">
+      <Navbar />
+      <main>
+        <HeroSection />
+        <HowItWorks />
+        <ServicesPreview />
+        <PricingPreview />
+        <Testimonials />
+      </main>
+      <Footer />
+    </div>
+  );
+}
