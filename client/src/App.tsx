@@ -7,7 +7,7 @@ import { ThemeProvider } from "./ThemeContext";
 import Home from "./Home";
 // import Services from "./Services";
 // import Pricing from "./Pricing";
-import Specialists from "./pages/Specialists";
+// import Specialists from "./Specialists";
 import Schools from "./pages/Schools";
 import Knowledge from "./Knowledge";
 import Privacy from "./pages/Privacy";
