@@ -1,19 +1,19 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
+import NotFound from "./NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./ErrorBoundary";
 import { ThemeProvider } from "./ThemeContext";
 import Home from "./Home";
-import Services from "./pages/Services";
+// import Services from "./Services";
 import Pricing from "./pages/Pricing";
 import Specialists from "./pages/Specialists";
 import Schools from "./pages/Schools";
-import Knowledge from "./pages/Knowledge";
+import Knowledge from "./Knowledge";
 import Privacy from "./pages/Privacy";
 import Disclaimer from "./pages/Disclaimer";
-import Contact from "./pages/Contact";
-import Booking from "./pages/Booking";
+import Contact from "./Contact";
+import Booking from "./Booking";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
