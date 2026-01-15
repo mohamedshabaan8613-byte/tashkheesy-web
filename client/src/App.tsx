@@ -11,7 +11,7 @@ import Home from "./Home";
 // import Schools from "./Schools";
 import Knowledge from "./Knowledge";
 // import Privacy from "./Privacy";
-import Disclaimer from "./pages/Disclaimer";
+// import Disclaimer from "./Disclaimer";
 import Contact from "./Contact";
 import Booking from "./Booking";
 
