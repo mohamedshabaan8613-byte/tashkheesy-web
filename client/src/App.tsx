@@ -13,7 +13,7 @@ import Knowledge from "./Knowledge";
 // import Privacy from "./Privacy";
 // import Disclaimer from "./Disclaimer";
 import Contact from "./Contact";
-import Booking from "./Booking";
+import Booking from "./components/booking/Booking";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
