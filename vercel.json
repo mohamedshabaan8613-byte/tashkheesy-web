@@ -1,8 +1,8 @@
 {
-  "buildCommand": "pnpm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "devCommand": "pnpm run dev",
-  "installCommand": "corepack enable pnpm && pnpm install",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
   "framework": null,
   "rewrites": [
     {
