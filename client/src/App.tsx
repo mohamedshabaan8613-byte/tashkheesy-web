@@ -43,7 +43,7 @@ function App() {
         {/* <TooltipProvider> */}
           {/* <Toaster /> */}
           <Router />
-        /* </TooltipProvider> */}
+        {/* </TooltipProvider> */}
       </ThemeProvider>
     </ErrorBoundary>
   );
