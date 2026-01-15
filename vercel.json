@@ -2,7 +2,7 @@
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist/public",
   "devCommand": "pnpm run dev",
-  "installCommand": "pnpm install",
+  "installCommand": "corepack enable pnpm && pnpm install",
   "framework": null,
   "rewrites": [
     {
