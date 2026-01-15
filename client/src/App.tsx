@@ -8,7 +8,7 @@ import Home from "./Home";
 // import Services from "./Services";
 // import Pricing from "./Pricing";
 // import Specialists from "./Specialists";
-import Schools from "./pages/Schools";
+// import Schools from "./Schools";
 import Knowledge from "./Knowledge";
 import Privacy from "./pages/Privacy";
 import Disclaimer from "./pages/Disclaimer";
