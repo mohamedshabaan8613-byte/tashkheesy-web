@@ -6,7 +6,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import { ThemeProvider } from "./ThemeContext";
 import Home from "./Home";
 // import Services from "./Services";
-import Pricing from "./pages/Pricing";
+// import Pricing from "./Pricing";
 import Specialists from "./pages/Specialists";
 import Schools from "./pages/Schools";
 import Knowledge from "./Knowledge";
