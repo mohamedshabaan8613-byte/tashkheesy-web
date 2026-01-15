@@ -1,10 +1,10 @@
 // import { Toaster } from "./Toaster";
 // import { TooltipProvider } from "./TooltipProvider";
-import NotFound from "./NotFound";
+import NotFound from "./components/NotFound";
 import { Route, Switch } from "wouter";
-import ErrorBoundary from "./ErrorBoundary";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./ThemeContext";
-import Home from "./Home";
+import Home from "./components/Home";
 // import Services from "./Services";
 // import Pricing from "./Pricing";
 // import Specialists from "./Specialists";
