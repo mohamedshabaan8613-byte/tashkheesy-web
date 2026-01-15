@@ -1,4 +1,4 @@
-import { Button } from "./Button";
+import { Button } from "./button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Home } from "lucide-react";
 import { useLocation } from "wouter";
