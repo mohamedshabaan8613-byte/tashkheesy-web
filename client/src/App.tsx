@@ -10,7 +10,7 @@ import Home from "./Home";
 // import Specialists from "./Specialists";
 // import Schools from "./Schools";
 import Knowledge from "./Knowledge";
-import Privacy from "./pages/Privacy";
+// import Privacy from "./Privacy";
 import Disclaimer from "./pages/Disclaimer";
 import Contact from "./Contact";
 import Booking from "./Booking";
