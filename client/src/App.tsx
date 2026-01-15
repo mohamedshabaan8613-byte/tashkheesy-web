@@ -1,5 +1,5 @@
 // import { Toaster } from "./Toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+// import { TooltipProvider } from "./TooltipProvider";
 import NotFound from "./NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./ErrorBoundary";
@@ -40,10 +40,10 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
+        {/* <TooltipProvider> */}
           {/* <Toaster /> */}
           <Router />
-        </TooltipProvider>
+        /* </TooltipProvider> */}
       </ThemeProvider>
     </ErrorBoundary>
   );
