@@ -3,7 +3,7 @@
 import NotFound from "./components/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./ThemeContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./components/Home";
 // import Services from "./Services";
 // import Pricing from "./Pricing";
