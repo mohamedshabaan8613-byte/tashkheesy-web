@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import QuickBookingForm from "@/components/QuickBookingForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -215,8 +216,52 @@ export default function Services() {
           </div>
         </section>
 
-        {/* CTA Section */}
+        {/* Quick Booking Form Section */}
         <section className="py-16">
+          <div className="container">
+            <div className="grid md:grid-cols-2 gap-12 items-start max-w-6xl mx-auto">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+                  جاهز للبدء؟
+                </h2>
+                <p className="text-lg text-slate-600 mb-6">
+                  احجز موعدك الآن واحصل على تشخيص احترافي يساعدك على فهم الحالة واتخاذ الخطوات الصحيحة
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-1">سريع وسهل</h3>
+                      <p className="text-slate-600 text-sm">املأ النموذج في أقل من دقيقة</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-1">رد سريع</h3>
+                      <p className="text-slate-600 text-sm">سنتواصل معك خلال 24 ساعة</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-1">مرونة في المواعيد</h3>
+                      <p className="text-slate-600 text-sm">اختر الوقت الذي يناسبك</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <QuickBookingForm />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 bg-slate-50">
           <div className="container">
             <Card className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white">
               <CardContent className="py-12 text-center">
