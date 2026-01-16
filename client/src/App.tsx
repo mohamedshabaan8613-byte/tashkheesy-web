@@ -14,6 +14,7 @@ import Knowledge from "./Knowledge";
 // import Disclaimer from "./Disclaimer";
 import Contact from "./Contact";
 import Booking from "./components/booking/Booking";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -43,6 +44,7 @@ function App() {
         {/* <TooltipProvider> */}
           {/* <Toaster /> */}
           <Router />
+          <WhatsAppButton />
         {/* </TooltipProvider> */}
       </ThemeProvider>
     </ErrorBoundary>
