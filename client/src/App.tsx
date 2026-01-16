@@ -20,13 +20,13 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
-      <Route path={"/services"} component={Services} />
-      <Route path={"/pricing"} component={Pricing} />
-      <Route path={"/specialists"} component={Specialists} />
-      <Route path={"/schools"} component={Schools} />
+      {/* <Route path={"/services"} component={Services} /> */}
+      {/* <Route path={"/pricing"} component={Pricing} /> */}
+      {/* <Route path={"/specialists"} component={Specialists} /> */}
+      {/* <Route path={"/schools"} component={Schools} /> */}
       <Route path={"/knowledge"} component={Knowledge} />
-      <Route path={"/privacy"} component={Privacy} />
-      <Route path={"/disclaimer"} component={Disclaimer} />
+      {/* <Route path={"/privacy"} component={Privacy} /> */}
+      {/* <Route path={"/disclaimer"} component={Disclaimer} /> */}
       <Route path={"/contact"} component={Contact} />
       <Route path={"/booking"} component={Booking} />
       <Route path={"/404"} component={NotFound} />
