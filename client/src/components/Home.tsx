@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import TrustSignals from "@/components/TrustSignals";
 import HowItWorks from "@/components/HowItWorks";
 import ServicesPreview from "@/components/ServicesPreview";
 import PricingPreview from "@/components/PricingPreview";
@@ -13,6 +14,7 @@ export default function Home() {
       <Navbar />
       <main>
         <HeroSection />
+        <TrustSignals />
         <HowItWorks />
         <ServicesPreview />
         <PricingPreview />
