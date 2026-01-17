@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./components/Home";
 import Services from "./components/Services";
 import Pricing from "./components/Pricing";
+import Team from "./components/Team";
 // import Specialists from "./Specialists";
 // import Schools from "./Schools";
 import Knowledge from "./Knowledge";
@@ -23,6 +24,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/services"} component={Services} />
       <Route path={"/pricing"} component={Pricing} />
+      <Route path={"/team"} component={Team} />
       {/* <Route path={"/specialists"} component={Specialists} /> */}
       {/* <Route path={"/schools"} component={Schools} /> */}
       <Route path={"/knowledge"} component={Knowledge} />

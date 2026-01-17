@@ -36,8 +36,8 @@ export default function Navbar() {
             <Link href="/pricing">
               <a className="hover:text-indigo-600 transition-colors">الأسعار</a>
             </Link>
-            <Link href="/specialists">
-              <a className="hover:text-indigo-600 transition-colors">أطباؤنا</a>
+            <Link href="/team">
+              <a className="hover:text-indigo-600 transition-colors">فريقنا</a>
             </Link>
             <Link href="/schools">
               <a className="hover:text-indigo-600 transition-colors">للمدارس والجامعات</a>
@@ -77,8 +77,8 @@ export default function Navbar() {
             <Link href="/pricing">
               <a className="block py-2 hover:text-indigo-600">الأسعار</a>
             </Link>
-            <Link href="/specialists">
-              <a className="block py-2 hover:text-indigo-600">أطباؤنا</a>
+            <Link href="/team">
+              <a className="block py-2 hover:text-indigo-600">فريقنا</a>
             </Link>
             <Link href="/schools">
               <a className="block py-2 hover:text-indigo-600">للمدارس والجامعات</a>

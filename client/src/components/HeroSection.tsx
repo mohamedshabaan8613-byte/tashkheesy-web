@@ -31,10 +31,25 @@ export default function HeroSection() {
               </Link>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-              <span>🔒 سرية تامة</span>
-              <span>🧑‍⚕️ أخصائيون معتمدون</span>
-              <span>💳 دفع إلكتروني آمن</span>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mb-8">
+              <span className="flex items-center gap-1">🔒 سرية تامة</span>
+              <span className="flex items-center gap-1">🧑‍⚕️ أخصائيون معتمدون</span>
+              <span className="flex items-center gap-1">💳 دفع إلكتروني آمن</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 border-t pt-6">
+              <div>
+                <div className="text-xl font-bold text-indigo-600">3500+</div>
+                <div className="text-xs text-slate-500">جلسة تشخيص</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-indigo-600">98%</div>
+                <div className="text-xs text-slate-500">رضا العملاء</div>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-indigo-600">15+</div>
+                <div className="text-xs text-slate-500">أخصائي خبير</div>
+              </div>
             </div>
           </div>
 
