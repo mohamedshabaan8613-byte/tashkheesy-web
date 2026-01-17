@@ -7,7 +7,7 @@ export default function WhatsAppButton() {
   // رقم WhatsApp الخاص بك (استبدله برقمك)
   // يجب أن يكون بصيغة دولية بدون + أو 00
   // مثال: 966501234567 (السعودية)
-  const whatsappNumber = "966XXXXXXXXX";
+  const whatsappNumber = "966534823022";
   
   // الرسالة الافتراضية
   const defaultMessage = "مرحباً، أرغب في الاستفسار عن خدمات تشخيص صعوبات التعلم";
