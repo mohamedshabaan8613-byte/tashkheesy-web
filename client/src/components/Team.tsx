@@ -1,7 +1,7 @@
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Link } from "react-router-dom";
+import { Link } from "wouter";
 import { 
   GraduationCap, 
   Award, 
@@ -304,12 +304,12 @@ export default function Team() {
                 احجز موعدك الآن واحصل على تشخيص احترافي من أخصائيين معتمدين
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/booking">
+                <Link href="/booking">
                   <Button size="lg" variant="secondary" className="w-full sm:w-auto">
                     احجز موعدك الآن
                   </Button>
                 </Link>
-                <Link to="/services">
+                <Link href="/services">
                   <Button size="lg" variant="outline" className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white border-white">
                     تعرف على الخدمات
                   </Button>
