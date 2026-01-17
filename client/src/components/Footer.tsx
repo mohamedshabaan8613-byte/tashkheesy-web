@@ -9,20 +9,20 @@ export default function Footer() {
             © {new Date().getFullYear()} تشخيصي. جميع الحقوق محفوظة.
           </div>
           <div className="flex flex-wrap gap-4">
+            <Link href="/">
+              <a className="hover:text-indigo-600 transition-colors">الرئيسية</a>
+            </Link>
+            <Link href="/services">
+              <a className="hover:text-indigo-600 transition-colors">الخدمات</a>
+            </Link>
+            <Link href="/pricing">
+              <a className="hover:text-indigo-600 transition-colors">الأسعار</a>
+            </Link>
+            <Link href="/team">
+              <a className="hover:text-indigo-600 transition-colors">فريقنا</a>
+            </Link>
             <Link href="/privacy">
-              <a className="hover:text-indigo-600 transition-colors">
-                سياسة الخصوصية
-              </a>
-            </Link>
-            <Link href="/disclaimer">
-              <a className="hover:text-indigo-600 transition-colors">
-                إخلاء المسؤولية الطبية
-              </a>
-            </Link>
-            <Link href="/contact">
-              <a className="hover:text-indigo-600 transition-colors">
-                تواصل معنا
-              </a>
+              <a className="hover:text-indigo-600 transition-colors">سياسة الخصوصية</a>
             </Link>
           </div>
         </div>

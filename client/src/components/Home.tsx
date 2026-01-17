@@ -4,6 +4,7 @@ import HowItWorks from "@/components/HowItWorks";
 import ServicesPreview from "@/components/ServicesPreview";
 import PricingPreview from "@/components/PricingPreview";
 import Testimonials from "@/components/Testimonials";
+import TeamPreview from "@/components/TeamPreview";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
         <HowItWorks />
         <ServicesPreview />
         <PricingPreview />
+        <TeamPreview />
         <Testimonials />
       </main>
       <Footer />
