@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -42,75 +41,87 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ─── تشخيصي Design System ─────────────────────────────────────────────────
+ * Editorial Healthcare Calm
+ * Background: #F8FAFC | Surface: #FFFFFF | Primary: #0F172A
+ * Accent Blue: #2563EB | Accent Teal: #14B8A6 | Warm: #F59E0B
+ * Typography: Cairo (headings) + IBM Plex Sans Arabic (body)
+ */
+
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
+  /* ─── تشخيصي Brand Colors ─── */
+  --brand-blue: #2563EB;
+  --brand-teal: #14B8A6;
+  --brand-warm: #F59E0B;
+  --brand-bg: #F8FAFC;
+  --brand-surface: #FFFFFF;
+  --brand-text: #0F172A;
+  --brand-secondary: #475569;
+
+  /* ─── Tailwind CSS Variables ─── */
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --chart-1: oklch(0.7 0.18 264);
+  --chart-2: oklch(0.6 0.18 264);
+  --chart-3: oklch(0.5 0.18 264);
+  --chart-4: oklch(0.4 0.18 264);
+  --chart-5: oklch(0.3 0.18 264);
+  --radius: 0.75rem;
+
+  /* ─── Semantic Colors ─── */
+  --background: oklch(0.985 0.002 247.839);
+  --foreground: oklch(0.13 0.028 261.692);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
+  --card-foreground: oklch(0.13 0.028 261.692);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
+  --popover-foreground: oklch(0.13 0.028 261.692);
+  --secondary: oklch(0.96 0.007 247.896);
+  --secondary-foreground: oklch(0.35 0.025 261.692);
+  --muted: oklch(0.96 0.007 247.896);
+  --muted-foreground: oklch(0.52 0.026 261.692);
+  --accent: oklch(0.96 0.007 247.896);
+  --accent-foreground: oklch(0.13 0.028 261.692);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+  --border: oklch(0.91 0.013 247.839);
+  --input: oklch(0.91 0.013 247.839);
+  --ring: oklch(0.488 0.243 264.376);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.13 0.028 261.692);
+  --sidebar-accent: oklch(0.96 0.007 247.896);
+  --sidebar-accent-foreground: oklch(0.13 0.028 261.692);
+  --sidebar-border: oklch(0.91 0.013 247.839);
+  --sidebar-ring: oklch(0.488 0.243 264.376);
 }
 
 .dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
+  --primary: oklch(0.6 0.22 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --background: oklch(0.13 0.028 261.692);
+  --foreground: oklch(0.97 0.014 254.604);
+  --card: oklch(0.18 0.025 261.692);
+  --card-foreground: oklch(0.97 0.014 254.604);
+  --popover: oklch(0.18 0.025 261.692);
+  --popover-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.22 0.02 261.692);
+  --secondary-foreground: oklch(0.8 0.015 261.692);
+  --muted: oklch(0.22 0.02 261.692);
+  --muted-foreground: oklch(0.65 0.02 261.692);
+  --accent: oklch(0.22 0.02 261.692);
+  --accent-foreground: oklch(0.97 0.014 254.604);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
+  --ring: oklch(0.6 0.22 264.376);
+  --sidebar: oklch(0.18 0.025 261.692);
+  --sidebar-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.22 0.02 261.692);
+  --sidebar-accent-foreground: oklch(0.97 0.014 254.604);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  --sidebar-ring: oklch(0.6 0.22 264.376);
 }
 
 @layer base {
@@ -119,6 +130,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
+    direction: rtl;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -134,24 +147,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +162,161 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
     }
+  }
+
+  /* ─── تشخيصي Custom Utilities ─── */
+  .font-cairo {
+    font-family: 'Cairo', sans-serif;
+  }
+
+  .font-ibm {
+    font-family: 'IBM Plex Sans Arabic', sans-serif;
+  }
+
+  .result-hero-gradient {
+    background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 50%, #F0FDFA 100%);
+  }
+
+  .ai-card-glow {
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.1), 0 8px 32px rgba(37, 99, 235, 0.08);
+  }
+
+  .booking-cta-gradient {
+    background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #0EA5E9 100%);
+  }
+
+  .teal-accent-gradient {
+    background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%);
+  }
+
+  .warm-accent-gradient {
+    background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F1F5F9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+
+  /* Animation utilities */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.5s ease-out forwards;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  /* Stagger delays */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+  .delay-700 { animation-delay: 700ms; }
+  .delay-800 { animation-delay: 800ms; }
+}
+
+/* ─── تشخيصي Button Utilities ─── */
+@layer components {
+  .tashkhisi-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 0.875rem;
+    background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
+    color: white;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+    cursor: pointer;
+    border: none;
+  }
+  .tashkhisi-btn-primary:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  }
+  .tashkhisi-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 0.875rem;
+    background: white;
+    color: #2563EB;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    border: 1.5px solid #BFDBFE;
+  }
+  .tashkhisi-btn-secondary:hover {
+    background: #EFF6FF;
+    border-color: #93C5FD;
   }
 }
