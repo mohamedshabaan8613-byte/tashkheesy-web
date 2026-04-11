@@ -193,7 +193,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "كم تكلف جلسة الاستشارة مع المتخصص؟",
-    a: "تبدأ جلسات الاستشارة من ٢٩٩ ريال سعودي للجلسة الواحدة. نقدم أيضاً باقات متكاملة تشمل التقييم الشامل وخطة الدعم بأسعار مناسبة. يمكنك الاطلاع على تفاصيل الأسعار الكاملة في صفحة الخدمات.",
+    a: "تختلف تكلفة الجلسات حسب نوع الخدمة والمتخصص. يمكنك الاطلاع على تفاصيل الأسعار الكاملة والباقات المتاحة في صفحة الخدمات، أو التواصل معنا مباشرة للاستفسار.",
     icon: Star,
     color: "#2563EB",
     bg: "#EFF6FF",
@@ -246,26 +246,26 @@ const JOURNEY_STEPS = [
 // ─── بيانات المتخصصين ─────────────────────────────────────────────────────────
 const SPECIALISTS = [
   {
-    name: "د. سارة الأحمدي",
+    name: "",
     title: "أخصائية صعوبات التعلم",
     specialties: ["الديسلكسيا", "صعوبات القراءة", "التدخل المبكر"],
-    rating: 4.9,
-    sessions: 320,
+    rating: 0,
+    sessions: 0,
     available: "متاحة هذا الأسبوع",
     mode: ["أونلاين", "حضوري"],
     color: "#2563EB",
-    initials: "سأ",
+    initials: "أت",
   },
   {
-    name: "د. محمد الزهراني",
+    name: "",
     title: "أخصائي نفسي تربوي",
     specialties: ["اضطراب الانتباه", "صعوبات التعلم", "التقييم الشامل"],
-    rating: 4.8,
-    sessions: 280,
+    rating: 0,
+    sessions: 0,
     available: "متاح غداً",
     mode: ["أونلاين"],
     color: "#14B8A6",
-    initials: "مز",
+    initials: "أن",
   },
 ];
 
@@ -414,7 +414,7 @@ function SpecialistCard({ specialist, onBook }: { specialist: typeof SPECIALISTS
               className="text-base font-black text-slate-900"
               style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
             >
-              {specialist.name}
+              {specialist.title}
             </h3>
             <div
               className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
@@ -428,15 +428,8 @@ function SpecialistCard({ specialist, onBook }: { specialist: typeof SPECIALISTS
             className="text-slate-500 text-sm mb-2"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
           >
-            {specialist.title}
+            متخصص معتمد من فريق تشخيصي
           </p>
-          <div className="flex items-center gap-3 text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
-            <span className="flex items-center gap-1">
-              <Star size={11} className="text-amber-400" fill="#FBBF24" />
-              {specialist.rating}
-            </span>
-            <span>{specialist.sessions}+ جلسة</span>
-          </div>
         </div>
       </div>
 
@@ -491,7 +484,7 @@ function SpecialistCard({ specialist, onBook }: { specialist: typeof SPECIALISTS
           boxShadow: `0 4px 16px ${specialist.color}30`,
         }}
       >
-        احجز مع {specialist.name.split(" ")[1]}
+        احجز جلسة مع هذا المتخصص
       </button>
     </div>
   );
@@ -1572,21 +1565,14 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                     className="text-sm font-bold text-slate-900"
                     style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
                   >
-                    تكلفة الجلسة
+                    احجز جلسة مناقشة النتائج
                   </span>
                 </div>
-                <div
-                  className="text-3xl font-black text-slate-900 mb-1"
-                  style={{ fontFamily: "'Cairo', sans-serif" }}
-                >
-                  ٢٩٩{" "}
-                  <span className="text-base font-semibold text-slate-500">ريال</span>
-                </div>
                 <p
-                  className="text-xs text-slate-500 mb-4"
-                  style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
+                  className="text-sm text-slate-600 mb-4 leading-relaxed"
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.75 }}
                 >
-                  للجلسة الواحدة · باقات متكاملة متاحة بأسعار مخفضة
+                  جلسة ٤٥-٦٠ دقيقة مع متخصص معتمد — أونلاين أو حضوري حسب تفضيلك.
                 </p>
                 <button
                   onClick={() => navigate("/booking")}
