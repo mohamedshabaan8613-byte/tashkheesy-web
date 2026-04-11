@@ -1,4 +1,4 @@
-// useAuth import removed
+import { useAuth } from './useAuth';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,

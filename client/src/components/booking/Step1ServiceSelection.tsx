@@ -173,7 +173,7 @@ export default function Step1ServiceSelection() {
               )}
               {specialists && specialists.length > 0 && (
             <div className="grid md:grid-cols-2 gap-4">
-              {specialists.map((specialist) => (
+              {specialists.map((specialist: any) => (
                 <Card
                   key={specialist.id}
                   className={`cursor-pointer transition-all hover:shadow-lg ${

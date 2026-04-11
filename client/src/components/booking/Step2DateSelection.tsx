@@ -67,7 +67,7 @@ export default function Step2DateSelection() {
           </div>
         ) : (
         <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3">
-          {availableDates?.map((date) => (
+          {availableDates?.map((date: any) => (
             <Card
               key={date.id}
               className={`cursor-pointer transition-all hover:shadow-md ${
@@ -117,7 +117,7 @@ export default function Step2DateSelection() {
             </div>
           ) : timeSlots && timeSlots.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {timeSlots.map((slot) => (
+              {timeSlots.map((slot: any) => (
                 <Button
                   key={slot.id}
                   variant={selectedTimeSlot === slot.id ? "default" : "outline"}
@@ -159,8 +159,8 @@ export default function Step2DateSelection() {
                   موعدك المختار
                 </h4>
                 <p className="text-sm text-slate-700">
-                  {availableDates?.find((d) => d.id === selectedDate)?.fullDate} -{" "}
-                  {timeSlots?.find((t) => t.id === selectedTimeSlot)?.time}
+                  {availableDates?.find((d: any) => d.id === selectedDate)?.fullDate} -{" "}
+                  {timeSlots?.find((t: any) => t.id === selectedTimeSlot)?.time}
                 </p>
               </div>
             </div>
