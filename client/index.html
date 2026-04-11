@@ -1,23 +1,94 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>تشخيصي — منصة الفحص والتقييم التعليمي</title>
-    <meta name="description" content="منصة تشخيصي للفحص المبكر لصعوبات التعلم والقراءة والانتباه. احصل على تقييم دقيق وتواصل مع متخصصين معتمدين." />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Google Fonts: Cairo + IBM Plex Sans Arabic -->
+    <!-- Primary Meta Tags -->
+    <title>تشخيصي | Tashkheesy — فحص أولي مجاني لصعوبات التعلم والانتباه</title>
+    <meta name="title" content="تشخيصي | Tashkheesy — فحص أولي مجاني لصعوبات التعلم والانتباه" />
+    <meta name="description" content="تشخيصي (Tashkheesy) منصة عربية تقدم فحصاً أولياً مجانياً مدعوماً بالذكاء الاصطناعي لمساعدة الأسر على فهم مؤشرات صعوبات التعلم وتشتت الانتباه لدى الأطفال. خطوة فهم أولية، ليست تشخيصاً طبياً رسمياً." />
+    <meta name="keywords" content="تشخيصي, Tashkheesy, صعوبات التعلم, تشتت الانتباه, فحص أولي, دعم الأطفال, السعودية, ذكاء اصطناعي" />
+    <meta name="author" content="تشخيصي | Tashkheesy" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#2563EB" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tashkheesy-web.vercel.app/" />
+    <meta property="og:title" content="تشخيصي | Tashkheesy — فحص أولي مجاني لصعوبات التعلم والانتباه" />
+    <meta property="og:description" content="تشخيصي (Tashkheesy) منصة عربية تقدم فحصاً أولياً مجانياً مدعوماً بالذكاء الاصطناعي لمساعدة الأسر على فهم مؤشرات صعوبات التعلم وتشتت الانتباه لدى الأطفال." />
+    <meta property="og:image" content="https://tashkheesy-web.vercel.app/og-image.jpg" />
+    <meta property="og:locale" content="ar_SA" />
+    <meta property="og:site_name" content="تشخيصي | Tashkheesy" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://tashkheesy-web.vercel.app/" />
+    <meta property="twitter:title" content="تشخيصي | Tashkheesy — فحص أولي مجاني لصعوبات التعلم والانتباه" />
+    <meta property="twitter:description" content="تشخيصي (Tashkheesy) منصة عربية تقدم فحصاً أولياً مجانياً مدعوماً بالذكاء الاصطناعي لمساعدة الأسر على فهم مؤشرات صعوبات التعلم وتشتت الانتباه لدى الأطفال." />
+    <meta property="twitter:image" content="https://tashkheesy-web.vercel.app/og-image.jpg" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://tashkheesy-web.vercel.app/" />
+
+    <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+
+    <!-- Structured Data (Schema.org) — SoftwareApplication (أكثر دقة من HealthAndBeautyBusiness) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "تشخيصي",
+      "alternateName": "Tashkheesy",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web",
+      "description": "منصة عربية تقدم فحصاً أولياً مجانياً مدعوماً بالذكاء الاصطناعي لمساعدة الأسر على فهم مؤشرات صعوبات التعلم وتشتت الانتباه لدى الأطفال. الفحص خطوة فهم أولية وليس تشخيصاً طبياً رسمياً.",
+      "url": "https://tashkheesy-web.vercel.app",
+      "inLanguage": "ar",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "SAR",
+        "description": "الفحص الأولي مجاني"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "email": "support@tashkheesy.com",
+        "availableLanguage": "Arabic"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "تشخيصي | Tashkheesy",
+        "url": "https://tashkheesy-web.vercel.app"
+      },
+      "sameAs": [
+        "https://github.com/mohamedshabaan8613-byte/tashkheesy-web"
+      ]
+    }
+    </script>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LW0Y68FYY5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-LW0Y68FYY5', {
+        'send_page_view': true,
+        'cookie_flags': 'SameSite=None;Secure',
+        'anonymize_ip': true
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%">
-    </script>
   </body>
 </html>

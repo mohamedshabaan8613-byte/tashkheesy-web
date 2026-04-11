@@ -7,7 +7,8 @@ import HeroSection from "@/components/HeroSection";
 import TrustRibbon from "@/components/TrustRibbon";
 import AwarenessSection from "@/components/AwarenessSection";
 import HowItWorks from "@/components/HowItWorks";
-import WhyTashkhisi from "@/components/WhyTashkhisi";
+import WhyTashkheesy from "@/components/WhyTashkheesy";
+import FounderStory from "@/components/FounderStory";
 import ServicesPreview from "@/components/ServicesPreview";
 import ImpactSection from "@/components/ImpactSection";
 import Testimonials from "@/components/Testimonials";
@@ -15,41 +16,51 @@ import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 
+/**
+ * homeSchema — بيانات منظمة دقيقة وآمنة
+ * النوع: SoftwareApplication (أكثر دقة من MedicalOrganization)
+ * تم حذف: priceRange, paymentAccepted, currenciesAccepted (لا يوجد دفع مباشر)
+ * تم إصلاح: البريد الإلكتروني → tashkheesy.com
+ * تم حذف: logo.png (الملف غير موجود في production)
+ */
 const homeSchema = {
   "@context": "https://schema.org",
-  "@type": "MedicalOrganization",
+  "@type": "SoftwareApplication",
   "name": "تشخيصي",
   "alternateName": "Tashkheesy",
-  "description": "منصة رقمية متخصصة في تشخيص صعوبات التعلم والقراءة (الديسلكسيا) للأطفال وطلاب الجامعة في المملكة العربية السعودية",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Web",
+  "description": "منصة عربية تُقدّم فحصاً أولياً مجانياً لمؤشرات صعوبات التعلم والانتباه — خطوة فهم أولية مدعومة بالذكاء الاصطناعي، ليست تشخيصاً طبياً رسمياً، توجهك نحو الدعم المتخصص المناسب بخطوات واضحة.",
   "url": "https://tashkheesy-web.vercel.app",
-  "logo": "https://tashkheesy-web.vercel.app/logo.png",
-  "image": "https://tashkheesy-web.vercel.app/og-image.jpg",
-  "priceRange": "299-349 SAR",
-  "currenciesAccepted": "SAR",
-  "paymentAccepted": "تحويل بنكي, بطاقة ائتمان",
+  "inLanguage": "ar",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "SAR",
+    "description": "الفحص الأولي مجاني"
+  },
   "areaServed": { "@type": "Country", "name": "Saudi Arabia" },
   "availableLanguage": { "@type": "Language", "name": "Arabic" },
   "contactPoint": {
     "@type": "ContactPoint",
     "contactType": "customer service",
-    "email": "support@tashkhisi.com",
+    "email": "support@tashkheesy.com",
     "availableLanguage": "Arabic"
   },
-  "address": {
-    "@type": "PostalAddress",
-    "addressCountry": "SA",
-    "addressLocality": "الرياض",
-    "addressRegion": "منطقة الرياض"
+  "publisher": {
+    "@type": "Organization",
+    "name": "تشخيصي | Tashkheesy",
+    "url": "https://tashkheesy-web.vercel.app"
   }
 };
 
 export default function Home() {
   useSEO({
-    title: "تشخيصي — افهم طفلك، ابدأ الفحص مجاناً",
+    title: "تشخيصي | Tashkheesy — فحص أولي لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه",
     description:
-      "تشخيصي منصة عربية متخصصة تساعدك على فهم صعوبات التعلم والانتباه لدى طفلك أو لنفسك، والوصول إلى الدعم المناسب بخطوات واضحة وبسرية تامة.",
+      "تشخيصي (Tashkheesy) منصة عربية سعودية تقدّم فحصاً أولياً مجانياً لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه، مع تفسير أولي مدعوم بالذكاء الاصطناعي وخطوات أوضح نحو الدعم المتخصص. هذا الفحص لا يُعد تشخيصاً طبياً رسمياً.",
     keywords:
-      "تشخيص صعوبات تعلم, ديسلكسيا السعودية, صعوبات القراءة للأطفال, تشخيص أخصائي نفسي, تشخيص تربوي, صعوبات تعلم الرياض",
+      "تشخيصي, Tashkheesy, صعوبات التعلم, عسر القراءة, فرط الحركة وتشتت الانتباه, فحص أولي, دعم تربوي, السعودية",
     canonical: "/",
     schema: homeSchema,
   });
@@ -61,7 +72,8 @@ export default function Home() {
       <TrustRibbon />
       <AwarenessSection />
       <HowItWorks />
-      <WhyTashkhisi />
+      <FounderStory />
+      <WhyTashkheesy />
       <ServicesPreview />
       <ImpactSection />
       <Testimonials />

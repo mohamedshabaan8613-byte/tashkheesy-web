@@ -1,22 +1,79 @@
 /*
- * تشخيصي Footer — Editorial Healthcare
- * Clean, minimal footer with brand, links, and legal
- * Dark background, subtle dividers
+ * تشخيصي | Tashkheesy — Footer
+ * روابط حقيقية لـ FAQ والخصوصية + شريط الثقة + تصميم محسّن
+ * Palette: #0A0F1E bg · white text · #2563EB accent · #14B8A6 secondary
+ * Updated: 2026 — removed broken social links, softened privacy claim
  */
+import { Link } from "wouter";
+import { Shield, Lock, Heart, Award } from "lucide-react";
+
+// ─── إشارات الثقة ──────────────────────────────────────────────────────────────
+const trustSignals = [
+  { icon: Shield, text: "نحمي بياناتك بعناية", color: "#14B8A6" },
+  { icon: Lock, text: "لا مشاركة مع أطراف ثالثة", color: "#2563EB" },
+  { icon: Heart, text: "مراجعة من متخصصين معتمدين", color: "#F59E0B" },
+  { icon: Award, text: "منصة عربية موثوقة", color: "#14B8A6" },
+];
+
+// ─── روابط المنصة (جميعها موجودة فعلياً) ──────────────────────────────────────
+const platformLinks = [
+  { label: "ابدأ الفحص", href: "/start" },
+  { label: "كيف يعمل", href: "/#how-it-works" },
+  { label: "خدماتنا", href: "/services" },
+  { label: "الأسعار", href: "/pricing" },
+  { label: "احجز موعداً", href: "/booking" },
+];
+
+// ─── روابط الدعم ───────────────────────────────────────────────────────────────
+const supportLinks = [
+  { label: "لماذا تشخيصي", href: "/impact" },
+  { label: "الأسئلة الشائعة", href: "/faq" },
+  { label: "سياسة الخصوصية", href: "/privacy" },
+  { label: "إخلاء المسؤولية", href: "/disclaimer" },
+  { label: "تواصل معنا", href: "/contact" },
+  { label: "نموذج النتائج", href: "/result-demo" },
+];
 
 export default function Footer() {
-  const navLinks = [
-    { section: "المنصة", links: ["ابدأ الفحص", "كيف يعمل", "خدماتنا", "لماذا تشخيصي"] },
-    { section: "الدعم", links: ["الأسئلة الشائعة", "سياسة الخصوصية", "شروط الاستخدام", "تواصل معنا"] },
-  ];
-
   return (
-    <footer style={{ background: "#0A0F1E" }}>
+    <footer style={{ background: "#0A0F1E", direction: "rtl" }}>
+      {/* ─── شريط الثقة ────────────────────────────────────────────────────── */}
+      <div
+        className="border-b"
+        style={{ borderColor: "rgba(255,255,255,0.06)" }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 lg:gap-10">
+            {trustSignals.map((signal, i) => {
+              const Icon = signal.icon;
+              return (
+                <div key={i} className="flex items-center gap-2.5">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: `${signal.color}18`, border: `1px solid ${signal.color}30` }}
+                  >
+                    <Icon size={15} style={{ color: signal.color }} />
+                  </div>
+                  <span
+                    className="text-sm text-slate-400"
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                  >
+                    {signal.text}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── المحتوى الرئيسي ────────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+
           {/* Brand */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2.5 mb-5">
+            <div className="flex items-center gap-2.5 mb-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #2563EB, #14B8A6)" }}
@@ -28,68 +85,164 @@ export default function Footer() {
                   ت
                 </span>
               </div>
-              <span
-                className="text-2xl font-black text-white"
-                style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 800 }}
-              >
-                تشخيصي
-              </span>
+              <div>
+                <span
+                  className="text-2xl font-black text-white block leading-tight"
+                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 800 }}
+                >
+                  تشخيصي
+                </span>
+                <span
+                  className="text-xs text-slate-500 tracking-wider"
+                  style={{ fontFamily: "sans-serif", letterSpacing: "0.08em" }}
+                >
+                  Tashkheesy
+                </span>
+              </div>
             </div>
             <p
               className="text-sm text-slate-400 leading-relaxed max-w-sm mb-6"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
             >
-              منصة عربية متخصصة تساعدك على فهم صعوبات التعلم والانتباه، والوصول إلى الدعم المناسب بخطوات واضحة وبلغتك.
+              منصة عربية متخصصة تساعدك على فهم مؤشرات صعوبات التعلم والانتباه، والوصول إلى الدعم المناسب بخطوات واضحة وبلغتك.
             </p>
-            {/* Social / Contact placeholder */}
-            <div className="flex gap-3">
-              {["𝕏", "in", "f"].map((s, i) => (
-                <a
+
+            {/* Trust mini-badges */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {["🔒 بيانات آمنة", "👨‍⚕️ متخصصون معتمدون", "🇸🇦 منصة عربية"].map((badge, i) => (
+                <span
                   key={i}
-                  href="#"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white transition-colors"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+                  className="text-xs px-3 py-1.5 rounded-full"
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "#94A3B8",
+                    fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  }}
                 >
-                  {s}
-                </a>
+                  {badge}
+                </span>
               ))}
             </div>
           </div>
 
-          {/* Links */}
-          {navLinks.map((group) => (
-            <div key={group.section}>
-              <h4
-                className="text-sm font-bold text-white mb-5"
-                style={{ fontFamily: "'Cairo', sans-serif" }}
-              >
-                {group.section}
-              </h4>
-              <ul className="space-y-3">
-                {group.links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-sm text-slate-400 hover:text-white transition-colors"
+          {/* Platform Links */}
+          <div>
+            <h4
+              className="text-sm font-bold text-white mb-5"
+              style={{ fontFamily: "'Cairo', sans-serif" }}
+            >
+              المنصة
+            </h4>
+            <ul className="space-y-3">
+              {platformLinks.map((link) => (
+                <li key={link.label}>
+                  <Link href={link.href}>
+                    <span
+                      className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
                       style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                     >
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+                      {link.label}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Support Links */}
+          <div>
+            <h4
+              className="text-sm font-bold text-white mb-5"
+              style={{ fontFamily: "'Cairo', sans-serif" }}
+            >
+              الدعم والمعلومات
+            </h4>
+            <ul className="space-y-3">
+              {supportLinks.map((link) => (
+                <li key={link.label}>
+                  <Link href={link.href}>
+                    <span
+                      className="text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                    >
+                      {link.label}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            {/* FAQ highlight */}
+            <div
+              className="mt-6 p-4 rounded-xl"
+              style={{
+                background: "linear-gradient(135deg, rgba(37,99,235,0.15), rgba(20,184,166,0.15))",
+                border: "1px solid rgba(37,99,235,0.2)",
+              }}
+            >
+              <p
+                className="text-xs text-slate-300 mb-2"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                لديك سؤال؟
+              </p>
+              <Link href="/faq">
+                <span
+                  className="text-sm font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{
+                    background: "linear-gradient(135deg, #60A5FA, #2DD4BF)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    fontFamily: "'Cairo', sans-serif",
+                  }}
+                >
+                  اقرأ الأسئلة الشائعة ←
+                </span>
+              </Link>
             </div>
-          ))}
+          </div>
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-white/8 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* ─── Bottom bar ──────────────────────────────────────────────────── */}
+        <div
+          className="border-t pt-8 flex flex-col items-center sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 text-center sm:text-right"
+          style={{ borderColor: "rgba(255,255,255,0.06)" }}
+        >
           <p
             className="text-xs text-slate-600"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
           >
-            © ٢٠٢٥ تشخيصي. جميع الحقوق محفوظة.
+            © ٢٠٢٦ تشخيصي | Tashkheesy. جميع الحقوق محفوظة.
           </p>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy">
+              <span
+                className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                الخصوصية
+              </span>
+            </Link>
+            <span className="text-slate-700 text-xs">·</span>
+            <Link href="/disclaimer">
+              <span
+                className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                إخلاء المسؤولية
+              </span>
+            </Link>
+            <span className="text-slate-700 text-xs">·</span>
+            <Link href="/faq">
+              <span
+                className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                الأسئلة الشائعة
+              </span>
+            </Link>
+          </div>
           <p
             className="text-xs text-slate-700"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}

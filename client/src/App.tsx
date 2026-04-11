@@ -18,12 +18,23 @@ const NotFound    = lazy(() => import("./components/NotFound"));
 const Privacy     = lazy(() => import("./Privacy"));
 const Disclaimer  = lazy(() => import("./Disclaimer"));
 const AIInsights  = lazy(() => import("./AIInsights"));
+const FAQ         = lazy(() => import("./FAQ"));
+const Impact      = lazy(() => import("./Impact"));
 
 // ─── صفحات ملف الطفل والفحص ────────────────────────────────────────────────
 const ChildrenPage    = lazy(() => import("./components/children/ChildrenPage"));
 const ScreeningPage   = lazy(() => import("./components/screening/ScreeningPage"));
 const ScreeningResult = lazy(() => import("./components/screening/ScreeningResult"));
-const ResultDemo     = lazy(() => import("./components/screening/ResultDemo"));
+const ResultDemo      = lazy(() => import("./components/screening/ResultDemo"));
+const ScreeningIntro  = lazy(() => import("./components/screening/ScreeningIntro"));
+const AssessmentStart = lazy(() => import("./components/AssessmentStart"));
+const SelfAssessment  = lazy(() => import("./components/SelfAssessment"));
+
+// ─── صفحات القمع الجديدة ────────────────────────────────────────────────────
+const ChooseChildPath  = lazy(() => import("./components/screening/ChooseChildPath"));
+const ChooseSelfPath   = lazy(() => import("./components/screening/ChooseSelfPath"));
+const SpecialistsMatch = lazy(() => import("./components/screening/SpecialistsMatch"));
+// ───────────────────────────────────────────────────────────────────────────────
 
 // ─── Wrapper Components لاستخراج URL Params ──────────────────────────────────
 function ScreeningWrapper() {
@@ -34,6 +45,16 @@ function ScreeningWrapper() {
 function ScreeningResultWrapper() {
   const params = useParams<{ sessionId: string }>();
   return <ScreeningResult sessionId={params.sessionId ?? ""} />;
+}
+
+function ScreeningIntroWrapper() {
+  const params = useParams<{ childId: string }>();
+  return <ScreeningIntro childId={params.childId ?? ""} />;
+}
+
+function ChooseChildPathWrapper() {
+  const params = useParams<{ childId: string }>();
+  return <ChooseChildPath childId={params.childId ?? ""} />;
 }
 
 function Router() {
@@ -51,12 +72,22 @@ function Router() {
         <Route path="/privacy"    component={Privacy} />
         <Route path="/disclaimer" component={Disclaimer} />
         <Route path="/ai-insights" component={AIInsights} />
+        <Route path="/faq"         component={FAQ} />
+        <Route path="/impact"      component={Impact} />
 
         {/* ─── صفحات ملف الطفل والفحص ──────────────────────────────────── */}
-        <Route path="/children"                    component={ChildrenPage} />
-        <Route path="/screening/:childId"          component={ScreeningWrapper} />
-        <Route path="/screening-result/:sessionId" component={ScreeningResultWrapper} />
-        <Route path="/result-demo"                    component={ResultDemo} />
+        <Route path="/children"                        component={ChildrenPage} />
+        <Route path="/screening-intro/:childId"        component={ScreeningIntroWrapper} />
+        <Route path="/screening/:childId"              component={ScreeningWrapper} />
+        <Route path="/screening-result/:sessionId"     component={ScreeningResultWrapper} />
+        <Route path="/result-demo"                     component={ResultDemo} />
+
+        {/* ─── مسارات القمع الجديدة ────────────────────────────────────── */}
+        <Route path="/start"                           component={AssessmentStart} />
+        <Route path="/self-assessment"                 component={SelfAssessment} />
+        <Route path="/choose-self-path"                component={ChooseSelfPath} />
+        <Route path="/choose-child-path/:childId"      component={ChooseChildPathWrapper} />
+        <Route path="/specialists"                     component={SpecialistsMatch} />
 
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />

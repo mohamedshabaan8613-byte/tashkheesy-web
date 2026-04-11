@@ -204,7 +204,7 @@ export default function QuickBookingForm() {
           <p className="text-xs text-slate-500 text-center">
             بإرسال هذا النموذج، أنت توافق على{" "}
             <Link href="/privacy">
-              <a className="text-indigo-600 hover:underline">سياسة الخصوصية</a>
+              <a className="text-[#2563EB] hover:underline">سياسة الخصوصية</a>
             </Link>
           </p>
         </form>

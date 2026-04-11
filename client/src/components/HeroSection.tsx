@@ -4,9 +4,15 @@
  * Background: soft blue-white gradient with generated hero image
  * Text: dark on light background
  * Animation: staggered fadeInUp on load
+ *
+ * CTA logic:
+ *   Primary  → /start  (unified screening entry for both child & self)
+ *   Secondary → /#how-it-works  (scrolls to HowItWorks section — label matches destination)
+ *
+ * AI badge wording: responsible, non-diagnostic, clear
  */
 
-import { ArrowLeft, Play, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, Brain, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function HeroSection() {
@@ -60,13 +66,14 @@ export default function HeroSection() {
         }}
       />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20">
-        <div className="grid lg:grid-cols-5 gap-12 lg:gap-8 items-center">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-16 sm:pb-20">
+        <div className="grid lg:grid-cols-5 gap-8 lg:gap-8 items-center">
           {/* Text Content — 3 cols */}
           <div className="lg:col-span-3 order-2 lg:order-1">
-            {/* Label badge */}
+
+            {/* Label badge — concise on all screen sizes */}
             <div
-              className={`mb-7 inline-flex items-center gap-2 px-4 py-2 rounded-full ${animClass(0)}`}
+              className={`mb-5 sm:mb-7 inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full ${animClass(0)}`}
               style={{
                 ...animStyle(0),
                 background: "rgba(37,99,235,0.07)",
@@ -76,15 +83,15 @@ export default function HeroSection() {
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               <span
                 className="text-xs font-semibold text-blue-700"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", letterSpacing: "0.05em" }}
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", letterSpacing: "0.02em" }}
               >
-                منصة عربية متخصصة في صعوبات التعلم والانتباه
+                مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — فحص أولي مجاني
               </span>
             </div>
 
             {/* Main Headline */}
             <h1
-              className={`text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 mb-6 ${animClass(100)}`}
+              className={`text-3xl sm:text-4xl lg:text-6xl font-black text-slate-900 mb-5 sm:mb-6 ${animClass(100)}`}
               style={{
                 ...animStyle(100),
                 fontFamily: "'Cairo', sans-serif",
@@ -93,7 +100,20 @@ export default function HeroSection() {
                 letterSpacing: "-0.01em",
               }}
             >
-              افهم طفلك{" "}
+              <span
+                className="block text-xl sm:text-2xl lg:text-3xl font-black mb-1.5"
+                style={{
+                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  fontFamily: "'Cairo', sans-serif",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                تشخيصي{" "}·{" "}Tashkheesy
+              </span>
+              خطوتك الأولى{" "}
               <br />
               <span
                 style={{
@@ -103,79 +123,143 @@ export default function HeroSection() {
                   backgroundClip: "text",
                 }}
               >
-                قبل أن يتأخر
+                نحو الفهم
               </span>
               <br />
-              الوقت
+              والدعم
             </h1>
 
             {/* Subheadline */}
             <p
-              className={`text-xl text-slate-600 leading-relaxed mb-9 max-w-lg ${animClass(200)}`}
+              className={`text-base sm:text-lg lg:text-xl text-slate-600 leading-relaxed mb-7 sm:mb-9 max-w-lg ${animClass(200)}`}
               style={{
                 ...animStyle(200),
                 fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                 fontWeight: 400,
-                lineHeight: 1.85,
+                lineHeight: 1.8,
               }}
             >
-              تشخيصي تساعدك على فهم إشارات صعوبات التعلم والانتباه — وتوجّهك نحو الخطوة الصحيحة التالية بثقة وبدون قلق.
+              <span className="hidden sm:inline">
+                <strong style={{ fontWeight: 700, color: "#1e40af" }}>تشخيصي (Tashkheesy)</strong> تقدم فحصاً أولياً مجانياً مدعوماً بالذكاء الاصطناعي، يساعدك في فهم مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه، ويساعدك على اتخاذ خطوة أولى أكثر وضوحاً نحو الدعم المناسب.
+              </span>
+              <span className="sm:hidden">فحص أولي مجاني لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — خطوة أولى أوضح نحو الدعم المناسب.</span>
             </p>
 
             {/* CTAs */}
             <div
-              className={`flex flex-col sm:flex-row gap-4 mb-12 ${animClass(300)}`}
+              className={`flex flex-col gap-3 mb-12 ${animClass(300)}`}
               style={animStyle(300)}
             >
-              <a
-                href="#screening"
-                className="group flex items-center justify-center gap-2 px-7 py-4 rounded-2xl text-white font-bold text-base transition-all duration-200"
+              {/* Primary + Secondary row */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Primary CTA → /start (unified entry: child or self) */}
+                <a
+                  href="/start"
+                  className="group flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-white font-bold text-base transition-all duration-200"
+                  style={{
+                    background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
+                    fontFamily: "'Cairo', sans-serif",
+                    fontWeight: 700,
+                    boxShadow: "0 6px 20px rgba(37,99,235,0.35)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(37,99,235,0.45)";
+                    (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(37,99,235,0.35)";
+                    (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                  }}
+                >
+                  ابدأ الفحص الأولي
+                  <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
+                </a>
+
+                {/* Secondary CTA → #how-it-works (label now matches destination) */}
+                <a
+                  href="#how-it-works"
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm transition-all duration-200"
+                  style={{
+                    color: "#475569",
+                    border: "1.5px solid rgba(71,85,105,0.18)",
+                    fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                    background: "rgba(248,250,252,0.9)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.04)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(37,99,235,0.25)";
+                    (e.currentTarget as HTMLElement).style.color = "#2563EB";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(248,250,252,0.9)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(71,85,105,0.18)";
+                    (e.currentTarget as HTMLElement).style.color = "#475569";
+                  }}
+                >
+                  اكتشف كيف يعمل الفحص
+                </a>
+              </div>
+
+              {/* Reassurance line */}
+              <p
+                className="text-xs"
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
-                  fontFamily: "'Cairo', sans-serif",
-                  fontWeight: 700,
-                  boxShadow: "0 6px 20px rgba(37,99,235,0.35)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(37,99,235,0.45)";
-                  (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(37,99,235,0.35)";
-                  (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                  color: "#64748B",
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  lineHeight: 1.7,
                 }}
               >
-                ابدأ الفحص الآن
-                <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-1" />
-              </a>
-              <a
-                href="#how-it-works"
-                className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl font-semibold text-base transition-all duration-200"
-                style={{
-                  color: "#2563EB",
-                  border: "1.5px solid rgba(37,99,235,0.3)",
-                  fontFamily: "'Cairo', sans-serif",
-                  background: "rgba(255,255,255,0.8)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.05)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(37,99,235,0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.8)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(37,99,235,0.3)";
-                }}
+                فحص أولي آمن وسري — ليس تشخيصاً رسمياً، يساعدك على فهم الخطوة التالية بثقة.
+              </p>
+            </div>
+
+            {/* AI Badge — responsible, non-diagnostic wording */}
+            <div
+              className={`mb-6 sm:mb-8 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 sm:gap-4 ${animClass(350)}`}
+              style={{
+                ...animStyle(350),
+                background: "linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,58,138,0.92) 55%, rgba(15,118,110,0.92) 100%)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 8px 32px rgba(15,23,42,0.2)",
+                maxWidth: "480px",
+              }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}
               >
-                <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Play size={12} className="fill-blue-600 text-blue-600 mr-0.5" />
+                <Brain size={20} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <span
+                    className="text-sm font-bold text-white"
+                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
+                  >
+                    تحليل ذكاء اصطناعي للمؤشرات
+                  </span>
+                  <div
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0"
+                    style={{ background: "rgba(16,185,129,0.2)", border: "1px solid rgba(16,185,129,0.3)" }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs text-emerald-300" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>مجاني</span>
+                  </div>
                 </div>
-                كيف يعمل تشخيصي؟
-              </a>
+                <p
+                  className="text-xs text-blue-200"
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.6 }}
+                >
+                  تحليل أولي مدعوم بالذكاء الاصطناعي — يساعد على فهم المؤشرات الأولية، لا يُعد تشخيصاً رسمياً
+                </p>
+              </div>
+              <Shield size={14} className="text-teal-300 flex-shrink-0" />
             </div>
 
             {/* Micro-stats */}
             <div
-              className={`flex flex-wrap gap-8 ${animClass(400)}`}
+              className={`flex flex-wrap gap-5 sm:gap-8 ${animClass(400)}`}
               style={animStyle(400)}
             >
               {[
@@ -183,7 +267,7 @@ export default function HeroSection() {
                 { value: "مجاني", label: "بدون أي رسوم" },
                 { value: "سري تماماً", label: "خصوصيتك محمية" },
               ].map((stat, i) => (
-                <div key={i} className="flex items-center gap-3">
+                <div key={i} className="flex items-center gap-2.5">
                   <div
                     className="w-1 h-10 rounded-full"
                     style={{ background: i === 0 ? "#2563EB" : i === 1 ? "#14B8A6" : "#F59E0B" }}
@@ -207,9 +291,9 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Illustration — 2 cols */}
+          {/* Illustration — 2 cols — مخفية على الجوال لتوفير مساحة للنص */}
           <div
-            className={`lg:col-span-2 order-1 lg:order-2 flex justify-center ${animClass(150)}`}
+            className={`hidden lg:flex lg:col-span-2 order-1 lg:order-2 justify-center ${animClass(150)}`}
             style={animStyle(150)}
           >
             <div className="relative w-full max-w-sm lg:max-w-full">
@@ -250,7 +334,7 @@ export default function HeroSection() {
                     className="text-xs font-bold text-slate-900"
                     style={{ fontFamily: "'Cairo', sans-serif" }}
                   >
-                    نتائج فورية
+                    نتائج واضحة
                   </div>
                   <div
                     className="text-xs text-slate-500"
@@ -274,7 +358,7 @@ export default function HeroSection() {
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: "#FFFBEB" }}
                 >
-                  <span className="text-amber-500 text-lg">🔒</span>
+                  <Shield size={18} className="text-amber-500" />
                 </div>
                 <div>
                   <div

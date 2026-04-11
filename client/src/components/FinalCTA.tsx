@@ -30,7 +30,7 @@ export default function FinalCTA() {
 
   return (
     <section
-      id="screening"
+      id="final-cta"
       ref={sectionRef}
       className="py-24 lg:py-32 relative overflow-hidden"
     >
@@ -89,7 +89,7 @@ export default function FinalCTA() {
           className="fade-in-up text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6"
           style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.2 }}
         >
-          ابدأ الفحص الآن
+          خطوتك الأولى نحو فهم
           <br />
           <span
             style={{
@@ -99,7 +99,7 @@ export default function FinalCTA() {
               backgroundClip: "text",
             }}
           >
-            مجاناً وبسرية تامة
+            مؤشرات التعلم والانتباه
           </span>
         </h2>
 
@@ -108,14 +108,15 @@ export default function FinalCTA() {
           className="fade-in-up text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed"
           style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
         >
-          ١٥ دقيقة فقط تُعطيك وضوحاً قد يُغيّر مسار طفلك — أو مسارك أنت.
-          لا تحتاج إلى حجز مسبق، ولا إلى خبرة طبية.
+          فحص أولي مجاني لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه —
+          سواء كنت والداً يلاحظ شيئاً ما، أو بالغاً يبحث عن فهم أعمق لنفسه.
         </p>
 
-        {/* CTA Button */}
-        <div className="fade-in-up mb-12">
+        {/* CTA Buttons */}
+        <div className="fade-in-up mb-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+          {/* Primary CTA */}
           <a
-            href="/screening"
+            href="/start"
             className="group inline-flex items-center gap-3 px-10 py-5 rounded-2xl text-blue-700 font-black text-lg transition-all duration-200"
             style={{
               background: "white",
@@ -132,17 +133,40 @@ export default function FinalCTA() {
               (e.currentTarget as HTMLElement).style.boxShadow = "0 10px 40px rgba(0,0,0,0.25)";
             }}
           >
-            ابدأ الفحص الآن — مجاناً
+            ابدأ الفحص الأولي — مجاناً
             <ArrowLeft size={20} className="transition-transform group-hover:-translate-x-1" />
+          </a>
+          {/* Tertiary CTA — لمن يريد التحدث مع متخصص مباشرة */}
+          <a
+            href="/booking"
+            className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl font-semibold text-sm transition-all duration-200"
+            style={{
+              background: "rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.9)",
+              border: "1.5px solid rgba(255,255,255,0.25)",
+              fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+              fontWeight: 600,
+              backdropFilter: "blur(10px)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.18)";
+              (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)";
+              (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+            }}
+          >
+            احجز موعداً مع متخصص
           </a>
         </div>
 
         {/* Trust micro-badges */}
         <div className="fade-in-up flex flex-wrap justify-center gap-8">
           {[
-            { icon: Shield, text: "خصوصية كاملة — لا نشارك بياناتك أبداً" },
-            { icon: Clock, text: "١٥ دقيقة فقط" },
-            { icon: Smile, text: "نتائج فورية ومفهومة" },
+            { icon: Shield, text: "خصوصية كاملة — لا نشارك بياناتك" },
+            { icon: Clock, text: "١٠ دقائق فقط" },
+            { icon: Smile, text: "فحص أولي — ليس تشخيصاً رسمياً" },
           ].map((item, i) => {
             const Icon = item.icon;
             return (

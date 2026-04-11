@@ -4,7 +4,7 @@ import { Home, ArrowRight, Search } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#EFF6FF] via-white to-slate-50 flex items-center justify-center p-4">
       <div className="text-center max-w-lg mx-auto">
         {/* 404 Number */}
         <div className="text-8xl font-black text-indigo-100 select-none mb-2">
@@ -13,7 +13,7 @@ export default function NotFound() {
 
         {/* Icon */}
         <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full bg-[#DBEAFE] flex items-center justify-center">
             <Search className="w-10 h-10 text-indigo-500" />
           </div>
         </div>
@@ -30,7 +30,7 @@ export default function NotFound() {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+            <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] gap-2">
               <Home className="w-4 h-4" />
               العودة للرئيسية
             </Button>
@@ -54,7 +54,7 @@ export default function NotFound() {
               { href: "/knowledge", label: "مركز المعرفة" },
             ].map((link) => (
               <Link key={link.href} href={link.href}>
-                <a className="text-indigo-600 hover:text-indigo-800 hover:underline transition-colors">
+                <a className="text-[#2563EB] hover:text-indigo-800 hover:underline transition-colors">
                   {link.label}
                 </a>
               </Link>

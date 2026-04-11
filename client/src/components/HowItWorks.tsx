@@ -1,12 +1,12 @@
 /*
  * تشخيصي HowItWorks — Editorial Healthcare
- * 4-step visual journey: Screening → Results → Book → Follow-up
+ * 4-step visual journey: Screening → AI Results → Book → Follow-up
+ * AI badge on step 2, AI transparency banner after steps
  * Large decorative Arabic numerals, connected steps, soft cards
- * Alternating layout for visual interest
  */
 
 import { useEffect, useRef } from "react";
-import { ClipboardList, FileText, CalendarCheck, TrendingUp, ArrowLeft } from "lucide-react";
+import { ClipboardList, FileText, CalendarCheck, TrendingUp, ArrowLeft, Brain, Sparkles, Shield, Info } from "lucide-react";
 
 const steps = [
   {
@@ -19,17 +19,19 @@ const steps = [
     color: "#2563EB",
     bg: "#EFF6FF",
     gradient: "from-blue-500 to-blue-600",
+    aiTag: null,
   },
   {
     number: "٢",
     numEn: "02",
-    icon: FileText,
-    title: "احصل على نتائجك فوراً",
-    desc: "تقرير واضح ومفصَّل يشرح ما لاحظناه، مع توصيات أولية مكتوبة بلغة سهلة وغير تقنية.",
-    detail: "النتائج فورية — بمجرد إتمام الفحص",
+    icon: Brain,
+    title: "الذكاء الاصطناعي يُحلّل إجاباتك",
+    desc: "يُحلّل نظام الذكاء الاصطناعي إجاباتك فورياً ويُنشئ شرحاً مفصلاً بلغة عربية واضحة وغير مُخيفة.",
+    detail: "تقرير فوري مدعوم بالذكاء الاصطناعي — يساعدك على فهم المؤشرات",
     color: "#14B8A6",
     bg: "#F0FDFA",
     gradient: "from-teal-500 to-teal-600",
+    aiTag: "مدعوم بالذكاء الاصطناعي",
   },
   {
     number: "٣",
@@ -41,17 +43,19 @@ const steps = [
     color: "#F59E0B",
     bg: "#FFFBEB",
     gradient: "from-amber-500 to-amber-600",
+    aiTag: null,
   },
   {
     number: "٤",
     numEn: "04",
     icon: TrendingUp,
-    title: "خطة متابعة مستمرة",
-    desc: "لا تنتهي رحلتك عند التشخيص — نرافقك بخطة دعم واضحة تشمل الأسرة والمدرسة.",
-    detail: "تقارير دورية وتحديث مستمر لخطة الدعم",
+    title: "توجيه نحو الخطوة التالية",
+    desc: "بعد فهم النتائج، نوجهك نحو الخطوة التالية المناسبة — سواء كانت حجز موعد مع متخصص أو استشارة متخصصة.",
+    detail: "يوجّهك إلى الدعم المناسب بناءً على مؤشرات الفحص",
     color: "#2563EB",
     bg: "#EFF6FF",
     gradient: "from-blue-500 to-teal-500",
+    aiTag: null,
   },
 ];
 
@@ -105,7 +109,7 @@ export default function HowItWorks() {
             className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
           >
-            من أول سؤال في الفحص إلى خطة دعم متكاملة — نرافقك في كل خطوة.
+            من أول سؤال في الفحص إلى فهم النتائج والخطوة التالية — نرافقك في رحلة أكثر وضوحًا وطمأنينة.
           </p>
         </div>
 
@@ -118,13 +122,6 @@ export default function HowItWorks() {
                 key={index}
                 className="fade-in-up group relative"
               >
-                {/* Connector arrow (desktop, not last) */}
-                {index < steps.length - 1 && (
-                  <div className="hidden lg:flex absolute top-8 left-0 items-center justify-center w-full z-10 pointer-events-none"
-                    style={{ transform: "translateX(-50%)" }}>
-                  </div>
-                )}
-
                 <div
                   className="rounded-2xl p-6 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   style={{
@@ -148,15 +145,31 @@ export default function HowItWorks() {
                     {step.number}
                   </div>
 
-                  {/* Step number badge */}
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white mb-4 relative z-10"
-                    style={{
-                      background: step.color,
-                      fontFamily: "'Cairo', sans-serif",
-                    }}
-                  >
-                    {index + 1}
+                  {/* Step number badge + AI tag */}
+                  <div className="flex items-center justify-between mb-4 relative z-10">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                      style={{
+                        background: step.color,
+                        fontFamily: "'Cairo', sans-serif",
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+                    {step.aiTag && (
+                      <div
+                        className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold"
+                        style={{
+                          background: "rgba(20,184,166,0.12)",
+                          border: "1px solid rgba(20,184,166,0.25)",
+                          color: "#0f766e",
+                          fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                        }}
+                      >
+                        <Sparkles size={10} />
+                        {step.aiTag}
+                      </div>
+                    )}
                   </div>
 
                   {/* Icon */}
@@ -198,10 +211,120 @@ export default function HowItWorks() {
           })}
         </div>
 
-        {/* CTA */}
+        {/* ─── بانر الذكاء الاصطناعي ─── */}
+        <div
+          className="fade-in-up rounded-3xl p-6 sm:p-8 mb-10 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, #0F172A 0%, #1e3a8a 55%, #0f766e 100%)",
+            boxShadow: "0 16px 48px rgba(15,23,42,0.2)",
+          }}
+        >
+          {/* نقاط زخرفية */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-10"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+            }}
+          />
+          <div
+            className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"
+            style={{
+              background: "radial-gradient(circle, rgba(20,184,166,0.2) 0%, transparent 70%)",
+              transform: "translate(30%, -30%)",
+            }}
+          />
+          <div className="relative flex flex-col lg:flex-row items-start lg:items-center gap-6">
+            {/* الأيقونة */}
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "rgba(255,255,255,0.12)",
+                border: "1px solid rgba(255,255,255,0.2)",
+              }}
+            >
+              <Brain size={30} className="text-white" />
+            </div>
+            {/* المحتوى */}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h3
+                  className="text-xl font-black text-white"
+                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+                >
+                  كيف يعمل الذكاء الاصطناعي في تشخيصي؟
+                </h3>
+                <div
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                  style={{ background: "rgba(16,185,129,0.2)", border: "1px solid rgba(16,185,129,0.3)" }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span
+                    className="text-xs font-semibold text-emerald-300"
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                  >
+                    نشط
+                  </span>
+                </div>
+              </div>
+              <p
+                className="text-blue-200 text-sm leading-relaxed mb-4"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+              >
+                بعد إتمام الفحص، يُحلل نموذج الذكاء الاصطناعي إجاباتك عبر ٦ محاور معرفية ويُنشئ شرحاً مخصصاً بلغة عربية دافئة — يُجيب على: ما الذي رصده الفحص؟ ماذا يعني؟ لماذا يهم؟ وما الخطوة التالية؟
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { icon: Shield, text: "فحص أولي — ليس تشخيصاً طبياً رسمياً" },
+                  { icon: Info, text: "الذكاء الاصطناعي يُنظّم المؤشرات ويشرحها — لا يُصدر أحكاماً" },
+                  { icon: Sparkles, text: "المتخصص هو الخطوة التالية عند الحاجة" },
+                ].map((item, i) => {
+                  const ItemIcon = item.icon;
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                      style={{
+                        background: "rgba(255,255,255,0.08)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                      }}
+                    >
+                      <ItemIcon size={12} className="text-teal-300" />
+                      <span
+                        className="text-xs text-blue-100"
+                        style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                      >
+                        {item.text}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {/* زر */}
+            <div className="flex-shrink-0">
+              <a
+                href="/ai-insights"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all duration-200 hover:opacity-90 whitespace-nowrap"
+                style={{
+                  background: "white",
+                  color: "#1e3a8a",
+                  fontFamily: "'Cairo', sans-serif",
+                  fontWeight: 700,
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                }}
+              >
+                <Brain size={15} />
+                اعرف أكثر عن AI
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA — زر واحد يقود مباشرة إلى مسار الفحص */}
         <div className="fade-in-up text-center">
           <a
-            href="#screening"
+            href="/start"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:-translate-y-1"
             style={{
               background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
@@ -210,7 +333,7 @@ export default function HowItWorks() {
               boxShadow: "0 6px 20px rgba(37,99,235,0.3)",
             }}
           >
-            ابدأ رحلتك الآن — مجاناً
+            ابدأ الفحص الأولي — مجاناً
             <ArrowLeft size={18} />
           </a>
         </div>

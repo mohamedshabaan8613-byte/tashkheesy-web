@@ -1,61 +1,1539 @@
+/*
+ * تشخيصي — Booking MVP Page
+ * Editorial Healthcare style — Arabic-first
+ * Full 4-step booking flow: Service → Specialist → Date/Time → Confirmation
+ * Colors: #F8FAFC bg, #2563EB primary, #14B8A6 secondary, #F59E0B warm
+ * Fonts: Cairo (headings), IBM Plex Sans Arabic (body)
+ * Static MVP — no backend required, realistic mock data
+ */
+
+import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { BookingProvider, useBooking } from "@/contexts/BookingContext";
-import { useSEO } from "@/hooks/useSEO";
-import StepIndicator from "@/components/booking/StepIndicator";
-import Step1ServiceSelection from "@/components/booking/Step1ServiceSelection";
-import Step2DateSelection from "@/components/booking/Step2DateSelection";
-import Step3DataConfirmation from "@/components/booking/Step3DataConfirmation";
-import Step4Confirmation from "@/components/booking/Step4Confirmation";
+import {
+  CheckCircle,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Clock,
+  User,
+  Star,
+  Shield,
+  MessageCircle,
+  Award,
+  Languages,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Heart,
+  BookOpen,
+  Brain,
+  Users,
+  Phone,
+  Mail,
+  MapPin,
+  Check,
+  Info,
+} from "lucide-react";
 
-function BookingContent() {
-  const { currentStep } = useBooking();
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-  useSEO({
-    title: "احجز موعد تشخيص صعوبات التعلم",
+type ServiceType = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  duration: string;
+  price: string;
+  icon: React.ElementType;
+  color: string;
+  bg: string;
+  badge?: string;
+};
+
+type Specialist = {
+  id: string;
+  name: string;
+  title: string;
+  specialty: string;
+  bio: string;
+  experience: string;
+  languages: string[];
+  qualifications: string[];
+  focus: string[];
+  rating: number;
+  sessions: number;
+  avatar: string;
+  avatarBg: string;
+  initials: string;
+  available: string;
+};
+
+type BookingState = {
+  step: 1 | 2 | 3 | 4;
+  service: ServiceType | null;
+  specialist: Specialist | null;
+  date: string | null;
+  time: string | null;
+  name: string;
+  email: string;
+  phone: string;
+  notes: string;
+};
+
+// ─── Static Data ─────────────────────────────────────────────────────────────
+
+const SERVICES: ServiceType[] = [
+  {
+    id: "initial",
+    title: "استشارة أولية",
+    subtitle: "الخطوة الأولى نحو الفهم",
     description:
-      "احجز موعدك مع أخصائي تشخيصي في 4 خطوات سهلة. اختر الخدمة، التاريخ، وأدخل بياناتك لتأكيد الحجز.",
-    keywords: "حجز موعد تشخيص, حجز أخصائي صعوبات تعلم, موعد تشخيص ديسلكسيا",
-    canonical: "/booking",
-    noIndex: true,
-  });
+      "جلسة تعريفية مع متخصص لمراجعة نتائج الفحص، الإجابة على أسئلتك، وتحديد الخطوات التالية المناسبة.",
+    duration: "٤٥ دقيقة",
+    price: "مجانية للمرة الأولى",
+    icon: MessageCircle,
+    color: "#2563EB",
+    bg: "#EFF6FF",
+    badge: "مجانية",
+  },
+  {
+    id: "parent",
+    title: "إرشاد الوالدين",
+    subtitle: "دعم الأسرة في رحلة الفهم",
+    description:
+      "جلسة موجهة للوالدين لفهم نتائج الفحص، كيفية دعم الطفل في المنزل والمدرسة، وبناء بيئة داعمة.",
+    duration: "٦٠ دقيقة",
+    price: "٢٥٠ ريال",
+    icon: Heart,
+    color: "#14B8A6",
+    bg: "#F0FDFA",
+  },
+  {
+    id: "specialist",
+    title: "جلسة متخصص صعوبات التعلم",
+    subtitle: "تقييم معمّق ومتخصص",
+    description:
+      "تقييم شامل مع متخصص في صعوبات التعلم لفهم نمط التعلم، تحديد نقاط القوة والتحديات، ووضع خطة دعم.",
+    duration: "٩٠ دقيقة",
+    price: "٤٥٠ ريال",
+    icon: Brain,
+    color: "#F59E0B",
+    bg: "#FFFBEB",
+    badge: "الأكثر طلباً",
+  },
+  {
+    id: "followup",
+    title: "جلسة متابعة",
+    subtitle: "استمرارية الدعم والتقدم",
+    description:
+      "مراجعة التقدم المحرز، تحديث خطة الدعم، والإجابة على أي أسئلة جديدة ظهرت خلال فترة التطبيق.",
+    duration: "٤٥ دقيقة",
+    price: "٢٠٠ ريال",
+    icon: BookOpen,
+    color: "#8B5CF6",
+    bg: "#F5F3FF",
+  },
+];
+
+const SPECIALISTS: Specialist[] = [
+  {
+    id: "sp1",
+    name: "د. سارة المنصور",
+    title: "أخصائية صعوبات التعلم",
+    specialty: "ديسلكسيا وصعوبات القراءة",
+    bio: "دكتوراه في التربية الخاصة من جامعة الملك عبدالعزيز. متخصصة في تشخيص وعلاج صعوبات القراءة والكتابة لدى الأطفال والمراهقين.",
+    experience: "+١٢ سنة خبرة",
+    languages: ["العربية", "الإنجليزية"],
+    qualifications: ["دكتوراه تربية خاصة", "شهادة CALT", "عضو ASHA"],
+    focus: ["ديسلكسيا", "صعوبات القراءة", "الوعي الصوتي"],
+    rating: 4.9,
+    sessions: 1240,
+    avatar: "",
+    avatarBg: "from-blue-400 to-blue-600",
+    initials: "سم",
+    available: "أقرب موعد: الثلاثاء",
+  },
+  {
+    id: "sp2",
+    name: "أ. خالد العتيبي",
+    title: "أخصائي اضطرابات الانتباه",
+    specialty: "ADHD وصعوبات التركيز",
+    bio: "ماجستير في علم النفس التربوي. خبرة واسعة في تقييم وعلاج اضطراب نقص الانتباه وفرط الحركة لدى الأطفال وطلاب الجامعات.",
+    experience: "+٨ سنوات خبرة",
+    languages: ["العربية"],
+    qualifications: ["ماجستير علم نفس تربوي", "معالج سلوكي معتمد", "مدرب ADHD"],
+    focus: ["ADHD", "صعوبات التركيز", "إدارة السلوك"],
+    rating: 4.8,
+    sessions: 890,
+    avatar: "",
+    avatarBg: "from-teal-400 to-teal-600",
+    initials: "خع",
+    available: "أقرب موعد: الأربعاء",
+  },
+  {
+    id: "sp3",
+    name: "د. نورة الشمري",
+    title: "أخصائية نفسية تربوية",
+    specialty: "التقييم الشامل والإرشاد الأسري",
+    bio: "دكتوراه في علم النفس التربوي. متخصصة في التقييم الشامل لصعوبات التعلم، الإرشاد الأسري، وبناء خطط التدخل المبكر.",
+    experience: "+١٥ سنة خبرة",
+    languages: ["العربية", "الإنجليزية", "الفرنسية"],
+    qualifications: ["دكتوراه علم نفس", "شهادة BCBA", "مستشارة تربوية معتمدة"],
+    focus: ["التقييم الشامل", "الإرشاد الأسري", "التدخل المبكر"],
+    rating: 5.0,
+    sessions: 2100,
+    avatar: "",
+    avatarBg: "from-amber-400 to-amber-600",
+    initials: "نش",
+    available: "أقرب موعد: الخميس",
+  },
+];
+
+// Generate available dates (next 14 days, skip Fridays)
+function generateDates() {
+  const dates: { date: string; label: string; day: string }[] = [];
+  const today = new Date();
+  let count = 0;
+  let i = 1;
+  while (count < 10) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    if (d.getDay() !== 5) {
+      // skip Friday
+      const dayNames = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+      const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+      dates.push({
+        date: d.toISOString().split("T")[0],
+        label: `${d.getDate()} ${monthNames[d.getMonth()]}`,
+        day: dayNames[d.getDay()],
+      });
+      count++;
+    }
+    i++;
+  }
+  return dates;
+}
+
+const DATES = generateDates();
+
+const TIME_SLOTS = [
+  { id: "t1", time: "٩:٠٠ صباحاً", available: true },
+  { id: "t2", time: "١٠:٠٠ صباحاً", available: false },
+  { id: "t3", time: "١١:٠٠ صباحاً", available: true },
+  { id: "t4", time: "١:٠٠ مساءً", available: true },
+  { id: "t5", time: "٢:٠٠ مساءً", available: false },
+  { id: "t6", time: "٣:٠٠ مساءً", available: true },
+  { id: "t7", time: "٤:٠٠ مساءً", available: true },
+  { id: "t8", time: "٥:٠٠ مساءً", available: true },
+  { id: "t9", time: "٦:٠٠ مساءً", available: false },
+  { id: "t10", time: "٧:٠٠ مساءً", available: true },
+];
+
+const FAQS = [
+  {
+    q: "هل حجزي خاص وسري؟",
+    a: "نعم تماماً. جميع جلساتك وبياناتك محمية بسرية تامة ولا تُشارك مع أي جهة خارجية. نلتزم بأعلى معايير الخصوصية.",
+  },
+  {
+    q: "هل يمكنني إعادة الجدولة أو الإلغاء؟",
+    a: "بالطبع. يمكنك إعادة الجدولة أو الإلغاء مجاناً قبل ٢٤ ساعة من موعد الجلسة عبر رسالة بريد إلكتروني أو واتساب.",
+  },
+  {
+    q: "ماذا يحدث بعد إرسال طلب الحجز؟",
+    a: "سيتواصل معك المتخصص خلال 24 ساعة لتأكيد الموعد وإرسال تفاصيل الجلسة. ستتلقى تذكيراً قبل موعدك بيوم.",
+  },
+  {
+    q: "هل هذه جلسة تشخيص طبي أم استشارة؟",
+    a: "تشخيصي يقدم استشارات تربوية ونفسية متخصصة. نتائجنا توجيهية وداعمة، وليست بديلاً عن التشخيص الطبي الرسمي عند الحاجة.",
+  },
+];
+
+// ─── Sub-Components ───────────────────────────────────────────────────────────
+
+function AnimatedSection({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+        { threshold: 0.1 }
+      );
+      if (ref.current) observer.observe(ref.current);
+      return () => observer.disconnect();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Navbar />
-      <main className="flex-1 py-12">
-        <div className="container">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              احجز موعد تشخيص
-            </h1>
-            <p className="text-slate-600">
-              اتبع الخطوات التالية لإكمال حجز موعدك
-            </p>
-          </div>
-
-          {/* Step Indicator */}
-          <StepIndicator currentStep={currentStep} totalSteps={4} />
-
-          {/* Content */}
-          <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
-            {currentStep === 1 && <Step1ServiceSelection />}
-            {currentStep === 2 && <Step2DateSelection />}
-            {currentStep === 3 && <Step3DataConfirmation />}
-            {currentStep === 4 && <Step4Confirmation />}
-          </div>
-        </div>
-      </main>
-      <Footer />
+    <div
+      ref={ref}
+      style={{ transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms` }}
+      className={visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
+    >
+      {children}
     </div>
   );
 }
 
-export default function Booking() {
+// Step Indicator
+function StepBar({ step }: { step: number }) {
+  const steps = [
+    { n: 1, label: "الخدمة" },
+    { n: 2, label: "المتخصص" },
+    { n: 3, label: "الموعد" },
+    { n: 4, label: "التأكيد" },
+  ];
   return (
-    <BookingProvider>
-      <BookingContent />
-    </BookingProvider>
+    <div className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
+      {steps.map((s, i) => (
+        <div key={s.n} className="flex items-center">
+          <div className="flex flex-col items-center">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
+              style={{
+                background: step > s.n ? "#14B8A6" : step === s.n ? "#2563EB" : "#E2E8F0",
+                color: step >= s.n ? "white" : "#94A3B8",
+                boxShadow: step === s.n ? "0 0 0 4px rgba(37,99,235,0.15)" : "none",
+                fontFamily: "'Cairo', sans-serif",
+              }}
+            >
+              {step > s.n ? <Check size={16} /> : s.n}
+            </div>
+            <span
+              className="text-xs mt-1.5 font-medium"
+              style={{
+                color: step >= s.n ? "#0F172A" : "#94A3B8",
+                fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+              }}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className="w-8 sm:w-16 lg:w-24 h-0.5 mx-0.5 sm:mx-1 -mt-5 transition-all duration-500"
+              style={{ background: step > s.n ? "#14B8A6" : "#E2E8F0" }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Step 1: Service Selection ────────────────────────────────────────────────
+function Step1({ booking, setBooking }: { booking: BookingState; setBooking: React.Dispatch<React.SetStateAction<BookingState>> }) {
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <h2
+          className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
+          style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+        >
+          ما الذي تحتاجه اليوم؟
+        </h2>
+        <p className="text-slate-500 text-base" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+          اختر نوع الجلسة الأنسب لوضعك — يمكنك دائماً تغيير رأيك لاحقاً
+        </p>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4 mb-8">
+        {SERVICES.map((service) => {
+          const Icon = service.icon;
+          const selected = booking.service?.id === service.id;
+          return (
+            <button
+              key={service.id}
+              onClick={() => setBooking((b) => ({ ...b, service }))}
+              className="relative text-right rounded-2xl p-5 border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={{
+                background: selected ? service.bg : "white",
+                borderColor: selected ? service.color : "#E2E8F0",
+                boxShadow: selected ? `0 0 0 3px ${service.color}20` : undefined,
+              }}
+            >
+              {service.badge && (
+                <span
+                  className="absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full"
+                  style={{
+                    background: service.color,
+                    color: "white",
+                    fontFamily: "'Cairo', sans-serif",
+                  }}
+                >
+                  {service.badge}
+                </span>
+              )}
+              {selected && (
+                <div
+                  className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{ background: service.color }}
+                >
+                  <Check size={13} className="text-white" />
+                </div>
+              )}
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
+                style={{ background: service.bg }}
+              >
+                <Icon size={24} style={{ color: service.color }} />
+              </div>
+              <h3
+                className="text-base font-bold text-slate-900 mb-1"
+                style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
+              >
+                {service.title}
+              </h3>
+              <p
+                className="text-xs font-medium mb-2"
+                style={{ color: service.color, fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                {service.subtitle}
+              </p>
+              <p
+                className="text-sm text-slate-500 leading-relaxed mb-4"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
+              >
+                {service.description}
+              </p>
+              <div className="flex items-center justify-between">
+                <span
+                  className="text-xs px-3 py-1 rounded-lg font-medium"
+                  style={{ background: service.bg, color: service.color, fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                >
+                  <Clock size={11} className="inline ml-1" />
+                  {service.duration}
+                </span>
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: service.color, fontFamily: "'Cairo', sans-serif" }}
+                >
+                  {service.price}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-start">
+        <button
+          onClick={() => {
+            if (!booking.service) return;
+            setBooking((b) => ({ ...b, step: 2 }));
+          }}
+          disabled={!booking.service}
+          className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-white font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
+          style={{
+            background: booking.service ? "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)" : "#CBD5E1",
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 700,
+            boxShadow: booking.service ? "0 6px 20px rgba(37,99,235,0.3)" : "none",
+          }}
+        >
+          التالي: اختر متخصصك
+          <ArrowLeft size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 2: Specialist Selection ─────────────────────────────────────────────
+function Step2({ booking, setBooking }: { booking: BookingState; setBooking: React.Dispatch<React.SetStateAction<BookingState>> }) {
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <h2
+          className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
+          style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+        >
+          اختر متخصصك
+        </h2>
+        <p className="text-slate-500 text-base" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+          جميع متخصصينا معتمدون ولديهم خبرة واسعة في مجالاتهم
+        </p>
+      </div>
+
+      <div className="space-y-4 mb-8">
+        {SPECIALISTS.map((sp) => {
+          const selected = booking.specialist?.id === sp.id;
+          return (
+            <button
+              key={sp.id}
+              onClick={() => setBooking((b) => ({ ...b, specialist: sp }))}
+              className="w-full text-right rounded-2xl p-5 border-2 transition-all duration-200 hover:shadow-md"
+              style={{
+                background: selected ? "#EFF6FF" : "white",
+                borderColor: selected ? "#2563EB" : "#E2E8F0",
+                boxShadow: selected ? "0 0 0 3px rgba(37,99,235,0.1)" : undefined,
+              }}
+            >
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div
+                  className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center text-white font-black text-lg bg-gradient-to-br ${sp.avatarBg}`}
+                  style={{ fontFamily: "'Cairo', sans-serif" }}
+                >
+                  {sp.initials}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div>
+                      <h3
+                        className="text-base font-bold text-slate-900"
+                        style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
+                      >
+                        {sp.name}
+                      </h3>
+                      <p
+                        className="text-sm text-blue-600 font-medium"
+                        style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                      >
+                        {sp.title}
+                      </p>
+                    </div>
+                    {selected && (
+                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Check size={13} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  <p
+                    className="text-sm text-slate-500 leading-relaxed mb-3"
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.65 }}
+                  >
+                    {sp.bio}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Rating */}
+                    <div className="flex items-center gap-1">
+                      <Star size={13} className="fill-amber-400 text-amber-400" />
+                      <span
+                        className="text-xs font-bold text-slate-700"
+                        style={{ fontFamily: "'Cairo', sans-serif" }}
+                      >
+                        {sp.rating}
+                      </span>
+                      <span className="text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                        ({sp.sessions.toLocaleString("ar-SA")} جلسة)
+                      </span>
+                    </div>
+
+                    {/* Experience */}
+                    <span
+                      className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-medium"
+                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                    >
+                      {sp.experience}
+                    </span>
+
+                    {/* Languages */}
+                    <div className="flex items-center gap-1">
+                      <Languages size={12} className="text-teal-500" />
+                      <span className="text-xs text-slate-500" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                        {sp.languages.join("، ")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Focus tags */}
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {sp.focus.map((f) => (
+                      <span
+                        key={f}
+                        className="text-xs px-2.5 py-0.5 rounded-full font-medium"
+                        style={{
+                          background: "#EFF6FF",
+                          color: "#2563EB",
+                          fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                        }}
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Availability */}
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+                    <span
+                      className="text-xs text-teal-700 font-medium"
+                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                    >
+                      {sp.available}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setBooking((b) => ({ ...b, step: 1 }))}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl text-slate-600 font-medium text-sm border border-slate-200 hover:bg-slate-50 transition-all"
+          style={{ fontFamily: "'Cairo', sans-serif" }}
+        >
+          <ArrowRight size={16} />
+          رجوع
+        </button>
+        <button
+          onClick={() => {
+            if (!booking.specialist) return;
+            setBooking((b) => ({ ...b, step: 3 }));
+          }}
+          disabled={!booking.specialist}
+          className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-white font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
+          style={{
+            background: booking.specialist ? "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)" : "#CBD5E1",
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 700,
+            boxShadow: booking.specialist ? "0 6px 20px rgba(37,99,235,0.3)" : "none",
+          }}
+        >
+          التالي: اختر الموعد
+          <ArrowLeft size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 3: Date & Time Selection ────────────────────────────────────────────
+function Step3({ booking, setBooking }: { booking: BookingState; setBooking: React.Dispatch<React.SetStateAction<BookingState>> }) {
+  const [showForm, setShowForm] = useState(false);
+
+  const canProceed = booking.date && booking.time && booking.name && booking.email;
+
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <h2
+          className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
+          style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+        >
+          اختر موعدك
+        </h2>
+        <p className="text-slate-500 text-base" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+          جميع المواعيد بتوقيت المملكة العربية السعودية (AST)
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        {/* Date Selection */}
+        <div>
+          <h3
+            className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2"
+            style={{ fontFamily: "'Cairo', sans-serif" }}
+          >
+            <Calendar size={16} className="text-blue-600" />
+            اختر التاريخ
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {DATES.map((d) => {
+              const selected = booking.date === d.date;
+              return (
+                <button
+                  key={d.date}
+                  onClick={() => setBooking((b) => ({ ...b, date: d.date, time: null }))}
+                  className="p-3 rounded-xl border-2 text-center transition-all duration-150 hover:border-blue-300"
+                  style={{
+                    background: selected ? "#EFF6FF" : "white",
+                    borderColor: selected ? "#2563EB" : "#E2E8F0",
+                  }}
+                >
+                  <div
+                    className="text-xs text-slate-400 mb-0.5"
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                  >
+                    {d.day}
+                  </div>
+                  <div
+                    className="text-sm font-bold"
+                    style={{
+                      color: selected ? "#2563EB" : "#0F172A",
+                      fontFamily: "'Cairo', sans-serif",
+                    }}
+                  >
+                    {d.label}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Time Selection */}
+        <div>
+          <h3
+            className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2"
+            style={{ fontFamily: "'Cairo', sans-serif" }}
+          >
+            <Clock size={16} className="text-teal-600" />
+            اختر الوقت
+            {!booking.date && (
+              <span className="text-xs text-slate-400 font-normal" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                (اختر التاريخ أولاً)
+              </span>
+            )}
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {TIME_SLOTS.map((slot) => {
+              const selected = booking.time === slot.id;
+              return (
+                <button
+                  key={slot.id}
+                  onClick={() => {
+                    if (!booking.date || !slot.available) return;
+                    setBooking((b) => ({ ...b, time: slot.id }));
+                  }}
+                  disabled={!booking.date || !slot.available}
+                  className="p-3 rounded-xl border-2 text-center transition-all duration-150"
+                  style={{
+                    background: !slot.available
+                      ? "#F8FAFC"
+                      : selected
+                      ? "#EFF6FF"
+                      : "white",
+                    borderColor: !slot.available
+                      ? "#E2E8F0"
+                      : selected
+                      ? "#2563EB"
+                      : "#E2E8F0",
+                    opacity: !slot.available ? 0.5 : 1,
+                    cursor: !slot.available ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <div
+                    className="text-sm font-medium"
+                    style={{
+                      color: !slot.available ? "#94A3B8" : selected ? "#2563EB" : "#0F172A",
+                      fontFamily: "'Cairo', sans-serif",
+                    }}
+                  >
+                    {slot.time}
+                  </div>
+                  {!slot.available && (
+                    <div className="text-xs text-slate-400 mt-0.5" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                      محجوز
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* User Info Form */}
+      <div
+        className="rounded-2xl border border-slate-200 overflow-hidden mb-6"
+        style={{ background: "#F8FAFC" }}
+      >
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="w-full flex items-center justify-between p-4 text-right"
+        >
+          <div className="flex items-center gap-2">
+            <User size={16} className="text-blue-600" />
+            <span
+              className="text-sm font-bold text-slate-800"
+              style={{ fontFamily: "'Cairo', sans-serif" }}
+            >
+              بياناتك الشخصية
+            </span>
+            {booking.name && (
+              <span
+                className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-medium"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                تم الإدخال ✓
+              </span>
+            )}
+          </div>
+          {showForm ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+        </button>
+
+        {showForm && (
+          <div className="px-4 pb-4 grid sm:grid-cols-2 gap-4">
+            {[
+              { key: "name", label: "الاسم الكامل", placeholder: "مثال: محمد أحمد", icon: User, required: true },
+              { key: "email", label: "البريد الإلكتروني", placeholder: "example@email.com", icon: Mail, required: true },
+              { key: "phone", label: "رقم الجوال", placeholder: "+966 5X XXX XXXX", icon: Phone, required: false },
+            ].map((field) => {
+              const Icon = field.icon;
+              return (
+                <div key={field.key} className={field.key === "name" ? "sm:col-span-2" : ""}>
+                  <label
+                    className="block text-xs font-medium text-slate-600 mb-1.5"
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                  >
+                    {field.label}
+                    {field.required && <span className="text-red-400 mr-0.5">*</span>}
+                  </label>
+                  <div className="relative">
+                    <Icon size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={field.placeholder}
+                      value={(booking as any)[field.key] || ""}
+                      onChange={(e) => setBooking((b) => ({ ...b, [field.key]: e.target.value }))}
+                      className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", direction: "rtl" }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            <div className="sm:col-span-2">
+              <label
+                className="block text-xs font-medium text-slate-600 mb-1.5"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                ملاحظات إضافية (اختياري)
+              </label>
+              <textarea
+                placeholder="أي معلومات تريد مشاركتها مع المتخصص قبل الجلسة..."
+                value={booking.notes}
+                onChange={(e) => setBooking((b) => ({ ...b, notes: e.target.value }))}
+                rows={3}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", direction: "rtl" }}
+              />
+            </div>
+          </div>
+        )}
+
+        {!showForm && !booking.name && (
+          <div className="px-4 pb-4">
+            <p className="text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+              انقر لإدخال بياناتك الشخصية (مطلوب لإتمام الحجز)
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setBooking((b) => ({ ...b, step: 2 }))}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl text-slate-600 font-medium text-sm border border-slate-200 hover:bg-slate-50 transition-all"
+          style={{ fontFamily: "'Cairo', sans-serif" }}
+        >
+          <ArrowRight size={16} />
+          رجوع
+        </button>
+        <button
+          onClick={() => {
+            if (!canProceed) {
+              setShowForm(true);
+              return;
+            }
+            setBooking((b) => ({ ...b, step: 4 }));
+          }}
+          className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:-translate-y-0.5"
+          style={{
+            background: canProceed
+              ? "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)"
+              : "#CBD5E1",
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 700,
+            boxShadow: canProceed ? "0 6px 20px rgba(37,99,235,0.3)" : "none",
+            cursor: canProceed ? "pointer" : "default",
+          }}
+        >
+          مراجعة الحجز
+          <ArrowLeft size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step 4: Summary & Confirmation ──────────────────────────────────────────
+function Step4({
+  booking,
+  setBooking,
+  onConfirm,
+}: {
+  booking: BookingState;
+  setBooking: React.Dispatch<React.SetStateAction<BookingState>>;
+  onConfirm: () => void;
+}) {
+  const [agreed, setAgreed] = useState(false);
+  const timeLabel = TIME_SLOTS.find((t) => t.id === booking.time)?.time || "";
+  const dateObj = DATES.find((d) => d.date === booking.date);
+
+  return (
+    <div>
+      <div className="text-center mb-8">
+        <h2
+          className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
+          style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+        >
+          راجع تفاصيل حجزك
+        </h2>
+        <p className="text-slate-500 text-base" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+          تأكد من صحة المعلومات قبل التأكيد النهائي
+        </p>
+      </div>
+
+      {/* Summary Card */}
+      <div
+        className="rounded-2xl border border-slate-200 overflow-hidden mb-6"
+        style={{ background: "white" }}
+      >
+        {/* Header */}
+        <div
+          className="px-5 py-4 flex items-center gap-3"
+          style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 100%)", borderBottom: "1px solid #E2E8F0" }}
+        >
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: "#2563EB" }}
+          >
+            <Calendar size={20} className="text-white" />
+          </div>
+          <div>
+            <h3
+              className="text-base font-bold text-slate-900"
+              style={{ fontFamily: "'Cairo', sans-serif" }}
+            >
+              ملخص الحجز
+            </h3>
+            <p className="text-xs text-slate-500" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+              رقم الحجز المؤقت: #TK-{Math.floor(Math.random() * 9000) + 1000}
+            </p>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="divide-y divide-slate-100">
+          {[
+            { label: "نوع الجلسة", value: booking.service?.title || "", icon: Sparkles, color: "#2563EB" },
+            { label: "المتخصص", value: booking.specialist?.name || "", sub: booking.specialist?.title, icon: User, color: "#14B8A6" },
+            { label: "التاريخ", value: dateObj ? `${dateObj.day}، ${dateObj.label}` : "", icon: Calendar, color: "#F59E0B" },
+            { label: "الوقت", value: timeLabel, icon: Clock, color: "#8B5CF6" },
+            { label: "المدة", value: booking.service?.duration || "", icon: Clock, color: "#64748B" },
+            { label: "الاسم", value: booking.name, icon: User, color: "#64748B" },
+            { label: "البريد الإلكتروني", value: booking.email, icon: Mail, color: "#64748B" },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="flex items-center gap-3 px-5 py-3.5">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${item.color}15` }}
+                >
+                  <Icon size={15} style={{ color: item.color }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-slate-400 mb-0.5" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                    {item.label}
+                  </div>
+                  <div
+                    className="text-sm font-semibold text-slate-800 truncate"
+                    style={{ fontFamily: "'Cairo', sans-serif" }}
+                  >
+                    {item.value}
+                  </div>
+                  {item.sub && (
+                    <div className="text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                      {item.sub}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Preparation tips */}
+        <div
+          className="px-5 py-4"
+          style={{ background: "#FFFBEB", borderTop: "1px solid #FEF3C7" }}
+        >
+          <div className="flex items-start gap-2">
+            <Info size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p
+                className="text-xs font-bold text-amber-800 mb-1"
+                style={{ fontFamily: "'Cairo', sans-serif" }}
+              >
+                للاستعداد للجلسة
+              </p>
+              <p
+                className="text-xs text-amber-700 leading-relaxed"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.65 }}
+              >
+                احتفظ بنتائج الفحص في متناول يدك. إذا كان لديك تقارير سابقة أو ملاحظات من المدرسة، يُفضَّل مشاركتها مع المتخصص.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Agreement */}
+      <div
+        className="flex items-start gap-3 p-4 rounded-xl mb-6 cursor-pointer"
+        style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+        onClick={() => setAgreed(!agreed)}
+      >
+        <div
+          className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-all"
+          style={{
+            background: agreed ? "#2563EB" : "white",
+            border: `2px solid ${agreed ? "#2563EB" : "#CBD5E1"}`,
+          }}
+        >
+          {agreed && <Check size={12} className="text-white" />}
+        </div>
+        <p
+          className="text-sm text-slate-600 leading-relaxed"
+          style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.65 }}
+        >
+          أوافق على{" "}
+          <a href="/privacy" className="text-blue-600 hover:underline">سياسة الخصوصية</a>
+          {" "}و{" "}
+          <a href="/disclaimer" className="text-blue-600 hover:underline">إخلاء المسؤولية</a>
+          {" "}وأفهم أن هذه استشارة تربوية وليست تشخيصاً طبياً رسمياً.
+        </p>
+      </div>
+
+      {/* CTAs */}
+      <div className="flex items-center justify-between gap-4">
+        <button
+          onClick={() => setBooking((b) => ({ ...b, step: 3 }))}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl text-slate-600 font-medium text-sm border border-slate-200 hover:bg-slate-50 transition-all"
+          style={{ fontFamily: "'Cairo', sans-serif" }}
+        >
+          <ArrowRight size={16} />
+          تعديل
+        </button>
+        <button
+          onClick={() => {
+            if (!agreed) return;
+            onConfirm();
+          }}
+          disabled={!agreed}
+          className="flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-black text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
+          style={{
+            background: agreed
+              ? "linear-gradient(135deg, #14B8A6 0%, #0f766e 100%)"
+              : "#CBD5E1",
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 800,
+            boxShadow: agreed ? "0 8px 24px rgba(20,184,166,0.35)" : "none",
+          }}
+        >
+          <CheckCircle size={20} />
+          تأكيد الحجز
+        </button>
+      </div>
+
+      {/* Trust strip */}
+      <div className="flex flex-wrap justify-center gap-6 mt-6">
+        {[
+          { icon: Shield, text: "سرية تامة" },
+          { icon: Award, text: "متخصصون معتمدون" },
+          { icon: MessageCircle, text: "تواصل خلال 24 ساعة" },
+        ].map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <div key={i} className="flex items-center gap-1.5 text-slate-400">
+              <Icon size={14} className="text-teal-500" />
+              <span className="text-xs" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                {item.text}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Confirmation Screen ──────────────────────────────────────────────────────
+function ConfirmationScreen({ booking }: { booking: BookingState }) {
+  const timeLabel = TIME_SLOTS.find((t) => t.id === booking.time)?.time || "";
+  const dateObj = DATES.find((d) => d.date === booking.date);
+  // رقم مرجعي ثابت يُولَّد مرة واحدة عند mount — لا يتغيّر عند إعادة الرسم
+  const [bookingRef] = useState(() => {
+    const ts = Date.now().toString(36).toUpperCase().slice(-4);
+    const rand = Math.floor(Math.random() * 900 + 100);
+    return `TK-${ts}${rand}`;
+  });
+
+  return (
+    <div className="text-center py-8">
+
+      {/* Status badge — واضح وصادق */}
+      <div className="flex justify-center mb-5">
+        <span
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold"
+          style={{
+            background: "#EFF6FF",
+            color: "#2563EB",
+            border: "1px solid #BFDBFE",
+            fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+            letterSpacing: "0.02em",
+          }}
+        >
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: "#2563EB", animation: "pulse 2s infinite" }}
+          />
+          تم استلام طلب الحجز
+        </span>
+      </div>
+
+      {/* Icon */}
+      <div className="flex justify-center mb-6">
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center"
+          style={{
+            background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+            boxShadow: "0 12px 40px rgba(37,99,235,0.25)",
+          }}
+        >
+          <CheckCircle size={40} className="text-white" />
+        </div>
+      </div>
+
+      <h2
+        className="text-3xl font-black text-slate-900 mb-2"
+        style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+      >
+        طلبك في طريقه إلى المتخصص
+      </h2>
+
+      {/* Reference number */}
+      <div
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl mb-3"
+        style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+      >
+        <span className="text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+          رقم المرجع
+        </span>
+        <span
+          className="text-sm font-black text-blue-600"
+          style={{ fontFamily: "'Cairo', sans-serif", letterSpacing: "0.05em" }}
+        >
+          {bookingRef}
+        </span>
+      </div>
+
+      <p
+        className="text-slate-500 text-sm mb-8 max-w-sm mx-auto leading-relaxed"
+        style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.75 }}
+      >
+        سيتواصل معك المتخصص خلال ٢٤ ساعة لتأكيد الموعد
+        وإرسال تفاصيل الجلسة.
+      </p>
+
+      {/* Booking summary card */}
+      <div
+        className="max-w-md mx-auto rounded-2xl mb-8 overflow-hidden text-right"
+        style={{ border: "1px solid #BFDBFE" }}
+      >
+        {/* Card header */}
+        <div
+          className="px-5 py-3 flex items-center justify-between"
+          style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 100%)", borderBottom: "1px solid #BFDBFE" }}
+        >
+          <span
+            className="text-xs font-bold text-blue-700"
+            style={{ fontFamily: "'Cairo', sans-serif" }}
+          >
+            ملخص طلب الحجز
+          </span>
+          <span
+            className="text-xs text-slate-400"
+            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+          >
+            {bookingRef}
+          </span>
+        </div>
+        {/* Card body */}
+        <div className="px-5 py-4 space-y-3" style={{ background: "white" }}>
+          {[
+            { label: "نوع الجلسة", value: booking.service?.title || "—" },
+            { label: "المتخصص", value: booking.specialist?.name || "—" },
+            { label: "التاريخ", value: dateObj ? `${dateObj.day}، ${dateObj.label}` : "—" },
+            { label: "الوقت", value: timeLabel || "—" },
+            ...(booking.name ? [{ label: "الاسم", value: booking.name }] : []),
+          ].map((item) => (
+            <div key={item.label} className="flex items-center justify-between gap-4">
+              <span
+                className="text-xs text-slate-400 flex-shrink-0"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                {item.label}
+              </span>
+              <span
+                className="text-sm font-semibold text-slate-800 text-left"
+                style={{ fontFamily: "'Cairo', sans-serif" }}
+              >
+                {item.value}
+              </span>
+            </div>
+          ))}
+        </div>
+        {/* Preparation note */}
+        <div
+          className="px-5 py-3.5 flex items-start gap-2"
+          style={{ background: "#FFFBEB", borderTop: "1px solid #FEF3C7" }}
+        >
+          <Info size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+          <p
+            className="text-xs text-amber-700 leading-relaxed"
+            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.65 }}
+          >
+            احتفظ بنتائج فحصك في متناول يدك. إذا كان لديك تقارير سابقة أو ملاحظات من المدرسة، يُفضَّل مشاركتها مع المتخصص.
+          </p>
+        </div>
+      </div>
+
+      {/* What happens next */}
+      <div className="max-w-md mx-auto mb-8 text-right">
+        <h3
+          className="text-base font-bold text-slate-800 mb-4"
+          style={{ fontFamily: "'Cairo', sans-serif" }}
+        >
+          ماذا يحدث بعد ذلك؟
+        </h3>
+        <div className="space-y-3">
+          {[
+            {
+              step: "١",
+              color: "#2563EB",
+              text: "سيتواصل معك المتخصص خلال 24 ساعة لتأكيد الموعد وإرسال تفاصيل الجلسة",
+            },
+            {
+              step: "٢",
+              color: "#14B8A6",
+              text: "ستتلقى تذكيراً بالموعد قبل يوم من الجلسة لتكون مستعداً",
+            },
+            {
+              step: "٣",
+              color: "#8B5CF6",
+              text: "في يوم الجلسة، احضر بنتائج فحصك وأي ملاحظات تريد مشاركتها",
+            },
+          ].map((item) => (
+            <div key={item.step} className="flex items-start gap-3">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                style={{ background: item.color, fontFamily: "'Cairo', sans-serif" }}
+              >
+                {item.step}
+              </div>
+              <p
+                className="text-sm text-slate-600 leading-relaxed pt-0.5"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.65 }}
+              >
+                {item.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Trust strip */}
+      <div
+        className="max-w-md mx-auto flex flex-wrap justify-center gap-5 mb-8 px-4 py-3 rounded-xl"
+        style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+      >
+        {[
+          { icon: Shield, text: "سرية تامة", color: "#14B8A6" },
+          { icon: Award, text: "متخصصون معتمدون", color: "#2563EB" },
+          { icon: MessageCircle, text: "تواصل خلال 24 ساعة", color: "#8B5CF6" },
+        ].map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <div key={i} className="flex items-center gap-1.5">
+              <Icon size={13} style={{ color: item.color }} />
+              <span
+                className="text-xs text-slate-500"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                {item.text}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* CTAs */}
+      <div className="flex flex-col items-stretch sm:flex-row sm:items-center justify-center gap-3 px-4 sm:px-0">
+        <a
+          href="/"
+          className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:-translate-y-0.5 w-full sm:w-auto"
+          style={{
+            background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 700,
+            boxShadow: "0 6px 20px rgba(37,99,235,0.3)",
+          }}
+        >
+          العودة إلى الصفحة الرئيسية
+        </a>
+        <a
+          href="/start"
+          className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl font-bold text-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all w-full sm:w-auto"
+          style={{ fontFamily: "'Cairo', sans-serif" }}
+        >
+          بدء فحص جديد
+        </a>
+      </div>
+
+      {/* Disclaimer */}
+      <p
+        className="mt-6 text-xs text-slate-400 max-w-sm mx-auto leading-relaxed"
+        style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
+      >
+        هذا طلب حجز لاستشارة تربوية وليس تشخيصاً طبياً رسمياً.
+        سيساعدك المتخصص على فهم المؤشرات وتحديد الخطوات التالية.
+      </p>
+    </div>
+  );
+}
+
+// ─── FAQ Section ──────────────────────────────────────────────────────────────
+function FAQSection() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <section className="py-16 lg:py-20" style={{ background: "#F8FAFC" }}>
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="text-center mb-10">
+          <h2
+            className="text-2xl font-black text-slate-900 mb-3"
+            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+          >
+            أسئلة شائعة
+          </h2>
+          <p className="text-slate-500 text-sm" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+            إجابات سريعة على أكثر ما يُسأل عنه
+          </p>
+        </div>
+        <div className="space-y-3">
+          {FAQS.map((faq, i) => (
+            <div
+              key={i}
+              className="rounded-2xl overflow-hidden border transition-all duration-200"
+              style={{
+                background: "white",
+                borderColor: open === i ? "#BFDBFE" : "#E2E8F0",
+              }}
+            >
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                className="w-full flex items-center justify-between p-4 text-right"
+              >
+                <span
+                  className="text-sm font-bold text-slate-800"
+                  style={{ fontFamily: "'Cairo', sans-serif" }}
+                >
+                  {faq.q}
+                </span>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mr-2 transition-all"
+                  style={{ background: open === i ? "#EFF6FF" : "#F8FAFC" }}
+                >
+                  {open === i ? (
+                    <ChevronUp size={15} className="text-blue-600" />
+                  ) : (
+                    <ChevronDown size={15} className="text-slate-400" />
+                  )}
+                </div>
+              </button>
+              {open === i && (
+                <div className="px-4 pb-4">
+                  <p
+                    className="text-sm text-slate-500 leading-relaxed"
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.75 }}
+                  >
+                    {faq.a}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Main Booking Page ────────────────────────────────────────────────────────
+export default function Booking() {
+  const [confirmed, setConfirmed] = useState(false);
+  const [booking, setBooking] = useState<BookingState>({
+    step: 1,
+    service: null,
+    specialist: null,
+    date: null,
+    time: null,
+    name: "",
+    email: "",
+    phone: "",
+    notes: "",
+  });
+
+  // Scroll to top on step change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [booking.step, confirmed]);
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: "#F8FAFC", direction: "rtl" }}>
+      <Navbar />
+
+      {/* Hero */}
+      <section
+        className="pt-28 pb-10 relative overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #F8FAFC 0%, #EFF6FF 50%, #F0FDFA 100%)" }}
+      >
+        {/* Decorative blobs */}
+        <div
+          className="absolute top-0 left-0 w-80 h-80 rounded-full pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, rgba(37,99,235,0.07) 0%, transparent 70%)",
+            transform: "translate(-40%, -40%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-64 h-64 rounded-full pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, rgba(20,184,166,0.07) 0%, transparent 70%)",
+            transform: "translate(40%, 40%)",
+          }}
+        />
+
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center relative">
+          <AnimatedSection>
+            <div
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
+              style={{
+                background: "rgba(37,99,235,0.07)",
+                border: "1px solid rgba(37,99,235,0.15)",
+              }}
+            >
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span
+                className="text-xs font-semibold text-blue-700"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                الخطوة التالية بعد نتائجك
+              </span>
+            </div>
+
+            <h1
+              className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-5"
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.2 }}
+            >
+              احجز جلستك مع{" "}
+              <span
+                style={{
+                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                متخصص معتمد
+              </span>
+            </h1>
+
+            <p
+              className="text-lg text-slate-500 max-w-xl mx-auto mb-8 leading-relaxed"
+              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+            >
+              نتائج الفحص هي البداية. المتخصص هو من يساعدك على فهمها وتحويلها إلى خطوات واضحة — بسرية تامة وبدون تعقيد.
+            </p>
+
+            {/* Trust badges */}
+            <div className="flex flex-wrap justify-center gap-4">
+              {[
+                { icon: Shield, text: "سرية تامة" },
+                { icon: Award, text: "متخصصون معتمدون" },
+                { icon: Clock, text: "مواعيد مرنة" },
+                { icon: MessageCircle, text: "تأكيد فوري" },
+              ].map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #E2E8F0" }}
+                  >
+                    <Icon size={13} className="text-teal-500" />
+                    <span
+                      className="text-xs text-slate-600 font-medium"
+                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                    >
+                      {item.text}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* Main Booking Area */}
+      <main className="flex-1 py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          {!confirmed ? (
+            <>
+              <AnimatedSection>
+                <StepBar step={booking.step} />
+              </AnimatedSection>
+
+              <AnimatedSection delay={100}>
+                <div
+                  className="rounded-3xl p-6 sm:p-8"
+                  style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #E2E8F0" }}
+                >
+                  {booking.step === 1 && <Step1 booking={booking} setBooking={setBooking} />}
+                  {booking.step === 2 && <Step2 booking={booking} setBooking={setBooking} />}
+                  {booking.step === 3 && <Step3 booking={booking} setBooking={setBooking} />}
+                  {booking.step === 4 && (
+                    <Step4
+                      booking={booking}
+                      setBooking={setBooking}
+                      onConfirm={() => setConfirmed(true)}
+                    />
+                  )}
+                </div>
+              </AnimatedSection>
+            </>
+          ) : (
+            <AnimatedSection>
+              <div
+                className="rounded-3xl p-6 sm:p-10"
+                style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #E2E8F0" }}
+              >
+                <ConfirmationScreen booking={booking} />
+              </div>
+            </AnimatedSection>
+          )}
+        </div>
+      </main>
+
+      {/* FAQ */}
+      {!confirmed && <FAQSection />}
+
+      <Footer />
+    </div>
   );
 }

@@ -278,7 +278,7 @@ export default function ChildrenPage() {
                         <Button
                           className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-9"
                           onClick={() =>
-                            navigate(`/screening/${child.id}?name=${encodeURIComponent(child.name)}&age=${child.ageYears}`)
+                            navigate(`/choose-child-path/${child.id}?name=${encodeURIComponent(child.name)}&age=${child.ageYears}&ageGroup=${child.ageGroup}`)
                           }
                         >
                           <ClipboardList className="w-4 h-4" />

@@ -1,7 +1,19 @@
 /*
- * تشخيصي Navbar — Editorial Healthcare
+ * تشخيصي | Tashkheesy — Navbar
  * Sticky, transparent-to-white on scroll, Arabic RTL
- * Primary CTA: ابدأ الفحص (blue)
+ * Primary CTA: ابدأ الفحص → /start (unified entry for child & self-assessment)
+ * Nav hierarchy: 4 essential links only — no competing CTAs, no marketing highlights
+ * Accessibility: aria-labels, aria-expanded, role="navigation"
+ *
+ * Nav links rationale:
+ *   كيف يعمل → #how-it-works  (homepage section anchor)
+ *   خدماتنا  → #services       (homepage section anchor)
+ *   لماذا تشخيصي → #why-tashkheesy (homepage section anchor)
+ *   الأسئلة الشائعة → /faq    (standalone page)
+ *
+ * Removed from nav:
+ *   "الأثر" → /impact  (accessible via Footer and Impact page — not a primary nav item)
+ *   "نموذج النتائج" → /result-demo  (available via FounderStory CTA — not a nav item)
  */
 
 import { useState, useEffect } from "react";
@@ -20,8 +32,8 @@ export default function Navbar() {
   const navLinks = [
     { label: "كيف يعمل", href: "#how-it-works" },
     { label: "خدماتنا", href: "#services" },
-    { label: "لماذا تشخيصي", href: "#why-tashkhisi" },
-    { label: "الأثر", href: "#impact" },
+    { label: "لماذا تشخيصي", href: "#why-tashkheesy" },
+    { label: "الأسئلة الشائعة", href: "/faq" },
   ];
 
   return (
@@ -31,11 +43,17 @@ export default function Navbar() {
           ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100"
           : "bg-transparent"
       }`}
+      role="banner"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-18">
+
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 group">
+          <a
+            href="/"
+            className="flex items-center gap-2 group"
+            aria-label="تشخيصي | Tashkheesy — الصفحة الرئيسية"
+          >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-teal-500 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
               <span className="text-white font-bold text-sm" style={{ fontFamily: "'Cairo', sans-serif" }}>ت</span>
             </div>
@@ -47,13 +65,13 @@ export default function Navbar() {
             </span>
           </a>
 
-          {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-1">
+          {/* Desktop Nav — 4 essential links */}
+          <nav className="hidden lg:flex items-center gap-1" role="navigation" aria-label="القائمة الرئيسية">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-200"
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
               >
                 {link.label}
@@ -61,10 +79,10 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* CTA */}
-          <div className="hidden lg:flex items-center gap-3">
+          {/* Desktop CTA — single primary action */}
+          <div className="hidden lg:flex items-center">
             <a
-              href="#screening"
+              href="/start"
               className="tashkhisi-btn-primary text-sm"
               style={{ padding: "0.6rem 1.5rem" }}
             >
@@ -76,7 +94,9 @@ export default function Navbar() {
           <button
             className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="فتح القائمة"
+            aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -85,13 +105,18 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="lg:hidden bg-white border-t border-slate-100 shadow-lg">
+        <div
+          id="mobile-menu"
+          className="lg:hidden bg-white border-t border-slate-100 shadow-lg"
+          role="navigation"
+          aria-label="قائمة التنقل المحمول"
+        >
           <div className="px-4 py-4 space-y-1">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="block px-4 py-3 text-sm font-medium text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="block px-4 py-3 text-sm font-medium rounded-lg transition-colors text-slate-700 hover:text-blue-600 hover:bg-blue-50"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                 onClick={() => setMenuOpen(false)}
               >
@@ -100,7 +125,7 @@ export default function Navbar() {
             ))}
             <div className="pt-3 border-t border-slate-100">
               <a
-                href="#screening"
+                href="/start"
                 className="tashkhisi-btn-primary block text-center text-sm w-full"
                 style={{ padding: "0.75rem 1.5rem" }}
                 onClick={() => setMenuOpen(false)}

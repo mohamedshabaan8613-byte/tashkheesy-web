@@ -1,7 +1,10 @@
+/**
+ * تشخيصي — مركز المعرفة
+ * Editorial Healthcare Design System
+ */
 import Navbar from "@/components/Navbar";
 import { useSEO } from "@/hooks/useSEO";
 import Footer from "@/components/Footer";
-import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, FileText, Video, HelpCircle } from "lucide-react";
 
 const articles = [
@@ -76,55 +79,58 @@ export default function Knowledge() {
     canonical: "/knowledge",
   });
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="ts-page">
       <Navbar />
       <main className="flex-1">
         {/* Header */}
-        <section className="py-12 bg-gradient-to-b from-slate-50 to-white">
-          <div className="container">
+        <section className="ts-page-header">
+          <div className="container relative z-10">
             <div className="max-w-3xl mx-auto text-center">
-              <BookOpen className="w-16 h-16 mx-auto mb-6 text-indigo-600" />
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                مركز المعرفة
+              <div className="inline-flex items-center gap-2 bg-[#EFF6FF] text-[#2563EB] px-4 py-2 rounded-full text-sm font-medium mb-6 border border-[#BFDBFE]">
+                <BookOpen className="w-4 h-4" />
+                <span>مصادر توعوية معتمدة</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold text-[#0F172A] mb-5 leading-tight">
+                مركز <span className="tashkhisi-gradient-text">المعرفة</span>
               </h1>
-              <p className="text-lg text-slate-600">
-                مصادر توعوية وإرشادية لفهم صعوبات التعلم والقراءة
+              <p className="text-lg text-[#475569] leading-relaxed max-w-2xl mx-auto">
+                مصادر توعوية وإرشادية لفهم صعوبات التعلم والقراءة — للأهل والمعلمين والمهتمين
               </p>
             </div>
           </div>
         </section>
 
         {/* Articles Grid */}
-        <section className="py-16">
+        <section className="py-20 bg-white">
           <div className="container">
-            <h2 className="text-2xl font-bold text-slate-900 mb-8">
-              مقالات وموارد تعليمية
-            </h2>
+            <div className="text-center mb-14">
+              <span className="section-label block mb-3">مقالات وموارد</span>
+              <h2 className="text-3xl font-bold text-[#0F172A]">مواد تعليمية مختارة</h2>
+            </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {articles.map((article, index) => {
                 const Icon = article.icon;
                 return (
-                  <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-indigo-600" />
-                        </div>
-                        <span className="text-xs text-indigo-600 font-medium">
-                          {article.category}
-                        </span>
+                  <div key={index} className="ts-card rounded-2xl p-6 cursor-pointer group">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center group-hover:bg-[#2563EB] transition-colors">
+                        <Icon className="w-5 h-5 text-[#2563EB] group-hover:text-white transition-colors" />
                       </div>
-                      <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                        {article.title}
-                      </h3>
-                      <p className="text-sm text-slate-600 mb-3">
-                        {article.description}
-                      </p>
-                      <div className="text-xs text-slate-500">
-                        {article.readTime}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <span className="text-xs text-[#2563EB] font-semibold bg-[#EFF6FF] px-2 py-1 rounded-full">
+                        {article.category}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-[#0F172A] mb-2 leading-snug">
+                      {article.title}
+                    </h3>
+                    <p className="text-sm text-[#475569] mb-4 leading-relaxed">
+                      {article.description}
+                    </p>
+                    <div className="flex items-center gap-1 text-xs text-[#94A3B8]">
+                      <span>⏱</span>
+                      <span>{article.readTime}</span>
+                    </div>
+                  </div>
                 );
               })}
             </div>
@@ -132,24 +138,24 @@ export default function Knowledge() {
         </section>
 
         {/* FAQs */}
-        <section className="py-16 bg-slate-50">
+        <section className="py-20 bg-[#F8FAFC]">
           <div className="container">
             <div className="max-w-3xl mx-auto">
-              <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">
-                أسئلة شائعة
-              </h2>
+              <div className="text-center mb-12">
+                <span className="section-label block mb-3">أسئلة متكررة</span>
+                <h2 className="text-3xl font-bold text-[#0F172A]">أسئلة شائعة عن صعوبات التعلم</h2>
+              </div>
               <div className="space-y-4">
                 {faqs.map((faq, index) => (
-                  <Card key={index} className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-6">
-                      <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                        {faq.question}
-                      </h3>
-                      <p className="text-slate-600 leading-relaxed">
-                        {faq.answer}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <div key={index} className="ts-card rounded-2xl p-6">
+                    <h3 className="font-bold text-[#0F172A] mb-3 flex items-start gap-2">
+                      <span className="w-6 h-6 bg-[#EFF6FF] text-[#2563EB] rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5 font-bold">{index + 1}</span>
+                      {faq.question}
+                    </h3>
+                    <p className="text-sm text-[#475569] leading-relaxed pr-8">
+                      {faq.answer}
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>
@@ -157,24 +163,16 @@ export default function Knowledge() {
         </section>
 
         {/* CTA */}
-        <section className="py-16">
+        <section className="py-16 bg-white">
           <div className="container">
-            <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200 max-w-3xl mx-auto">
-              <CardContent className="pt-8 text-center">
-                <h3 className="text-2xl font-bold text-slate-900 mb-4">
-                  هل لديك أسئلة أخرى؟
-                </h3>
-                <p className="text-slate-700 mb-6">
-                  فريقنا جاهز للإجابة على جميع استفساراتك حول صعوبات التعلم والتشخيص
-                </p>
-                <a
-                  href="mailto:info@tashkhisi.com"
-                  className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  تواصل معنا
-                </a>
-              </CardContent>
-            </Card>
+            <div className="max-w-2xl mx-auto text-center">
+              <h2 className="text-2xl font-bold text-[#0F172A] mb-4">هل لديك أسئلة أخرى؟</h2>
+              <p className="text-[#475569] mb-8">فريقنا جاهز للإجابة على جميع استفساراتك حول صعوبات التعلم والتشخيص</p>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <a href="/contact" className="tashkhisi-btn-primary">تواصل معنا</a>
+                <a href="/faq" className="tashkhisi-btn-outline">الأسئلة الشائعة</a>
+              </div>
+            </div>
           </div>
         </section>
       </main>

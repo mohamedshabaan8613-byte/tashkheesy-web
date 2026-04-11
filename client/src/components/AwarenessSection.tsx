@@ -35,8 +35,8 @@ const signs = [
   },
   {
     icon: Clock,
-    title: "تأخر في الحصول على الدعم",
-    desc: "مرت سنوات دون تشخيص واضح، وتراكمت الفجوات الأكاديمية تدريجياً دون أن يعرف أحد السبب.",
+    title: "تأخر في الوصول إلى الدعم المناسب",
+    desc: "مرت سنوات دون فهم واضح، وتراكمت الفجوات الأكاديمية تدريجياً دون أن يعرف أحد السبب.",
     color: "#2563EB",
     bg: "#EFF6FF",
     borderColor: "rgba(37,99,235,0.15)",
@@ -52,7 +52,7 @@ const signs = [
   {
     icon: MessageCircle,
     title: "ملاحظات المعلمين",
-    desc: "تتكرر ملاحظات المعلمين حول الأداء أو السلوك، وأنت تشعر أن هناك شيئاً ما لا تراه بوضوح.",
+    desc: "تتكرر ملاحظات المعلمين حول الأداء أو السلوك، وأنت تشعر أن هناك شيئًا ما لا تراه بوضوح.",
     color: "#F59E0B",
     bg: "#FFFBEB",
     borderColor: "rgba(245,158,11,0.15)",
@@ -89,7 +89,7 @@ export default function AwarenessSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="max-w-3xl mx-auto text-center mb-14 fade-in-up">
-          <span className="section-label block mb-3">إشارات تستحق الانتباه</span>
+          <span className="section-label block mb-3">مؤشرات تستحق الانتباه</span>
           <h2
             className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-5"
             style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
@@ -110,7 +110,7 @@ export default function AwarenessSection() {
             className="text-lg text-slate-600 leading-relaxed"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
           >
-            هذه الإشارات لا تعني بالضرورة وجود مشكلة، لكنها تستحق الفهم والاستيضاح.
+            هذه المؤشرات لا تعني بالضرورة وجود مشكلة، لكنها تستحق الفهم والاستيضاح.
             الوضوح المبكر يُحدث فرقاً حقيقياً في مسيرة طفلك.
           </p>
         </div>

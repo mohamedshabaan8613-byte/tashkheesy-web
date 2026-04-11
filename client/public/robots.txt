@@ -1,0 +1,25 @@
+# robots.txt — منصة تشخيصي
+# https://tashkheesy-web.vercel.app
+
+User-agent: *
+Allow: /
+Allow: /services
+Allow: /pricing
+Allow: /team
+Allow: /knowledge
+Allow: /contact
+Allow: /privacy
+Allow: /disclaimer
+
+# منع فهرسة صفحة الحجز (تحتوي على بيانات شخصية)
+Disallow: /booking
+
+# منع فهرسة ملفات الـ assets
+Disallow: /assets/
+Disallow: /*.json$
+
+# Sitemap
+Sitemap: https://tashkheesy-web.vercel.app/sitemap.xml
+
+# معدل الزحف (Crawl-delay)
+Crawl-delay: 1

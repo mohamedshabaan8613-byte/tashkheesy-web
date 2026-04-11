@@ -161,8 +161,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 function getAgeGroup(age: number): string {
   if (age <= 5) return "preschool";
   if (age <= 12) return "school";
-  if (age <= 17) return "teen";
-  return "adult";
+  // البالغون (18+) يستخدمون أسئلة teen — وهي الأنسب للتقييم الذاتي
+  return "teen";
 }
 
 // ─── المكوّن الرئيسي ──────────────────────────────────────────────────────────
@@ -179,12 +179,19 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const childName = searchParams.get("name") ?? "الطفل";
   const childAge = parseInt(searchParams.get("age") ?? "8", 10);
 
+  // قراءة pathType من URL وتعيينه كـ screeningType تلقائياً
+  const urlPathType = searchParams.get("pathType") ?? "learning";
+  // تعيين screeningType من pathType مباشرة — learning يُعيَّن كـ dyslexia (صعوبات التعلم)
+  const initialScreeningType: ScreeningType = urlPathType === "adhd" ? "adhd" : "dyslexia";
+
   const [phase, setPhase] = useState<Phase>("intro");
-  const [screeningType, setScreeningType] = useState<ScreeningType>("general");
+  // screeningType مشتق من pathType فقط — لا setter مكشوف للـ UI
+  const screeningType: ScreeningType = initialScreeningType;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
 
   // ─── تصفية الأسئلة حسب العمر ─────────────────────────────────────────────
   const ageGroup = getAgeGroup(childAge);
@@ -221,14 +228,8 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
       // حفظ فوري في localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ answers: newAnswers, currentIndex }));
 
-      // انتقال تلقائي للسؤال التالي
-      if (currentIndex < totalQuestions - 1) {
-        setAnimating(true);
-        setTimeout(() => {
-          setCurrentIndex((i) => i + 1);
-          setAnimating(false);
-        }, 250);
-      }
+      // إخفاء رسالة التحقق فور اختيار إجابة
+      setShowValidation(false);
     },
     [currentQuestion, answers, currentIndex, totalQuestions, animating, STORAGE_KEY]
   );
@@ -258,87 +259,94 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     localStorage.removeItem(STORAGE_KEY);
 
     setTimeout(() => {
-      navigate(`/screening-result/${sessionId}?name=${encodeURIComponent(childName)}`);
+      navigate(`/screening-result/${sessionId}?name=${encodeURIComponent(childName)}&pathType=${urlPathType}`);
     }, 800);
   }
 
-  // ─── مرحلة المقدمة ───────────────────────────────────────────────────────
+  // ─── مرحلة المقدمة (path-aware — بدون اختيار نوع مكرر) ──────────────────────
   if (phase === "intro") {
+    // بيانات المسار المُختار مسبقاً من ChooseChildPath / ChooseSelfPath
+    const isAdhd = urlPathType === "adhd";
+    const pathTitle = isAdhd
+      ? "فحص مؤشرات فرط الحركة وتشتت الانتباه"
+      : "فحص مؤشرات صعوبات التعلم";
+    const pathSubtitle = isAdhd
+      ? "الانتباه · التركيز · الاندفاعية · فرط الحركة"
+      : "القراءة · الكتابة · الفهم · الأداء الأكاديمي";
+    const pathIcon = isAdhd ? "⚡" : "📖";
+    const pathBadgeBg  = isAdhd ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-blue-100 text-blue-700 border-blue-200";
+    const pathCardBg   = isAdhd ? "bg-purple-50 border-purple-200" : "bg-blue-50 border-blue-200";
+    const pathTextColor = isAdhd ? "text-purple-800" : "text-blue-800";
+    const btnColor     = isAdhd ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700";
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-4" dir="rtl">
         <Card className="max-w-lg w-full shadow-lg border-0">
           <CardContent className="p-8 space-y-6">
+
+            {/* ─── رأس الصفحة ─────────────────────────────────────────────── */}
             <div className="text-center">
-              <div className="text-6xl mb-3">🔍</div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">فحص {childName}</h1>
-              <p className="text-gray-500 text-sm">استبيان أولي لرصد مؤشرات صعوبات التعلم</p>
+              <div className="text-5xl mb-3">{pathIcon}</div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                {childName ? `فحص ${childName}` : "الفحص الأولي"}
+              </h1>
+              <p className="text-gray-500 text-sm">{pathSubtitle}</p>
             </div>
 
-            {/* معلومات الفحص */}
-            <div className="bg-blue-50 rounded-xl p-4 space-y-2">
-              <div className="flex items-center gap-2 text-sm text-blue-800">
-                <ClipboardList className="w-4 h-4 flex-shrink-0" />
+            {/* ─── بطاقة المسار المُختار (تأكيد، لا اختيار) ───────────────── */}
+            <div className={`rounded-xl border p-4 ${pathCardBg}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${pathBadgeBg}`}>
+                  المسار المُختار
+                </span>
+              </div>
+              <p className={`text-base font-bold ${pathTextColor}`}>{pathTitle}</p>
+              <p className={`text-sm mt-1 opacity-75 ${pathTextColor}`}>{pathSubtitle}</p>
+            </div>
+
+            {/* ─── معلومات الفحص ───────────────────────────────────────────── */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <ClipboardList className="w-4 h-4 flex-shrink-0 text-gray-500" />
                 <span><strong>{questions.length} سؤالاً</strong> مناسباً لعمر {childAge} سنوات</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-blue-700">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>⏱️</span>
                 <span>يستغرق حوالي <strong>{Math.ceil(questions.length * 0.4)} دقائق</strong></span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-blue-700">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>💾</span>
                 <span>إجاباتك تُحفظ تلقائياً على جهازك</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-blue-700">
-                <span>⚡</span>
-                <span>النتيجة تظهر فوراً عند الانتهاء</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>🤖</span>
+                <span>تحليل أولي بالذكاء الاصطناعي عند الانتهاء</span>
               </div>
             </div>
 
-            {/* نوع الفحص */}
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">اختر نوع الفحص:</p>
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  { value: "general", label: "فحص شامل", icon: "🔍", desc: "تقييم عام لجميع المجالات" },
-                  { value: "dyslexia", label: "عسر القراءة", icon: "📖", desc: "صعوبات القراءة والكتابة" },
-                  { value: "adhd", label: "فرط الحركة", icon: "⚡", desc: "الانتباه والنشاط الزائد" },
-                  { value: "autism", label: "طيف التوحد", icon: "🌈", desc: "المهارات الاجتماعية والتواصل" },
-                ] as const).map((type) => (
-                  <button
-                    key={type.value}
-                    onClick={() => setScreeningType(type.value)}
-                    className={`p-3 rounded-xl border-2 text-right transition-all ${
-                      screeningType === type.value
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-blue-200 bg-white"
-                    }`}
-                  >
-                    <div className="text-xl mb-1">{type.icon}</div>
-                    <div className="text-sm font-semibold text-gray-800">{type.label}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{type.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* تنبيه قانوني */}
+            {/* ─── تنبيه قانوني ────────────────────────────────────────────── */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-800 leading-relaxed">
-                هذا الفحص لأغراض التوعية فقط وليس تشخيصاً طبياً. استشر متخصصاً مؤهلاً للحصول على تقييم دقيق.
+                هذا فحص أولي لرصد المؤشرات — ليس تشخيصاً طبياً أو نفسياً رسمياً.
+                نتائجه توجيهية تساعدك على اتخاذ الخطوة التالية بثقة.
               </p>
             </div>
 
+            {/* ─── زر البدء ────────────────────────────────────────────────── */}
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base font-semibold gap-2"
+              className={`w-full h-12 text-base font-semibold gap-2 ${btnColor}`}
               onClick={() => setPhase("questions")}
             >
-              بدء الفحص الآن
+              ابدأ الفحص الآن
               <ChevronLeft className="w-5 h-5" />
             </Button>
 
-            <button onClick={() => navigate("/children")} className="w-full text-sm text-gray-400 hover:text-gray-600 text-center">
-              العودة لقائمة الأطفال
+            <button
+              onClick={() => window.history.back()}
+              className="w-full text-sm text-gray-400 hover:text-gray-600 text-center"
+            >
+              ← العودة للخطوة السابقة
             </button>
           </CardContent>
         </Card>
@@ -436,7 +444,7 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
           <div className="flex items-center justify-between mt-5 gap-3">
             <Button
               variant="outline"
-              onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+              onClick={() => { setCurrentIndex((i) => Math.max(0, i - 1)); setShowValidation(false); }}
               disabled={currentIndex === 0}
               className="gap-1.5"
             >
@@ -449,7 +457,7 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
               {questions.map((q, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setCurrentIndex(idx)}
+                  onClick={() => { setCurrentIndex(idx); setShowValidation(false); }}
                   className={`rounded-full transition-all ${
                     idx === currentIndex
                       ? "bg-blue-600 w-5 h-2"
@@ -472,8 +480,14 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
               </Button>
             ) : (
               <Button
-                onClick={() => setCurrentIndex((i) => i + 1)}
-                disabled={!answers[currentQuestion.id]}
+                onClick={() => {
+                  if (!answers[currentQuestion.id]) {
+                    setShowValidation(true);
+                    return;
+                  }
+                  setShowValidation(false);
+                  setCurrentIndex((i) => i + 1);
+                }}
                 className="gap-1.5 bg-blue-600 hover:bg-blue-700"
               >
                 التالي
@@ -494,11 +508,14 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
             </div>
           )}
 
-          {/* تنبيه عدم الإجابة */}
-          {!answers[currentQuestion.id] && currentIndex > 0 && (
-            <p className="text-center text-xs text-gray-400 mt-3">
-              اختر إجابة للمتابعة للسؤال التالي
-            </p>
+          {/* رسالة التحقق عند الضغط على التالي بدون إجابة */}
+          {showValidation && !answers[currentQuestion.id] && (
+            <div className="flex items-center justify-center gap-2 mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+              <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-700 font-medium">
+                يرجى اختيار إجابة قبل الانتقال للسؤال التالي
+              </p>
+            </div>
           )}
         </div>
 

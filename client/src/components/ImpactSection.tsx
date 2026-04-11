@@ -1,100 +1,111 @@
 /*
- * تشخيصي ImpactSection — Editorial Healthcare
- * Dark section with animated impact stats and social/educational value
- * For hackathon judges to understand the product's importance quickly
+ * تشخيصي ImpactSection — Editorial Healthcare (Rewritten)
+ * ─────────────────────────────────────────────────────────────────
+ * Design: Dark premium section — #0F172A background, teal/blue accents
+ * Purpose: أثر الفهم المبكر — defensible for hackathon judges & public users
+ *
+ * Rewrite principles:
+ * - No unsupported statistics as bold headline claims
+ * - No "تشخيص مبكر" — only "فهم مبكر" and "مؤشرات"
+ * - Impact categories preserved but rewritten carefully
+ * - Added measurable-intent layer: ما الذي تستهدف المنصة قياسه
+ * - Context figures framed as حجم الحاجة التقريبي, not proven outcomes
+ * ─────────────────────────────────────────────────────────────────
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { Target, Users, TrendingUp, Clock, BookOpen, Heart, Globe, Lightbulb } from "lucide-react";
 
-const stats = [
-  {
-    value: 15,
-    suffix: "٪",
-    label: "من الطلاب يعانون من صعوبات تعلم غير مشخَّصة",
-    source: "منظمة الصحة العالمية",
-    color: "#14B8A6",
-  },
-  {
-    value: 3,
-    suffix: "+",
-    label: "سنوات متوسط التأخر في التشخيص بالمنطقة العربية",
-    source: "دراسات إقليمية",
-    color: "#2563EB",
-  },
-  {
-    value: 80,
-    suffix: "٪",
-    label: "من الحالات تتحسن بشكل ملحوظ مع الدعم المبكر",
-    source: "أبحاص التعليم الخاص",
-    color: "#14B8A6",
-  },
-  {
-    value: 2,
-    suffix: "M+",
-    label: "طفل عربي قد يستفيد من هذه الخدمة",
-    source: "تقديرات تشخيصي",
-    color: "#F59E0B",
-  },
-];
-
+// ─── Impact Categories ─────────────────────────────────────────────
 const impactPoints = [
   {
+    icon: BookOpen,
     emoji: "📚",
     title: "أثر تعليمي",
-    desc: "الكشف المبكر يمنع تراكم الفجوات الأكاديمية ويُمكّن الطالب من الوصول لإمكاناته الحقيقية.",
+    desc: "الفهم المبكر لمؤشرات صعوبات القراءة والكتابة والانتباه يُمكّن الأسرة من التحرك قبل تراكم الفجوات الأكاديمية — كل فصل دراسي بوضوح أفضل من فصل بدونه.",
     color: "#14B8A6",
   },
   {
+    icon: Heart,
     emoji: "💙",
     title: "أثر نفسي",
-    desc: "الفهم يُزيل وصمة العار ويُعيد بناء الثقة بالنفس لدى الطفل وأسرته.",
+    desc: "عندما يُفهم الطفل بدلاً من أن يُحكم عليه، تتغير علاقته بالتعلم. الوضوح يُزيل الوصمة ويُعيد بناء الثقة — للطفل ولأسرته معاً.",
     color: "#2563EB",
   },
   {
+    icon: Globe,
     emoji: "🌍",
     title: "أثر اجتماعي",
-    desc: "دعم الأسر العربية بلغتها ومن ثقافتها يُقلل الحواجز ويُعزز الوصول العادل للرعاية.",
+    desc: "أداة عربية تُخاطب الأسرة بلغتها وثقافتها تُقلل الحاجز الاجتماعي أمام طلب الدعم — وهو أحد أكبر العوائق في السياق العربي.",
     color: "#14B8A6",
   },
   {
+    icon: Lightbulb,
     emoji: "💡",
     title: "أثر اقتصادي",
-    desc: "كل ريال يُنفق على الدعم المبكر يوفر عشرة أضعافه في تكاليف التدخل المتأخر.",
+    desc: "الخطوة الأولى الواضحة تُقلل الوقت الضائع بين القلق الأول والتدخل المناسب — وهو ما تستهدف المنصة قياسه وتحسينه.",
     color: "#F59E0B",
   },
 ];
 
-function AnimatedNumber({ target, suffix }: { target: number; suffix: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const animated = useRef(false);
+// ─── Need Context (framed as حجم الحاجة, not proven outcomes) ───────
+const needContext = [
+  {
+    value: "١ من كل ٥",
+    label: "أطفال في سن المدرسة قد يواجهون شكلاً من أشكال تحديات التعلم أو الانتباه",
+    frame: "تقدير عالمي",
+    color: "#14B8A6",
+    note: "وفق تقديرات منظمات التعليم الدولية — تتفاوت الأرقام حسب المنطقة والتعريف المستخدم",
+  },
+  {
+    value: "سنوات",
+    label: "قد تمر بين أول ملاحظة من الأسرة وأول خطوة دعم فعلية — في غياب أداة واضحة للبداية",
+    frame: "الفجوة التي نستهدفها",
+    color: "#2563EB",
+    note: "هذه الفجوة الزمنية هي المشكلة الجوهرية التي تعالجها المنصة",
+  },
+  {
+    value: "الفهم",
+    label: "وحده يُحدث فارقاً — حتى قبل أي تدخل رسمي. الأسرة التي تعرف من أين تبدأ تتصرف بثقة",
+    frame: "مبدأ المنصة",
+    color: "#F59E0B",
+    note: "الهدف الأول ليس التشخيص — بل تحويل الحيرة إلى خطوة واضحة",
+  },
+];
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !animated.current) {
-          animated.current = true;
-          const duration = 1800;
-          const startTime = performance.now();
-          const animate = (currentTime: number) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(eased * target));
-            if (progress < 1) requestAnimationFrame(animate);
-          };
-          requestAnimationFrame(animate);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target]);
+// ─── Measurable Intent Layer ───────────────────────────────────────
+const measurableTargets = [
+  {
+    icon: Users,
+    label: "عدد الأسر التي تُكمل الفحص الأولي",
+    sub: "مؤشر الوصول والبداية",
+    color: "#2563EB",
+    bg: "#EFF6FF",
+  },
+  {
+    icon: TrendingUp,
+    label: "نسبة من ينتقلون إلى خطوة دعم لاحقة",
+    sub: "مؤشر التحويل الفعلي",
+    color: "#14B8A6",
+    bg: "#F0FDFA",
+  },
+  {
+    icon: Clock,
+    label: "الزمن بين القلق الأول وأول خطوة واضحة",
+    sub: "مؤشر تقليص الفجوة الزمنية",
+    color: "#F59E0B",
+    bg: "#FFFBEB",
+  },
+  {
+    icon: Target,
+    label: "مدى شعور المستخدم بأن الشرح الأولي ساعده على فهم أوضح",
+    sub: "مؤشر جودة الفهم",
+    color: "#8B5CF6",
+    bg: "#F5F3FF",
+  },
+];
 
-  return <span ref={ref}>{count}{suffix}</span>;
-}
-
+// ─── Main Component ────────────────────────────────────────────────
 export default function ImpactSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -133,15 +144,22 @@ export default function ImpactSection() {
       />
 
       {/* Gradient overlays */}
-      <div className="absolute inset-0"
-        style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(20,184,166,0.08) 100%)" }} />
-      <div className="absolute top-0 left-0 right-0 h-24"
-        style={{ background: "linear-gradient(to bottom, #0F172A, transparent)" }} />
-      <div className="absolute bottom-0 left-0 right-0 h-24"
-        style={{ background: "linear-gradient(to top, #0F172A, transparent)" }} />
+      <div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(20,184,166,0.08) 100%)" }}
+      />
+      <div
+        className="absolute top-0 left-0 right-0 h-24"
+        style={{ background: "linear-gradient(to bottom, #0F172A, transparent)" }}
+      />
+      <div
+        className="absolute bottom-0 left-0 right-0 h-24"
+        style={{ background: "linear-gradient(to top, #0F172A, transparent)" }}
+      />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+
+        {/* ── Section Header ─────────────────────────────────────── */}
         <div className="text-center mb-16 fade-in-up">
           <span
             className="section-label block mb-3"
@@ -153,7 +171,7 @@ export default function ImpactSection() {
             className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-5"
             style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
           >
-            الأثر الحقيقي{" "}
+            أثر{" "}
             <span
               style={{
                 background: "linear-gradient(135deg, #14B8A6 0%, #2563EB 100%)",
@@ -162,20 +180,21 @@ export default function ImpactSection() {
                 backgroundClip: "text",
               }}
             >
-              لكل تشخيص مبكر
+              الفهم المبكر
             </span>
           </h2>
           <p
             className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
           >
-            الأرقام تحكي قصة واضحة — التشخيص المبكر ليس رفاهية، بل ضرورة تربوية وإنسانية.
+            الفهم المبكر لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه ليس رفاهية —
+            بل هو الخطوة التي تُغيّر مسار الطفل وأسرته.
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
-          {stats.map((stat, index) => (
+        {/* ── Need Context (حجم الحاجة) ──────────────────────────── */}
+        <div className="grid sm:grid-cols-3 gap-5 mb-14">
+          {needContext.map((item, index) => (
             <div
               key={index}
               className="fade-in-up text-center p-6 rounded-2xl group hover:-translate-y-1 transition-transform duration-200"
@@ -185,63 +204,178 @@ export default function ImpactSection() {
                 backdropFilter: "blur(10px)",
               }}
             >
+              {/* Frame tag */}
+              <div className="mb-3">
+                <span
+                  className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                  style={{
+                    color: item.color,
+                    background: `${item.color}18`,
+                    border: `1px solid ${item.color}30`,
+                    fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  }}
+                >
+                  {item.frame}
+                </span>
+              </div>
+
+              {/* Value */}
               <div
-                className="text-4xl lg:text-5xl font-black mb-3"
+                className="text-3xl lg:text-4xl font-black mb-3"
                 style={{
                   fontFamily: "'Cairo', sans-serif",
                   fontWeight: 900,
-                  color: stat.color,
+                  color: item.color,
+                  lineHeight: 1.2,
                 }}
               >
-                <AnimatedNumber target={stat.value} suffix={stat.suffix} />
+                {item.value}
               </div>
+
+              {/* Label */}
               <p
                 className="text-sm text-slate-300 leading-relaxed mb-3"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
+              >
+                {item.label}
+              </p>
+
+              {/* Note */}
+              <p
+                className="text-xs text-slate-500 leading-relaxed"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.6 }}
               >
-                {stat.label}
+                {item.note}
               </p>
-              <span
-                className="text-xs px-2 py-1 rounded-full"
-                style={{
-                  color: stat.color,
-                  background: `${stat.color}18`,
-                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                }}
-              >
-                {stat.source}
-              </span>
             </div>
           ))}
         </div>
 
-        {/* Impact points */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {impactPoints.map((point, index) => (
-            <div
-              key={index}
-              className="fade-in-up p-5 rounded-2xl"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.07)",
-              }}
-            >
-              <div className="text-2xl mb-3">{point.emoji}</div>
-              <h3
-                className="text-base font-bold text-white mb-2"
-                style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
+        {/* ── Impact Categories ──────────────────────────────────── */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
+          {impactPoints.map((point, index) => {
+            const Icon = point.icon;
+            return (
+              <div
+                key={index}
+                className="fade-in-up p-5 rounded-2xl hover:-translate-y-1 transition-transform duration-200"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }}
               >
-                {point.title}
-              </h3>
-              <p
-                className="text-sm text-slate-400 leading-relaxed"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
-              >
-                {point.desc}
-              </p>
-            </div>
-          ))}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
+                  style={{ background: `${point.color}18`, border: `1px solid ${point.color}25` }}
+                >
+                  <Icon size={18} style={{ color: point.color }} />
+                </div>
+                <h3
+                  className="text-base font-bold text-white mb-2"
+                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
+                >
+                  {point.title}
+                </h3>
+                <p
+                  className="text-sm text-slate-400 leading-relaxed"
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
+                >
+                  {point.desc}
+                </p>
+              </div>
+            );
+          })}
         </div>
+
+        {/* ── Measurable Intent Layer ────────────────────────────── */}
+        <div
+          className="fade-in-up rounded-3xl p-7 lg:p-10"
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 mb-3">
+              <Target size={16} style={{ color: "#14B8A6" }} />
+              <span
+                className="text-sm font-bold"
+                style={{ color: "#14B8A6", fontFamily: "'IBM Plex Sans Arabic', sans-serif", letterSpacing: "0.04em" }}
+              >
+                مؤشرات الأثر التي نتابعها
+              </span>
+            </div>
+            <h3
+              className="text-xl sm:text-2xl font-black text-white mb-3"
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+            >
+              ما الذي تستهدف المنصة قياسه
+            </h3>
+            <p
+              className="text-sm text-slate-400 max-w-xl mx-auto"
+              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+            >
+              هذه ليست إنجازات مؤكدة — بل مؤشرات الأثر التي نبني عليها قرارات التطوير ونسعى لتحقيقها.
+            </p>
+          </div>
+
+          {/* KPI Cards */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {measurableTargets.map((kpi, index) => {
+              const Icon = kpi.icon;
+              return (
+                <div
+                  key={index}
+                  className="p-4 rounded-2xl"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: `1px solid ${kpi.color}20`,
+                  }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+                    style={{ background: `${kpi.color}15` }}
+                  >
+                    <Icon size={16} style={{ color: kpi.color }} />
+                  </div>
+                  <p
+                    className="text-sm text-slate-200 leading-relaxed mb-2"
+                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7, fontWeight: 500 }}
+                  >
+                    {kpi.label}
+                  </p>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full"
+                    style={{
+                      color: kpi.color,
+                      background: `${kpi.color}15`,
+                      fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                    }}
+                  >
+                    {kpi.sub}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Disclaimer */}
+          <div
+            className="mt-7 pt-6 text-center"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <p
+              className="text-xs text-slate-500"
+              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+            >
+              تشخيصي منصة فحص أولي مجانية — لا تُصدر تشخيصاً طبياً أو نفسياً رسمياً.
+              نتائج الفحص مؤشرات توجيهية تُساعد الأسرة على معرفة الخطوة التالية بثقة.
+            </p>
+          </div>
+        </div>
+
       </div>
     </section>
   );

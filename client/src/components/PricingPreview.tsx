@@ -50,7 +50,7 @@ export default function PricingPreview() {
     <section className="py-20 bg-slate-50">
       <div className="container">
         <div className="text-center mb-16">
-          <div className="inline-block px-4 py-1.5 mb-4 text-sm font-bold tracking-wider text-indigo-600 uppercase bg-indigo-50 rounded-full">
+          <div className="inline-block px-4 py-1.5 mb-4 text-sm font-bold tracking-wider text-[#2563EB] uppercase bg-[#EFF6FF] rounded-full">
             باقاتنا وأسعارنا
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
@@ -70,7 +70,7 @@ export default function PricingPreview() {
               }`}
             >
               {pkg.highlighted && (
-                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-sm font-bold px-6 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#2563EB] text-white text-sm font-bold px-6 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
                   <Star className="w-4 h-4 fill-white" />
                   الأكثر طلباً
                 </div>
@@ -110,8 +110,8 @@ export default function PricingPreview() {
                   <Button
                     className={`w-full h-12 text-lg font-bold ${
                       pkg.highlighted 
-                        ? "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200" 
-                        : "bg-white text-indigo-600 border-2 border-indigo-600 hover:bg-indigo-50"
+                        ? "bg-[#2563EB] hover:bg-[#1D4ED8] shadow-lg shadow-indigo-200" 
+                        : "bg-white text-[#2563EB] border-2 border-indigo-600 hover:bg-[#EFF6FF]"
                     }`}
                   >
                     {pkg.cta}
@@ -125,7 +125,7 @@ export default function PricingPreview() {
         <div className="mt-16 text-center">
           <p className="text-slate-500 text-sm">
             هل تحتاج لباقة مخصصة لمدرسة أو مؤسسة؟ 
-            <Link href="/services" className="text-indigo-600 font-bold mr-1 hover:underline">تواصل معنا هنا</Link>
+            <Link href="/services" className="text-[#2563EB] font-bold mr-1 hover:underline">تواصل معنا هنا</Link>
           </p>
         </div>
       </div>
