@@ -55,7 +55,7 @@ export default function Step1ServiceSelection() {
           <Card
             className={`cursor-pointer transition-all hover:shadow-lg ${
               selectedService === "CHILD"
-                ? "ring-2 ring-indigo-600 bg-[#EFF6FF]"
+                ? "ring-2 ring-indigo-600 bg-[#DFF3F1]"
                 : ""
             }`}
             onClick={() => setSelectedService("CHILD")}
@@ -63,7 +63,7 @@ export default function Step1ServiceSelection() {
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#DBEAFE] flex items-center justify-center flex-shrink-0">
-                  <Baby className="w-6 h-6 text-[#2563EB]" />
+                  <Baby className="w-6 h-6 text-[#1E4E8C]" />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-slate-900 mb-1">
@@ -72,12 +72,12 @@ export default function Step1ServiceSelection() {
                   <p className="text-sm text-slate-600">
                     للأطفال من عمر 5 إلى 18 سنة
                   </p>
-                  <p className="text-sm font-semibold text-[#2563EB] mt-2">
+                  <p className="text-sm font-semibold text-[#1E4E8C] mt-2">
                     299 ر.س
                   </p>
                 </div>
                 {selectedService === "CHILD" && (
-                  <CheckCircle className="w-6 h-6 text-[#2563EB] flex-shrink-0" />
+                  <CheckCircle className="w-6 h-6 text-[#1E4E8C] flex-shrink-0" />
                 )}
               </div>
             </CardContent>
@@ -86,7 +86,7 @@ export default function Step1ServiceSelection() {
           <Card
             className={`cursor-pointer transition-all hover:shadow-lg ${
               selectedService === "UNIVERSITY"
-                ? "ring-2 ring-indigo-600 bg-[#EFF6FF]"
+                ? "ring-2 ring-indigo-600 bg-[#DFF3F1]"
                 : ""
             }`}
             onClick={() => setSelectedService("UNIVERSITY")}
@@ -126,7 +126,7 @@ export default function Step1ServiceSelection() {
           {/* خيار الاختيار التلقائي */}
           <Card
             className={`mb-4 cursor-pointer transition-all hover:shadow-lg ${
-              autoAssign ? "ring-2 ring-indigo-600 bg-[#EFF6FF]" : ""
+              autoAssign ? "ring-2 ring-indigo-600 bg-[#DFF3F1]" : ""
             }`}
             onClick={() => {
               setAutoAssign(!autoAssign);
@@ -141,7 +141,7 @@ export default function Step1ServiceSelection() {
                   type="checkbox"
                   checked={autoAssign}
                   onChange={() => {}}
-                  className="w-5 h-5 text-[#2563EB]"
+                  className="w-5 h-5 text-[#1E4E8C]"
                 />
                 <div>
                   <h4 className="font-semibold text-slate-900">
@@ -160,7 +160,7 @@ export default function Step1ServiceSelection() {
             <>
               {isLoading && (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+                  <Loader2 className="w-8 h-8 animate-spin text-[#1E4E8C]" />
                   <span className="mr-3 text-slate-600">جاري تحميل الأخصائيين...</span>
                 </div>
               )}
@@ -178,7 +178,7 @@ export default function Step1ServiceSelection() {
                   key={specialist.id}
                   className={`cursor-pointer transition-all hover:shadow-lg ${
                     selectedSpecialist === specialist.id
-                      ? "ring-2 ring-indigo-600 bg-[#EFF6FF]"
+                      ? "ring-2 ring-indigo-600 bg-[#DFF3F1]"
                       : ""
                   }`}
                   onClick={() => setSelectedSpecialist(specialist.id)}
@@ -197,7 +197,7 @@ export default function Step1ServiceSelection() {
                         </p>
                       </div>
                       {selectedSpecialist === specialist.id && (
-                        <CheckCircle className="w-5 h-5 text-[#2563EB] flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-[#1E4E8C] flex-shrink-0" />
                       )}
                     </div>
 

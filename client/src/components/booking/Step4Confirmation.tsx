@@ -10,7 +10,7 @@
  * - شرح الخطوات التالية + ضمانات الخصوصية
  * - لا يوجد backend call — يعمل كـ MVP كامل
  *
- * Palette: #F8FAFC bg, #FFFFFF surface, #0F172A text, #2563EB primary, #14B8A6 secondary
+ * Palette: #F4EFE8 bg, #FFFFFF surface, #243B53 text, #1E4E8C primary, #2BBDB6 secondary
  */
 
 import { useState, useEffect } from "react";
@@ -52,21 +52,21 @@ const SERVICE_LABELS: Record<string, string> = {
 const NEXT_STEPS = [
   {
     icon: Bell,
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     title: "تأكيد خلال ٢٤ ساعة",
     desc: "سيتواصل معك المتخصص أو فريق تشخيصي لتأكيد الموعد وترتيب الخطوة التالية",
   },
   {
     icon: MessageCircle,
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     title: "تنسيق الجلسة",
     desc: "ستتلقى تفاصيل الجلسة ورابط الاجتماع عبر البريد الإلكتروني أو الجوال",
   },
   {
     icon: FileText,
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     title: "تقرير مفصل",
     desc: "بعد الجلسة ستحصل على تقرير تقييم شامل مع توصيات واضحة للخطوات التالية",
@@ -136,7 +136,7 @@ export default function Step4Confirmation() {
         <div
           className="rounded-2xl p-5 mb-6 text-center"
           style={{
-            background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 100%)",
+            background: "linear-gradient(135deg, #DFF3F1 0%, #DFF3F1 100%)",
             border: "1.5px solid rgba(37,99,235,0.15)",
           }}
         >
@@ -147,7 +147,7 @@ export default function Step4Confirmation() {
             className="text-3xl font-black tracking-wider"
             style={{
               fontFamily: "'Cairo', sans-serif",
-              background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+              background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -161,7 +161,7 @@ export default function Step4Confirmation() {
         {/* ملخص الحجز */}
         <div
           className="rounded-2xl p-5 mb-6"
-          style={{ background: "white", border: "1px solid #E2E8F0", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+          style={{ background: "white", border: "1px solid #D8E8E7", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
         >
           <h3
             className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4"
@@ -240,7 +240,7 @@ export default function Step4Confirmation() {
             onClick={() => navigate("/")}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-white font-bold text-sm transition-all duration-200 hover:-translate-y-0.5"
             style={{
-              background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
+              background: "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)",
               fontFamily: "'Cairo', sans-serif",
               boxShadow: "0 4px 16px rgba(37,99,235,0.3)",
             }}
@@ -253,8 +253,8 @@ export default function Step4Confirmation() {
             className="sm:w-auto flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
             style={{
               background: "white",
-              color: "#475569",
-              border: "1.5px solid #E2E8F0",
+              color: "#4A6278",
+              border: "1.5px solid #D8E8E7",
               fontFamily: "'Cairo', sans-serif",
             }}
           >
@@ -279,7 +279,7 @@ export default function Step4Confirmation() {
       <div className={`mb-6 ${anim(0)}`} style={animStyle(0)}>
         <div
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-3 text-xs font-semibold"
-          style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid rgba(37,99,235,0.15)" }}
+          style={{ background: "#DFF3F1", color: "#1E4E8C", border: "1px solid rgba(37,99,235,0.15)" }}
         >
           <CheckCircle2 size={13} />
           الخطوة الأخيرة
@@ -301,7 +301,7 @@ export default function Step4Confirmation() {
         style={{
           ...animStyle(80),
           background: "white",
-          border: "1px solid #E2E8F0",
+          border: "1px solid #D8E8E7",
           boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}
       >
@@ -315,7 +315,7 @@ export default function Step4Confirmation() {
           <div className="flex items-start gap-3">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: "#EFF6FF" }}
+              style={{ background: "#DFF3F1" }}
             >
               <Sparkles size={14} className="text-blue-600" />
             </div>
@@ -330,7 +330,7 @@ export default function Step4Confirmation() {
           <div className="flex items-start gap-3">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: "#F0FDFA" }}
+              style={{ background: "#DFF3F1" }}
             >
               <Calendar size={14} className="text-teal-600" />
             </div>
@@ -380,7 +380,7 @@ export default function Step4Confirmation() {
         style={{
           ...animStyle(160),
           background: "white",
-          border: "1px solid #E2E8F0",
+          border: "1px solid #D8E8E7",
           boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}
       >
@@ -437,7 +437,7 @@ export default function Step4Confirmation() {
           style={{
             ...animStyle(240),
             background: "white",
-            border: "1px solid #E2E8F0",
+            border: "1px solid #D8E8E7",
             boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
           }}
         >
@@ -559,8 +559,8 @@ export default function Step4Confirmation() {
           className="flex items-center gap-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50"
           style={{
             background: "white",
-            color: "#475569",
-            border: "1.5px solid #E2E8F0",
+            color: "#4A6278",
+            border: "1.5px solid #D8E8E7",
             fontFamily: "'Cairo', sans-serif",
           }}
         >
@@ -575,7 +575,7 @@ export default function Step4Confirmation() {
           style={{
             background: isSubmitting
               ? "#94A3B8"
-              : "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
+              : "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)",
             fontFamily: "'Cairo', sans-serif",
             minWidth: "180px",
             boxShadow: isSubmitting ? "none" : "0 4px 16px rgba(37,99,235,0.3)",

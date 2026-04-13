@@ -14,10 +14,10 @@ const services = [
     title: "فحص صعوبات التعلم وفرط الحركة وتشتت الانتباه",
     desc: "فحص شامل ومنظم يغطي القراءة، الكتابة، الحساب، الانتباه، وفرط الحركة — في ١٥ دقيقة فقط.",
     tag: "مجاني",
-    tagColor: "#14B8A6",
-    tagBg: "#F0FDFA",
-    color: "#2563EB",
-    bg: "linear-gradient(160deg, #EFF6FF 0%, #F8FAFC 100%)",
+    tagColor: "#2BBDB6",
+    tagBg: "#DFF3F1",
+    color: "#1E4E8C",
+    bg: "linear-gradient(160deg, #DFF3F1 0%, #F4EFE8 100%)",
     border: "rgba(37,99,235,0.2)",
     cta: "ابدأ الفحص",
     href: "#screening",
@@ -29,10 +29,10 @@ const services = [
     title: "استشارة متخصص",
     desc: "جلسة مع متخصص معتمد في صعوبات التعلم لتفسير النتائج ووضع خطة عمل واضحة.",
     tag: "عند الحاجة",
-    tagColor: "#2563EB",
-    tagBg: "#EFF6FF",
-    color: "#2563EB",
-    bg: "linear-gradient(160deg, #F8FAFC 0%, #EFF6FF 100%)",
+    tagColor: "#1E4E8C",
+    tagBg: "#DFF3F1",
+    color: "#1E4E8C",
+    bg: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 100%)",
     border: "rgba(37,99,235,0.1)",
     cta: "احجز جلسة",
     href: "#",
@@ -44,10 +44,10 @@ const services = [
     title: "إرشاد الأسرة",
     desc: "جلسات توجيهية للوالدين لفهم كيفية دعم طفلهم في المنزل والمدرسة بشكل فعّال.",
     tag: "للأهل",
-    tagColor: "#F59E0B",
+    tagColor: "#F4C46A",
     tagBg: "#FFFBEB",
-    color: "#F59E0B",
-    bg: "linear-gradient(160deg, #FFFBEB 0%, #F8FAFC 100%)",
+    color: "#F4C46A",
+    bg: "linear-gradient(160deg, #FFFBEB 0%, #F4EFE8 100%)",
     border: "rgba(245,158,11,0.1)",
     cta: "اعرف المزيد",
     href: "#",
@@ -59,10 +59,10 @@ const services = [
     title: "خطة المتابعة",
     desc: "تتبع التقدم بمرور الوقت مع تقارير دورية وتحديث مستمر لخطة الدعم والتطوير.",
     tag: "مستمر",
-    tagColor: "#14B8A6",
-    tagBg: "#F0FDFA",
-    color: "#14B8A6",
-    bg: "linear-gradient(160deg, #F0FDFA 0%, #F8FAFC 100%)",
+    tagColor: "#2BBDB6",
+    tagBg: "#DFF3F1",
+    color: "#2BBDB6",
+    bg: "linear-gradient(160deg, #DFF3F1 0%, #F4EFE8 100%)",
     border: "rgba(20,184,166,0.1)",
     cta: "ابدأ المتابعة",
     href: "#",
@@ -105,7 +105,7 @@ export default function ServicesPreview() {
       id="services"
       ref={sectionRef}
       className="py-20 lg:py-28"
-      style={{ background: "#F8FAFC" }}
+      style={{ background: "#F4EFE8" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -118,7 +118,7 @@ export default function ServicesPreview() {
             كل ما تحتاجه{" "}
             <span
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",

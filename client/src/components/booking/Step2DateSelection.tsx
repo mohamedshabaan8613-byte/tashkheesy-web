@@ -54,7 +54,7 @@ export default function Step2DateSelection() {
       {/* اختيار التاريخ */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5 text-[#2563EB]" />
+          <Calendar className="w-5 h-5 text-[#1E4E8C]" />
           <h3 className="text-lg font-bold text-slate-900">
             اختر التاريخ المناسب
           </h3>
@@ -62,7 +62,7 @@ export default function Step2DateSelection() {
 
         {datesLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-[#2563EB]" />
+            <Loader2 className="w-6 h-6 animate-spin text-[#1E4E8C]" />
             <span className="mr-3 text-slate-600">جاري تحميل المواعيد...</span>
           </div>
         ) : (
@@ -72,7 +72,7 @@ export default function Step2DateSelection() {
               key={date.id}
               className={`cursor-pointer transition-all hover:shadow-md ${
                 selectedDate === date.id
-                  ? "ring-2 ring-indigo-600 bg-[#EFF6FF]"
+                  ? "ring-2 ring-indigo-600 bg-[#DFF3F1]"
                   : ""
               }`}
               onClick={() => {
@@ -91,7 +91,7 @@ export default function Step2DateSelection() {
                   {date.month}
                 </div>
                 {selectedDate === date.id && (
-                  <CheckCircle className="w-4 h-4 text-[#2563EB] mx-auto mt-2" />
+                  <CheckCircle className="w-4 h-4 text-[#1E4E8C] mx-auto mt-2" />
                 )}
               </CardContent>
             </Card>
@@ -104,7 +104,7 @@ export default function Step2DateSelection() {
       {selectedDate && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-[#2563EB]" />
+            <Clock className="w-5 h-5 text-[#1E4E8C]" />
             <h3 className="text-lg font-bold text-slate-900">
               اختر وقت الجلسة
             </h3>
@@ -112,7 +112,7 @@ export default function Step2DateSelection() {
 
           {slotsLoading ? (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-5 h-5 animate-spin text-[#2563EB]" />
+              <Loader2 className="w-5 h-5 animate-spin text-[#1E4E8C]" />
               <span className="mr-2 text-slate-600">جاري تحميل الأوقات...</span>
             </div>
           ) : timeSlots && timeSlots.length > 0 ? (
@@ -148,10 +148,10 @@ export default function Step2DateSelection() {
 
       {/* ملخص الاختيار */}
       {selectedDate && selectedTimeSlot && (
-        <Card className="mb-8 bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] border-[#BFDBFE]">
+        <Card className="mb-8 bg-gradient-to-br from-[#DFF3F1] to-[#DBEAFE] border-[#BFDBFE]">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-[#2563EB] flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-[#1E4E8C] flex items-center justify-center flex-shrink-0">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>

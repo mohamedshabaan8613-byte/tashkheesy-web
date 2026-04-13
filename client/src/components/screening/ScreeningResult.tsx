@@ -97,7 +97,7 @@ const RISK_CONFIG = {
     color: "#D97706",
     borderColor: "#FDE68A",
     accentBg: "#FFFBEB",
-    progressColor: "#F59E0B",
+    progressColor: "#F4C46A",
     headline: "رصد الفحص بعض الأنماط التي تستحق الاهتمام",
     subheadline:
       "هذه المؤشرات ليست سبباً للقلق — بل هي فرصة لفهم احتياجاتك بشكل أفضل والتصرف في الوقت المناسب.",
@@ -159,7 +159,7 @@ const SPECIALIST_PREVIEW: Record<string, {
       {
         role: "أخصائي صعوبات التعلم",
         specialties: ["صعوبات القراءة", "الكتابة والإملاء", "التدخل المبكر"],
-        color: "#2563EB",
+        color: "#1E4E8C",
         icon: "📖",
       },
       {
@@ -190,7 +190,7 @@ const SPECIALIST_PREVIEW: Record<string, {
       {
         role: "أخصائية فرط الحركة وتشتت الانتباه",
         specialties: ["تشتت الانتباه", "دعم التركيز", "التدخل السلوكي"],
-        color: "#2563EB",
+        color: "#1E4E8C",
         icon: "🎯",
       },
       {
@@ -209,29 +209,29 @@ const FAQ_ITEMS = [
     q: "هل هذه النتائج تُعدّ تشخيصاً طبياً رسمياً؟",
     a: "لا. نتائج هذا الفحص هي مؤشرات توجيهية أولية فقط، وليست تشخيصاً طبياً أو نفسياً رسمياً. التشخيص الدقيق يتطلب تقييماً شاملاً من متخصص معتمد. هدف هذا الفحص هو مساعدتك على فهم ما يحتاج إلى متابعة وتوجيهك نحو الخطوة الصحيحة.",
     icon: Info,
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
   {
     q: "هل نتائجي وبيانات طفلي خاصة وسرية تماماً؟",
     a: "نعم، بشكل كامل. بياناتك وبيانات طفلك محمية بتشفير كامل ولن تُشارك مع أي جهة خارجية تحت أي ظرف. نحن نلتزم بأعلى معايير الخصوصية وحماية البيانات.",
     icon: Lock,
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     q: "ماذا يحدث بعد حجز الجلسة مع المتخصص؟",
     a: "بعد الحجز، ستتلقى تأكيداً فورياً مع تفاصيل الموعد. سيطلع المتخصص على نتائج فحصك قبل الجلسة ليكون مستعداً. خلال الجلسة، ستناقشون النتائج بالتفصيل وستحصل على تقييم أعمق وخطة دعم مخصصة.",
     icon: Calendar,
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
   },
   {
     q: "هل يمكنني إجراء الجلسة عن بُعد (أونلاين)؟",
     a: "نعم. نقدم خيار الجلسات عبر الفيديو أونلاين بنفس جودة الجلسات الحضورية. يمكنك اختيار الوقت والطريقة المناسبة لك عند الحجز.",
     icon: MessageCircle,
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
 ];
 
@@ -250,7 +250,7 @@ function AccordionItem({
     <div
       className="rounded-2xl overflow-hidden transition-all duration-300"
       style={{
-        border: isOpen ? `1.5px solid ${item.color}30` : "1.5px solid #F1F5F9",
+        border: isOpen ? `1.5px solid ${item.color}30` : "1.5px solid #DFF3F1",
         background: isOpen ? item.bg : "white",
         boxShadow: isOpen ? `0 4px 20px ${item.color}12` : "0 1px 4px rgba(0,0,0,0.04)",
       }}
@@ -276,7 +276,7 @@ function AccordionItem({
         <div
           className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200"
           style={{
-            background: isOpen ? item.color : "#F1F5F9",
+            background: isOpen ? item.color : "#DFF3F1",
             color: isOpen ? "white" : "#94A3B8",
           }}
         >
@@ -306,7 +306,7 @@ function AnimatedProgressBar({ percentage, color }: { percentage: number; color:
     return () => clearTimeout(timer);
   }, [percentage]);
   return (
-    <div className="h-3 rounded-full overflow-hidden" style={{ background: "#F1F5F9" }}>
+    <div className="h-3 rounded-full overflow-hidden" style={{ background: "#DFF3F1" }}>
       <div
         className="h-full rounded-full transition-all duration-1000 ease-out relative"
         style={{ width: `${width}%`, background: color }}
@@ -399,13 +399,13 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "#F8FAFC" }}
+        style={{ background: "#F4EFE8" }}
         dir="rtl"
       >
         <div className="text-center">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse"
-            style={{ background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)" }}
+            style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)" }}
           >
             <Brain size={28} className="text-white" />
           </div>
@@ -433,7 +433,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#F8FAFC", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+      style={{ background: "#F4EFE8", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
       dir="rtl"
     >
       {/* ─── Navbar ──────────────────────────────────────────────────────────── */}
@@ -453,7 +453,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
           >
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)" }}
+              style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)" }}
             >
               <Brain size={16} className="text-white" />
             </div>
@@ -489,7 +489,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
       <section
         className="py-12 sm:py-16"
         style={{
-          background: `linear-gradient(160deg, ${config.accentBg} 0%, #F8FAFC 60%)`,
+          background: `linear-gradient(160deg, ${config.accentBg} 0%, #F4EFE8 60%)`,
           borderBottom: `1px solid ${config.borderColor}`,
         }}
       >
@@ -555,7 +555,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 {Math.round(data.result.percentage)}%
               </span>
             </div>
-            <div className="h-4 rounded-full overflow-hidden mb-5" style={{ background: "#F1F5F9" }}>
+            <div className="h-4 rounded-full overflow-hidden mb-5" style={{ background: "#DFF3F1" }}>
               <div
                 className="h-full rounded-full transition-all duration-1000 ease-out"
                 style={{
@@ -579,7 +579,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 <div
                   key={i}
                   className="rounded-xl p-3"
-                  style={{ background: "#F8FAFC", border: "1px solid #F1F5F9" }}
+                  style={{ background: "#F4EFE8", border: "1px solid #DFF3F1" }}
                 >
                   <div
                     className="text-base font-black text-slate-900 mb-0.5"
@@ -608,7 +608,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
           >
             <Shield
               size={16}
-              style={{ color: "#2563EB", flexShrink: 0, marginTop: "2px" }}
+              style={{ color: "#1E4E8C", flexShrink: 0, marginTop: "2px" }}
             />
             <p
               className="text-xs text-slate-500 leading-relaxed"
@@ -626,7 +626,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
       <section
         className="py-14"
         style={{
-          background: "linear-gradient(160deg, #0F172A 0%, #1E3A5F 50%, #0F2A3F 100%)",
+          background: "linear-gradient(160deg, #243B53 0%, #1E3A5F 50%, #0F2A3F 100%)",
         }}
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
@@ -809,7 +809,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 border: "1px solid rgba(37,99,235,0.15)",
               }}
             >
-              <TrendingUp size={14} style={{ color: "#2563EB" }} />
+              <TrendingUp size={14} style={{ color: "#1E4E8C" }} />
               <span
                 className="text-xs font-semibold text-blue-700"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
@@ -855,7 +855,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                   badgeBg = "#FFF7ED";
                   badgeColor = "#EA580C";
                 } else if (pct >= 30) {
-                  barColor = "#F59E0B";
+                  barColor = "#F4C46A";
                   badgeText = "متوسط";
                   badgeBg = "#FFFBEB";
                   badgeColor = "#D97706";
@@ -866,7 +866,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                     className="fade-in-up rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-md"
                     style={{
                       background: "white",
-                      border: "1.5px solid #F1F5F9",
+                      border: "1.5px solid #DFF3F1",
                       boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
                       transitionDelay: `${i * 60}ms`,
                     }}
@@ -875,7 +875,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                       <div className="flex items-center gap-3">
                         <div
                           className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                          style={{ background: "#F8FAFC", border: "1px solid #F1F5F9" }}
+                          style={{ background: "#F4EFE8", border: "1px solid #DFF3F1" }}
                         >
                           {catInfo.icon}
                         </div>
@@ -937,7 +937,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                   className="w-10 h-10 rounded-xl flex items-center justify-center"
                   style={{ background: "#FEF3C7", border: "1px solid #FDE68A" }}
                 >
-                  <FileText size={18} style={{ color: "#F59E0B" }} />
+                  <FileText size={18} style={{ color: "#F4C46A" }} />
                 </div>
                 <h3
                   className="text-base font-black text-slate-900"
@@ -955,7 +955,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                     >
                       <span
                         className="text-xs font-black"
-                        style={{ color: "#F59E0B", fontFamily: "'Cairo', sans-serif" }}
+                        style={{ color: "#F4C46A", fontFamily: "'Cairo', sans-serif" }}
                       >
                         {i + 1}
                       </span>
@@ -980,7 +980,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
       {/* ═══════════════════════════════════════════════════════════════════════
           4. معاينة فريق المتخصصين (path-aware، بدون أسماء شخصية)
       ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="py-14" style={{ background: "#F8FAFC" }}>
+      <section className="py-14" style={{ background: "#F4EFE8" }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 fade-in-up">
             <div
@@ -990,7 +990,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 border: "1px solid rgba(20,184,166,0.2)",
               }}
             >
-              <Users size={14} style={{ color: "#14B8A6" }} />
+              <Users size={14} style={{ color: "#2BBDB6" }} />
               <span
                 className="text-xs font-semibold"
                 style={{ color: "#0F766E", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
@@ -1020,7 +1020,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 className="fade-in-up rounded-2xl p-5 transition-all duration-300"
                 style={{
                   background: "white",
-                  border: "1.5px solid #F1F5F9",
+                  border: "1.5px solid #DFF3F1",
                   boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
                   transitionDelay: `${i * 80}ms`,
                 }}
@@ -1070,7 +1070,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
           >
             <Info
               size={15}
-              style={{ color: "#14B8A6", flexShrink: 0, marginTop: "2px" }}
+              style={{ color: "#2BBDB6", flexShrink: 0, marginTop: "2px" }}
             />
             <p
               className="text-xs text-slate-500 leading-relaxed"
@@ -1095,7 +1095,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 border: "1px solid rgba(37,99,235,0.15)",
               }}
             >
-              <HelpCircle size={14} style={{ color: "#2563EB" }} />
+              <HelpCircle size={14} style={{ color: "#1E4E8C" }} />
               <span
                 className="text-xs font-semibold text-blue-700"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
@@ -1129,7 +1129,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
       <section
         className="py-20 relative overflow-hidden no-print"
         style={{
-          background: "linear-gradient(135deg, #1e3a8a 0%, #2563EB 45%, #0f766e 100%)",
+          background: "linear-gradient(135deg, #1e3a8a 0%, #1E4E8C 45%, #0f766e 100%)",
         }}
       >
         {/* دوائر زخرفية */}
@@ -1240,7 +1240,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
       </section>
 
       {/* ─── Footer ──────────────────────────────────────────────────────────── */}
-      <footer className="py-10" style={{ background: "#0F172A" }}>
+      <footer className="py-10" style={{ background: "#243B53" }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div
             className="py-5 mb-5"

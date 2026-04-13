@@ -24,7 +24,7 @@ export default function StepIndicator({ currentStep }: StepIndicatorProps) {
                   currentStep > step.number
                     ? "bg-emerald-600 text-white"
                     : currentStep === step.number
-                    ? "bg-[#2563EB] text-white ring-4 ring-indigo-100"
+                    ? "bg-[#1E4E8C] text-white ring-4 ring-indigo-100"
                     : "bg-slate-200 text-slate-500"
                 }`}
               >

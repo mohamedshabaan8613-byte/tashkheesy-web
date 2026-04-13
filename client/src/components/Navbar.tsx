@@ -18,6 +18,7 @@
 
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { APP_LOGO, APP_TITLE } from "@/const";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -54,12 +55,14 @@ export default function Navbar() {
             className="flex items-center gap-2 group"
             aria-label="تشخيصي | Tashkheesy — الصفحة الرئيسية"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-teal-500 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-              <span className="text-white font-bold text-sm" style={{ fontFamily: "'Cairo', sans-serif" }}>ت</span>
-            </div>
+            <img
+              src={APP_LOGO}
+              alt={APP_TITLE}
+              className="w-9 h-9 rounded-xl shadow-md group-hover:shadow-lg transition-shadow object-cover"
+            />
             <span
-              className="text-xl font-bold text-slate-900"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 800 }}
+              className="text-xl font-bold"
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 800, color: "#243B53" }}
             >
               تشخيصي
             </span>
@@ -71,7 +74,7 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-[#1E4E8C] hover:bg-[#DFF3F1]"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
               >
                 {link.label}
@@ -116,7 +119,7 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="block px-4 py-3 text-sm font-medium rounded-lg transition-colors text-slate-700 hover:text-blue-600 hover:bg-blue-50"
+                className="block px-4 py-3 text-sm font-medium rounded-lg transition-colors text-slate-700 hover:text-[#1E4E8C] hover:bg-[#DFF3F1]"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                 onClick={() => setMenuOpen(false)}
               >

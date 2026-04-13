@@ -1,9 +1,9 @@
 /*
  * تشخيصي FounderStory — قسم "لماذا بنينا تشخيصي"
- * Design: Light editorial — #F8FAFC background, warm accents
+ * Design: Light editorial — #F4EFE8 background, warm accents
  * Tone: Human, mission-driven, warm, credible, non-promotional
  * Purpose: يُجيب على سؤال المحكم والأسرة: لماذا يوجد هذا المنتج؟
- * Palette: consistent with platform — #0F172A text, #2563EB accent, #14B8A6 secondary
+ * Palette: consistent with platform — #243B53 text, #1E4E8C accent, #2BBDB6 secondary
  */
 import { useEffect, useRef, useState } from "react";
 import { Heart, Eye, Compass, ArrowLeft } from "lucide-react";
@@ -14,8 +14,8 @@ const pillars = [
     title: "كثير من الأسر تلاحظ — لكن لا تعرف من أين تبدأ",
     body:
       "الأهل يرون طفلهم يُعاني في القراءة أو يتشتت في الصف أو يبذل جهداً مضاعفاً دون نتيجة. لكن الخطوة التالية ليست واضحة — هل أتحدث مع المعلمة؟ هل أزور طبيباً؟ هل ما يحدث طبيعي؟",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "#BFDBFE",
   },
   {
@@ -23,8 +23,8 @@ const pillars = [
     title: "صعوبات التعلم تُفهَم في وقت متأخر جداً",
     body:
       "في كثير من الحالات، يمر الطفل بسنوات دراسية كاملة قبل أن يُفهَم ما يواجهه فعلاً. وفي هذه السنوات، يتراكم الإحساس بالإخفاق — وليس لأن الطفل لا يُحاول، بل لأن أحداً لم يُقدّم له الصورة الكاملة في الوقت المناسب.",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "#99F6E4",
   },
   {
@@ -32,7 +32,7 @@ const pillars = [
     title: "تشخيصي بُنيت لتكون الخطوة الأولى الأكثر وضوحاً",
     body:
       "لا نُصدر أحكاماً ولا نضع تصنيفات. نُقدّم فحصاً أولياً مدعوماً بالذكاء الاصطناعي يُساعد الأسرة على فهم ما تلاحظه، ويُوجّهها نحو الدعم المناسب — بلغة عربية دافئة، وبسرية تامة، وبدون قلق.",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     border: "#FDE68A",
   },
@@ -61,12 +61,12 @@ export default function FounderStory() {
       ref={sectionRef}
       dir="rtl"
       className="relative overflow-hidden py-24"
-      style={{ background: "#F8FAFC" }}
+      style={{ background: "#F4EFE8" }}
     >
       {/* Subtle top border accent */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, #2563EB30, #14B8A630, transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, #1E4E8C30, #2BBDB630, transparent)" }}
       />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,7 +85,7 @@ export default function FounderStory() {
           >
             <span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#2563EB" }}
+              style={{ background: "#1E4E8C" }}
             />
             <span
               className="text-xs font-semibold text-blue-700"
@@ -113,7 +113,7 @@ export default function FounderStory() {
             <br />
             <span
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -187,7 +187,7 @@ export default function FounderStory() {
           <div
             className="rounded-3xl p-8 relative overflow-hidden"
             style={{
-              background: "linear-gradient(135deg, #0F172A 0%, #1E3A5F 60%, #0F4C4C 100%)",
+              background: "linear-gradient(135deg, #243B53 0%, #1E3A5F 60%, #0F4C4C 100%)",
               boxShadow: "0 20px 60px rgba(15,23,42,0.18)",
             }}
           >
@@ -301,7 +301,7 @@ export default function FounderStory() {
       {/* Subtle bottom border accent */}
       <div
         className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, #14B8A630, #2563EB30, transparent)" }}
+        style={{ background: "linear-gradient(90deg, transparent, #2BBDB630, #1E4E8C30, transparent)" }}
       />
     </section>
   );

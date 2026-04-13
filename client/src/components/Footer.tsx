@@ -1,7 +1,7 @@
 /*
  * تشخيصي | Tashkheesy — Footer
  * روابط حقيقية لـ FAQ والخصوصية + شريط الثقة + تصميم محسّن
- * Palette: #0A0F1E bg · white text · #2563EB accent · #14B8A6 secondary
+ * Palette: #0A0F1E bg · white text · #1E4E8C accent · #2BBDB6 secondary
  * Updated: 2026 — removed broken social links, softened privacy claim
  */
 import { Link } from "wouter";
@@ -9,10 +9,10 @@ import { Shield, Lock, Heart, Award } from "lucide-react";
 
 // ─── إشارات الثقة ──────────────────────────────────────────────────────────────
 const trustSignals = [
-  { icon: Shield, text: "نحمي بياناتك بعناية", color: "#14B8A6" },
-  { icon: Lock, text: "لا مشاركة مع أطراف ثالثة", color: "#2563EB" },
-  { icon: Heart, text: "مراجعة من متخصصين معتمدين", color: "#F59E0B" },
-  { icon: Award, text: "منصة عربية موثوقة", color: "#14B8A6" },
+  { icon: Shield, text: "نحمي بياناتك بعناية", color: "#2BBDB6" },
+  { icon: Lock, text: "لا مشاركة مع أطراف ثالثة", color: "#1E4E8C" },
+  { icon: Heart, text: "مراجعة من متخصصين معتمدين", color: "#F4C46A" },
+  { icon: Award, text: "منصة عربية موثوقة", color: "#2BBDB6" },
 ];
 
 // ─── روابط المنصة (جميعها موجودة فعلياً) ──────────────────────────────────────
@@ -76,7 +76,7 @@ export default function Footer() {
             <div className="flex items-center gap-2.5 mb-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #2563EB, #14B8A6)" }}
+                style={{ background: "linear-gradient(135deg, #1E4E8C, #2BBDB6)" }}
               >
                 <span
                   className="text-white font-bold text-base"

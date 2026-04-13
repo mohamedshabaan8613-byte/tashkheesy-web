@@ -3,7 +3,7 @@
  *
  * التصميم: Editorial Healthcare Calm
  * الهوية البصرية: Cairo + IBM Plex Sans Arabic
- * اللوحة اللونية: #F8FAFC خلفية | #14B8A6 أخضر | #2563EB أزرق
+ * اللوحة اللونية: #F4EFE8 خلفية | #2BBDB6 أخضر | #1E4E8C أزرق
  *
  * التدفق:
  *   /self-assessment → يُدخل المستخدم اسمه وعمره → /screening-intro/self?name=...&age=...
@@ -30,9 +30,9 @@ import {
 
 // ─── محاور الفحص الستة ────────────────────────────────────────────────────────
 const SCREENING_AREAS = [
-  { icon: BookOpen, label: "القراءة والفهم", color: "#2563EB", bg: "#EFF6FF" },
-  { icon: Pencil,   label: "الكتابة والإملاء", color: "#14B8A6", bg: "#F0FDFA" },
-  { icon: Zap,      label: "الانتباه والتركيز", color: "#F59E0B", bg: "#FFFBEB" },
+  { icon: BookOpen, label: "القراءة والفهم", color: "#1E4E8C", bg: "#DFF3F1" },
+  { icon: Pencil,   label: "الكتابة والإملاء", color: "#2BBDB6", bg: "#DFF3F1" },
+  { icon: Zap,      label: "الانتباه والتركيز", color: "#F4C46A", bg: "#FFFBEB" },
   { icon: Brain,    label: "الذاكرة والمعالجة", color: "#8B5CF6", bg: "#F5F3FF" },
   { icon: Users,    label: "المهارات الاجتماعية", color: "#059669", bg: "#ECFDF5" },
   { icon: Hand,     label: "المهارات الحركية", color: "#DC2626", bg: "#FEF2F2" },
@@ -100,7 +100,7 @@ export default function SelfAssessment() {
     <div
       className="min-h-screen flex flex-col"
       dir="rtl"
-      style={{ background: "linear-gradient(160deg, #F8FAFC 0%, #F0FDFA 50%, #EFF6FF 100%)" }}
+      style={{ background: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%)" }}
     >
       {/* ─── شريط التنقل ─────────────────────────────────────────────────── */}
       <header
@@ -131,7 +131,7 @@ export default function SelfAssessment() {
         >
           <span
             className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #14B8A6 0%, #2563EB 100%)" }}
+            style={{ background: "linear-gradient(135deg, #2BBDB6 0%, #1E4E8C 100%)" }}
             aria-hidden="true"
           >
             <Brain size={14} style={{ color: "white" }} />
@@ -157,12 +157,12 @@ export default function SelfAssessment() {
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
               style={{
-                background: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
+                background: "linear-gradient(135deg, #DFF3F1 0%, #CCFBF1 100%)",
                 border: "1px solid rgba(20,184,166,0.2)",
               }}
               aria-hidden="true"
             >
-              <User size={28} style={{ color: "#14B8A6" }} />
+              <User size={28} style={{ color: "#2BBDB6" }} />
             </div>
 
             {/* شارة */}
@@ -232,12 +232,12 @@ export default function SelfAssessment() {
                 className="w-full rounded-xl px-4 py-3 text-sm text-slate-800 outline-none transition-all duration-200"
                 style={{
                   fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  border: nameError ? "1.5px solid #EF4444" : "1.5px solid #E2E8F0",
-                  background: "#F8FAFC",
+                  border: nameError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7",
+                  background: "#F4EFE8",
                   boxShadow: "inset 0 1px 3px rgba(0,0,0,0.04)",
                 }}
-                onFocus={(e) => { e.target.style.border = "1.5px solid #14B8A6"; e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)"; }}
-                onBlur={(e) => { e.target.style.border = nameError ? "1.5px solid #EF4444" : "1.5px solid #E2E8F0"; e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)"; }}
+                onFocus={(e) => { e.target.style.border = "1.5px solid #2BBDB6"; e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)"; }}
+                onBlur={(e) => { e.target.style.border = nameError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7"; e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)"; }}
                 autoComplete="off"
                 aria-describedby={nameError ? "name-error" : undefined}
               />
@@ -268,12 +268,12 @@ export default function SelfAssessment() {
                 className="w-full rounded-xl px-4 py-3 text-sm text-slate-800 outline-none transition-all duration-200"
                 style={{
                   fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  border: ageError ? "1.5px solid #EF4444" : "1.5px solid #E2E8F0",
-                  background: "#F8FAFC",
+                  border: ageError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7",
+                  background: "#F4EFE8",
                   boxShadow: "inset 0 1px 3px rgba(0,0,0,0.04)",
                 }}
-                onFocus={(e) => { e.target.style.border = "1.5px solid #14B8A6"; e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)"; }}
-                onBlur={(e) => { e.target.style.border = ageError ? "1.5px solid #EF4444" : "1.5px solid #E2E8F0"; e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)"; }}
+                onFocus={(e) => { e.target.style.border = "1.5px solid #2BBDB6"; e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)"; }}
+                onBlur={(e) => { e.target.style.border = ageError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7"; e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)"; }}
                 aria-describedby={ageError ? "age-error" : "age-hint"}
               />
               {ageError ? (
@@ -290,7 +290,7 @@ export default function SelfAssessment() {
             {/* إشعار الخصوصية */}
             <div
               className="flex items-start gap-3 rounded-xl p-3.5 mb-6"
-              style={{ background: "#F0FDFA", border: "1px solid rgba(20,184,166,0.15)" }}
+              style={{ background: "#DFF3F1", border: "1px solid rgba(20,184,166,0.15)" }}
             >
               <Shield size={14} style={{ color: "#0D9488", flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />
               <p
@@ -306,7 +306,7 @@ export default function SelfAssessment() {
               type="submit"
               className="w-full flex items-center justify-center gap-2.5 rounded-2xl font-bold text-base transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
               style={{
-                background: "linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)",
+                background: "linear-gradient(135deg, #2BBDB6 0%, #0D9488 100%)",
                 color: "white",
                 fontFamily: "'Cairo', sans-serif",
                 fontWeight: 700,
@@ -325,7 +325,7 @@ export default function SelfAssessment() {
             className="rounded-2xl p-5"
             style={{
               background: "white",
-              border: "1px solid #F1F5F9",
+              border: "1px solid #DFF3F1",
               boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
             }}
           >
@@ -357,7 +357,7 @@ export default function SelfAssessment() {
             </div>
 
             {/* ضمانات الثقة */}
-            <div className="mt-4 pt-4" style={{ borderTop: "1px solid #F1F5F9" }}>
+            <div className="mt-4 pt-4" style={{ borderTop: "1px solid #DFF3F1" }}>
               <div className="flex flex-col gap-2">
                 {[
                   { icon: CheckCircle2, text: "الفحص لا يستغرق أكثر من ١٠ دقائق", color: "#059669" },

@@ -3,7 +3,7 @@
  *
  * التصميم: Editorial Healthcare Calm
  * الهوية البصرية: Cairo + IBM Plex Sans Arabic
- * اللوحة اللونية: #F8FAFC خلفية | #2563EB أزرق | #14B8A6 أخضر
+ * اللوحة اللونية: #F4EFE8 خلفية | #1E4E8C أزرق | #2BBDB6 أخضر
  *
  * المسارات:
  *   أقيّم طفلي  → /children  (المسار الحالي)
@@ -28,7 +28,7 @@ export default function AssessmentStart() {
     <div
       className="min-h-screen flex flex-col"
       dir="rtl"
-      style={{ background: "linear-gradient(160deg, #F8FAFC 0%, #EFF6FF 50%, #F0FDFA 100%)" }}
+      style={{ background: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%)" }}
     >
       {/* ─── شريط التنقل ─────────────────────────────────────────────────── */}
       <header
@@ -59,7 +59,7 @@ export default function AssessmentStart() {
         >
           <span
             className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)" }}
+            style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)" }}
             aria-hidden="true"
           >
             <Brain size={14} style={{ color: "white" }} />
@@ -87,10 +87,10 @@ export default function AssessmentStart() {
               border: "1px solid rgba(37,99,235,0.15)",
             }}
           >
-            <Sparkles size={13} style={{ color: "#2563EB" }} aria-hidden="true" />
+            <Sparkles size={13} style={{ color: "#1E4E8C" }} aria-hidden="true" />
             <span
               className="text-xs font-medium"
-              style={{ color: "#2563EB", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              style={{ color: "#1E4E8C", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
             >
               فحص أولي مجاني — لا يستغرق أكثر من 10 دقائق
             </span>
@@ -128,12 +128,12 @@ export default function AssessmentStart() {
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
               style={{
-                background: "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+                background: "linear-gradient(135deg, #DFF3F1 0%, #DBEAFE 100%)",
                 border: "1px solid rgba(37,99,235,0.15)",
               }}
               aria-hidden="true"
             >
-              <Users size={26} style={{ color: "#2563EB" }} />
+              <Users size={26} style={{ color: "#1E4E8C" }} />
             </div>
 
             {/* النص */}
@@ -157,8 +157,8 @@ export default function AssessmentStart() {
                   key={age}
                   className="text-xs px-3 py-1 rounded-full"
                   style={{
-                    background: "#EFF6FF",
-                    color: "#2563EB",
+                    background: "#DFF3F1",
+                    color: "#1E4E8C",
                     fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                     border: "1px solid rgba(37,99,235,0.15)",
                   }}
@@ -174,16 +174,16 @@ export default function AssessmentStart() {
             >
               <span
                 className="text-sm font-bold transition-colors duration-200"
-                style={{ color: "#2563EB", fontFamily: "'Cairo', sans-serif" }}
+                style={{ color: "#1E4E8C", fontFamily: "'Cairo', sans-serif" }}
               >
                 ابدأ تقييم طفلك
               </span>
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:translate-x-[-4px]"
-                style={{ background: "#EFF6FF" }}
+                style={{ background: "#DFF3F1" }}
                 aria-hidden="true"
               >
-                <ArrowLeft size={14} style={{ color: "#2563EB" }} />
+                <ArrowLeft size={14} style={{ color: "#1E4E8C" }} />
               </div>
             </div>
           </button>
@@ -204,12 +204,12 @@ export default function AssessmentStart() {
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
               style={{
-                background: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
+                background: "linear-gradient(135deg, #DFF3F1 0%, #CCFBF1 100%)",
                 border: "1px solid rgba(20,184,166,0.15)",
               }}
               aria-hidden="true"
             >
-              <User size={26} style={{ color: "#14B8A6" }} />
+              <User size={26} style={{ color: "#2BBDB6" }} />
             </div>
 
             {/* النص */}
@@ -233,7 +233,7 @@ export default function AssessmentStart() {
                   key={label}
                   className="text-xs px-3 py-1 rounded-full"
                   style={{
-                    background: "#F0FDFA",
+                    background: "#DFF3F1",
                     color: "#0D9488",
                     fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                     border: "1px solid rgba(20,184,166,0.15)",
@@ -254,7 +254,7 @@ export default function AssessmentStart() {
               </span>
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:translate-x-[-4px]"
-                style={{ background: "#F0FDFA" }}
+                style={{ background: "#DFF3F1" }}
                 aria-hidden="true"
               >
                 <ArrowLeft size={14} style={{ color: "#0D9488" }} />

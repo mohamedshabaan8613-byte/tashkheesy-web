@@ -3,7 +3,7 @@
  *
  * التصميم: Editorial Healthcare Calm
  * الهوية البصرية: Cairo + IBM Plex Sans Arabic
- * اللوحة اللونية: #F8FAFC خلفية | #2563EB أزرق | #14B8A6 أخضر
+ * اللوحة اللونية: #F4EFE8 خلفية | #1E4E8C أزرق | #2BBDB6 أخضر
  *
  * Flow: ScreeningResult → SpecialistsMatch (/specialists?pathType=...) → Booking (/booking?specialist=...)
  *
@@ -44,11 +44,11 @@ const LEARNING_SPECIALISTS = [
     sessionDuration: "٦٠ دقيقة",
     availability: "متاحة هذا الأسبوع",
     emoji: "👩‍🏫",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "rgba(37,99,235,0.15)",
     badge: "الأكثر طلباً",
-    badgeColor: "#2563EB",
+    badgeColor: "#1E4E8C",
   },
   {
     id: "sp2",
@@ -62,8 +62,8 @@ const LEARNING_SPECIALISTS = [
     sessionDuration: "٧٥ دقيقة",
     availability: "متاح الأسبوع القادم",
     emoji: "👨‍⚕️",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "rgba(20,184,166,0.15)",
     badge: "",
     badgeColor: "",
@@ -119,11 +119,11 @@ const ADHD_SPECIALISTS = [
     sessionDuration: "٦٠ دقيقة",
     availability: "متاحة هذا الأسبوع",
     emoji: "👩‍🏫",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "rgba(37,99,235,0.15)",
     badge: "الأكثر طلباً",
-    badgeColor: "#2563EB",
+    badgeColor: "#1E4E8C",
   },
   {
     id: "sp6",
@@ -137,8 +137,8 @@ const ADHD_SPECIALISTS = [
     sessionDuration: "٦٠ دقيقة",
     availability: "متاحة الأسبوع القادم",
     emoji: "👩‍⚕️",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "rgba(20,184,166,0.15)",
     badge: "",
     badgeColor: "",
@@ -184,7 +184,7 @@ export default function SpecialistsMatch() {
     <div
       className="min-h-screen flex flex-col"
       dir="rtl"
-      style={{ background: "#F8FAFC" }}
+      style={{ background: "#F4EFE8" }}
     >
       {/* ─── Header ───────────────────────────────────────────────────────────── */}
       <header
@@ -193,14 +193,14 @@ export default function SpecialistsMatch() {
           background: "rgba(248,250,252,0.92)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
-          borderColor: "#E2E8F0",
+          borderColor: "#D8E8E7",
         }}
       >
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <button
             onClick={() => window.history.back()}
             className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-blue-600"
-            style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+            style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
           >
             <ChevronLeft size={16} />
             العودة للنتيجة
@@ -213,11 +213,11 @@ export default function SpecialistsMatch() {
           >
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)" }}
+              style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)" }}
             >
               <Brain size={14} className="text-white" />
             </div>
-            <span className="font-black text-sm" style={{ color: "#0F172A" }}>تشخيصي</span>
+            <span className="font-black text-sm" style={{ color: "#243B53" }}>تشخيصي</span>
           </a>
 
           <div
@@ -243,10 +243,10 @@ export default function SpecialistsMatch() {
                 border: "1px solid rgba(37,99,235,0.15)",
               }}
             >
-              <Sparkles size={12} style={{ color: "#2563EB" }} />
+              <Sparkles size={12} style={{ color: "#1E4E8C" }} />
               <span
                 className="text-xs font-semibold"
-                style={{ color: "#2563EB", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                style={{ color: "#1E4E8C", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
               >
                 بناءً على مؤشرات {pathLabel}
               </span>
@@ -257,7 +257,7 @@ export default function SpecialistsMatch() {
               style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.3 }}
             >
               {childName
-                ? <>متخصصون يناسبون احتياجات <span style={{ color: "#2563EB" }}>{childName}</span></>
+                ? <>متخصصون يناسبون احتياجات <span style={{ color: "#1E4E8C" }}>{childName}</span></>
                 : <>متخصصون مقترحون بناءً على نتيجة فحصك</>
               }
             </h1>
@@ -331,7 +331,7 @@ export default function SpecialistsMatch() {
 
                       {/* Rating */}
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        <Star size={13} style={{ color: "#F59E0B", fill: "#F59E0B" }} />
+                        <Star size={13} style={{ color: "#F4C46A", fill: "#F4C46A" }} />
                         <span
                           className="text-sm font-bold text-slate-700"
                           style={{ fontFamily: "'Cairo', sans-serif" }}
@@ -391,7 +391,7 @@ export default function SpecialistsMatch() {
                       <div className="flex items-center gap-3">
                         <span
                           className="text-base font-black"
-                          style={{ color: "#0F172A", fontFamily: "'Cairo', sans-serif" }}
+                          style={{ color: "#243B53", fontFamily: "'Cairo', sans-serif" }}
                         >
                           {sp.sessionPrice}
                         </span>
@@ -419,7 +419,7 @@ export default function SpecialistsMatch() {
           <div
             className={`rounded-2xl p-5 mb-6 ${anim()}`}
             style={{
-              background: "linear-gradient(135deg, #F0FDFA 0%, #EFF6FF 100%)",
+              background: "linear-gradient(135deg, #DFF3F1 0%, #DFF3F1 100%)",
               border: "1px solid rgba(20,184,166,0.2)",
             }}
           >
@@ -443,7 +443,7 @@ export default function SpecialistsMatch() {
                       className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
                       style={{ background: "rgba(20,184,166,0.12)" }}
                     >
-                      <Icon size={12} style={{ color: "#14B8A6" }} />
+                      <Icon size={12} style={{ color: "#2BBDB6" }} />
                     </div>
                     <p
                       className="text-sm text-slate-600 leading-relaxed"
@@ -465,7 +465,7 @@ export default function SpecialistsMatch() {
               border: "1px solid rgba(37,99,235,0.1)",
             }}
           >
-            <Shield size={15} style={{ color: "#2563EB", flexShrink: 0, marginTop: "2px" }} />
+            <Shield size={15} style={{ color: "#1E4E8C", flexShrink: 0, marginTop: "2px" }} />
             <p
               className="text-xs text-slate-500 leading-relaxed"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}

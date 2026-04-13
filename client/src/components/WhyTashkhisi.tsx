@@ -12,29 +12,29 @@ const reasons = [
     icon: Lightbulb,
     title: "وضوح مبكر يُغيّر المسار",
     desc: "الفهم المبكر لصعوبات التعلم يُمكّن الأسرة من اتخاذ قرارات صحيحة قبل تراكم الفجوات الأكاديمية.",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
   },
   {
     icon: MapPin,
     title: "خطوتك الأولى الموثوقة",
     desc: "تشخيصي ليس تطبيقاً عشوائياً — بل مسار منظم مبني على أسس علمية وتوجيه من متخصصين.",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
   {
     icon: Languages,
     title: "تجربة عربية حقيقية",
     desc: "محتوى مكتوب بالعربية، يراعي السياق الثقافي، ويتحدث بلغة الأسرة العربية دون تعقيد.",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     icon: ArrowRightLeft,
     title: "من الحيرة إلى الفعل",
     desc: "نحوّل القلق والتساؤلات إلى خطوات واضحة وقابلة للتنفيذ — دون إرهاق أو تعقيد.",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
 ];
 
@@ -70,7 +70,7 @@ export default function WhyTashkhisi() {
       id="why-tashkhisi"
       ref={sectionRef}
       className="py-20 lg:py-28"
-      style={{ background: "#F8FAFC" }}
+      style={{ background: "#F4EFE8" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
@@ -86,7 +86,7 @@ export default function WhyTashkhisi() {
               لأن كل طفل{" "}
               <span
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -115,7 +115,7 @@ export default function WhyTashkhisi() {
                     style={{
                       fontFamily: "'Cairo', sans-serif",
                       fontWeight: 900,
-                      background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                      background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",

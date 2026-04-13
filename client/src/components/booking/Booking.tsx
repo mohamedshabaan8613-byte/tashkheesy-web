@@ -2,7 +2,7 @@
  * تشخيصي — Booking MVP Page
  * Editorial Healthcare style — Arabic-first
  * Full 4-step booking flow: Service → Specialist → Date/Time → Confirmation
- * Colors: #F8FAFC bg, #2563EB primary, #14B8A6 secondary, #F59E0B warm
+ * Colors: #F4EFE8 bg, #1E4E8C primary, #2BBDB6 secondary, #F4C46A warm
  * Fonts: Cairo (headings), IBM Plex Sans Arabic (body)
  * Static MVP — no backend required, realistic mock data
  */
@@ -93,8 +93,8 @@ const SERVICES: ServiceType[] = [
     duration: "٤٥ دقيقة",
     price: "مجانية للمرة الأولى",
     icon: MessageCircle,
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     badge: "مجانية",
   },
   {
@@ -106,8 +106,8 @@ const SERVICES: ServiceType[] = [
     duration: "٦٠ دقيقة",
     price: "٢٥٠ ريال",
     icon: Heart,
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     id: "specialist",
@@ -118,7 +118,7 @@ const SERVICES: ServiceType[] = [
     duration: "٩٠ دقيقة",
     price: "٤٥٠ ريال",
     icon: Brain,
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     badge: "الأكثر طلباً",
   },
@@ -294,7 +294,7 @@ function StepBar({ step }: { step: number }) {
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
               style={{
-                background: step > s.n ? "#14B8A6" : step === s.n ? "#2563EB" : "#E2E8F0",
+                background: step > s.n ? "#2BBDB6" : step === s.n ? "#1E4E8C" : "#D8E8E7",
                 color: step >= s.n ? "white" : "#94A3B8",
                 boxShadow: step === s.n ? "0 0 0 4px rgba(37,99,235,0.15)" : "none",
                 fontFamily: "'Cairo', sans-serif",
@@ -305,7 +305,7 @@ function StepBar({ step }: { step: number }) {
             <span
               className="text-xs mt-1.5 font-medium"
               style={{
-                color: step >= s.n ? "#0F172A" : "#94A3B8",
+                color: step >= s.n ? "#243B53" : "#94A3B8",
                 fontFamily: "'IBM Plex Sans Arabic', sans-serif",
               }}
             >
@@ -315,7 +315,7 @@ function StepBar({ step }: { step: number }) {
           {i < steps.length - 1 && (
             <div
               className="w-8 sm:w-16 lg:w-24 h-0.5 mx-0.5 sm:mx-1 -mt-5 transition-all duration-500"
-              style={{ background: step > s.n ? "#14B8A6" : "#E2E8F0" }}
+              style={{ background: step > s.n ? "#2BBDB6" : "#D8E8E7" }}
             />
           )}
         </div>
@@ -351,7 +351,7 @@ function Step1({ booking, setBooking }: { booking: BookingState; setBooking: Rea
               className="relative text-right rounded-2xl p-5 border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
               style={{
                 background: selected ? service.bg : "white",
-                borderColor: selected ? service.color : "#E2E8F0",
+                borderColor: selected ? service.color : "#D8E8E7",
                 boxShadow: selected ? `0 0 0 3px ${service.color}20` : undefined,
               }}
             >
@@ -428,7 +428,7 @@ function Step1({ booking, setBooking }: { booking: BookingState; setBooking: Rea
           disabled={!booking.service}
           className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-white font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
           style={{
-            background: booking.service ? "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)" : "#CBD5E1",
+            background: booking.service ? "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)" : "#CBD5E1",
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 700,
             boxShadow: booking.service ? "0 6px 20px rgba(37,99,235,0.3)" : "none",
@@ -467,8 +467,8 @@ function Step2({ booking, setBooking }: { booking: BookingState; setBooking: Rea
               onClick={() => setBooking((b) => ({ ...b, specialist: sp }))}
               className="w-full text-right rounded-2xl p-5 border-2 transition-all duration-200 hover:shadow-md"
               style={{
-                background: selected ? "#EFF6FF" : "white",
-                borderColor: selected ? "#2563EB" : "#E2E8F0",
+                background: selected ? "#DFF3F1" : "white",
+                borderColor: selected ? "#1E4E8C" : "#D8E8E7",
                 boxShadow: selected ? "0 0 0 3px rgba(37,99,235,0.1)" : undefined,
               }}
             >
@@ -551,8 +551,8 @@ function Step2({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                         key={f}
                         className="text-xs px-2.5 py-0.5 rounded-full font-medium"
                         style={{
-                          background: "#EFF6FF",
-                          color: "#2563EB",
+                          background: "#DFF3F1",
+                          color: "#1E4E8C",
                           fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                         }}
                       >
@@ -595,7 +595,7 @@ function Step2({ booking, setBooking }: { booking: BookingState; setBooking: Rea
           disabled={!booking.specialist}
           className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-white font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
           style={{
-            background: booking.specialist ? "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)" : "#CBD5E1",
+            background: booking.specialist ? "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)" : "#CBD5E1",
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 700,
             boxShadow: booking.specialist ? "0 6px 20px rgba(37,99,235,0.3)" : "none",
@@ -648,8 +648,8 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                   onClick={() => setBooking((b) => ({ ...b, date: d.date, time: null }))}
                   className="p-3 rounded-xl border-2 text-center transition-all duration-150 hover:border-blue-300"
                   style={{
-                    background: selected ? "#EFF6FF" : "white",
-                    borderColor: selected ? "#2563EB" : "#E2E8F0",
+                    background: selected ? "#DFF3F1" : "white",
+                    borderColor: selected ? "#1E4E8C" : "#D8E8E7",
                   }}
                 >
                   <div
@@ -661,7 +661,7 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                   <div
                     className="text-sm font-bold"
                     style={{
-                      color: selected ? "#2563EB" : "#0F172A",
+                      color: selected ? "#1E4E8C" : "#243B53",
                       fontFamily: "'Cairo', sans-serif",
                     }}
                   >
@@ -701,15 +701,15 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                   className="p-3 rounded-xl border-2 text-center transition-all duration-150"
                   style={{
                     background: !slot.available
-                      ? "#F8FAFC"
+                      ? "#F4EFE8"
                       : selected
-                      ? "#EFF6FF"
+                      ? "#DFF3F1"
                       : "white",
                     borderColor: !slot.available
-                      ? "#E2E8F0"
+                      ? "#D8E8E7"
                       : selected
-                      ? "#2563EB"
-                      : "#E2E8F0",
+                      ? "#1E4E8C"
+                      : "#D8E8E7",
                     opacity: !slot.available ? 0.5 : 1,
                     cursor: !slot.available ? "not-allowed" : "pointer",
                   }}
@@ -717,7 +717,7 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                   <div
                     className="text-sm font-medium"
                     style={{
-                      color: !slot.available ? "#94A3B8" : selected ? "#2563EB" : "#0F172A",
+                      color: !slot.available ? "#94A3B8" : selected ? "#1E4E8C" : "#243B53",
                       fontFamily: "'Cairo', sans-serif",
                     }}
                   >
@@ -738,7 +738,7 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
       {/* User Info Form */}
       <div
         className="rounded-2xl border border-slate-200 overflow-hidden mb-6"
-        style={{ background: "#F8FAFC" }}
+        style={{ background: "#F4EFE8" }}
       >
         <button
           onClick={() => setShowForm(!showForm)}
@@ -843,7 +843,7 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
           className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:-translate-y-0.5"
           style={{
             background: canProceed
-              ? "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)"
+              ? "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)"
               : "#CBD5E1",
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 700,
@@ -895,11 +895,11 @@ function Step4({
         {/* Header */}
         <div
           className="px-5 py-4 flex items-center gap-3"
-          style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 100%)", borderBottom: "1px solid #E2E8F0" }}
+          style={{ background: "linear-gradient(135deg, #DFF3F1 0%, #DFF3F1 100%)", borderBottom: "1px solid #D8E8E7" }}
         >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "#2563EB" }}
+            style={{ background: "#1E4E8C" }}
           >
             <Calendar size={20} className="text-white" />
           </div>
@@ -919,9 +919,9 @@ function Step4({
         {/* Details */}
         <div className="divide-y divide-slate-100">
           {[
-            { label: "نوع الجلسة", value: booking.service?.title || "", icon: Sparkles, color: "#2563EB" },
-            { label: "المتخصص", value: booking.specialist?.name || "", sub: booking.specialist?.title, icon: User, color: "#14B8A6" },
-            { label: "التاريخ", value: dateObj ? `${dateObj.day}، ${dateObj.label}` : "", icon: Calendar, color: "#F59E0B" },
+            { label: "نوع الجلسة", value: booking.service?.title || "", icon: Sparkles, color: "#1E4E8C" },
+            { label: "المتخصص", value: booking.specialist?.name || "", sub: booking.specialist?.title, icon: User, color: "#2BBDB6" },
+            { label: "التاريخ", value: dateObj ? `${dateObj.day}، ${dateObj.label}` : "", icon: Calendar, color: "#F4C46A" },
             { label: "الوقت", value: timeLabel, icon: Clock, color: "#8B5CF6" },
             { label: "المدة", value: booking.service?.duration || "", icon: Clock, color: "#64748B" },
             { label: "الاسم", value: booking.name, icon: User, color: "#64748B" },
@@ -985,14 +985,14 @@ function Step4({
       {/* Agreement */}
       <div
         className="flex items-start gap-3 p-4 rounded-xl mb-6 cursor-pointer"
-        style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+        style={{ background: "#F4EFE8", border: "1px solid #D8E8E7" }}
         onClick={() => setAgreed(!agreed)}
       >
         <div
           className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 transition-all"
           style={{
-            background: agreed ? "#2563EB" : "white",
-            border: `2px solid ${agreed ? "#2563EB" : "#CBD5E1"}`,
+            background: agreed ? "#1E4E8C" : "white",
+            border: `2px solid ${agreed ? "#1E4E8C" : "#CBD5E1"}`,
           }}
         >
           {agreed && <Check size={12} className="text-white" />}
@@ -1028,7 +1028,7 @@ function Step4({
           className="flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-black text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
           style={{
             background: agreed
-              ? "linear-gradient(135deg, #14B8A6 0%, #0f766e 100%)"
+              ? "linear-gradient(135deg, #2BBDB6 0%, #0f766e 100%)"
               : "#CBD5E1",
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 800,
@@ -1081,8 +1081,8 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
         <span
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold"
           style={{
-            background: "#EFF6FF",
-            color: "#2563EB",
+            background: "#DFF3F1",
+            color: "#1E4E8C",
             border: "1px solid #BFDBFE",
             fontFamily: "'IBM Plex Sans Arabic', sans-serif",
             letterSpacing: "0.02em",
@@ -1090,7 +1090,7 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
         >
           <span
             className="w-2 h-2 rounded-full"
-            style={{ background: "#2563EB", animation: "pulse 2s infinite" }}
+            style={{ background: "#1E4E8C", animation: "pulse 2s infinite" }}
           />
           تم استلام طلب الحجز
         </span>
@@ -1101,7 +1101,7 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center"
           style={{
-            background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+            background: "linear-gradient(135deg, #1E4E8C 0%, #1A3F73 100%)",
             boxShadow: "0 12px 40px rgba(37,99,235,0.25)",
           }}
         >
@@ -1119,7 +1119,7 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
       {/* Reference number */}
       <div
         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl mb-3"
-        style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+        style={{ background: "#F4EFE8", border: "1px solid #D8E8E7" }}
       >
         <span className="text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
           رقم المرجع
@@ -1148,7 +1148,7 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
         {/* Card header */}
         <div
           className="px-5 py-3 flex items-center justify-between"
-          style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 100%)", borderBottom: "1px solid #BFDBFE" }}
+          style={{ background: "linear-gradient(135deg, #DFF3F1 0%, #DFF3F1 100%)", borderBottom: "1px solid #BFDBFE" }}
         >
           <span
             className="text-xs font-bold text-blue-700"
@@ -1215,12 +1215,12 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
           {[
             {
               step: "١",
-              color: "#2563EB",
+              color: "#1E4E8C",
               text: "سيتواصل معك المتخصص خلال 24 ساعة لتأكيد الموعد وإرسال تفاصيل الجلسة",
             },
             {
               step: "٢",
-              color: "#14B8A6",
+              color: "#2BBDB6",
               text: "ستتلقى تذكيراً بالموعد قبل يوم من الجلسة لتكون مستعداً",
             },
             {
@@ -1250,11 +1250,11 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
       {/* Trust strip */}
       <div
         className="max-w-md mx-auto flex flex-wrap justify-center gap-5 mb-8 px-4 py-3 rounded-xl"
-        style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+        style={{ background: "#F4EFE8", border: "1px solid #D8E8E7" }}
       >
         {[
-          { icon: Shield, text: "سرية تامة", color: "#14B8A6" },
-          { icon: Award, text: "متخصصون معتمدون", color: "#2563EB" },
+          { icon: Shield, text: "سرية تامة", color: "#2BBDB6" },
+          { icon: Award, text: "متخصصون معتمدون", color: "#1E4E8C" },
           { icon: MessageCircle, text: "تواصل خلال 24 ساعة", color: "#8B5CF6" },
         ].map((item, i) => {
           const Icon = item.icon;
@@ -1278,7 +1278,7 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
           href="/"
           className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all hover:-translate-y-0.5 w-full sm:w-auto"
           style={{
-            background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
+            background: "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)",
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 700,
             boxShadow: "0 6px 20px rgba(37,99,235,0.3)",
@@ -1311,7 +1311,7 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
 function FAQSection() {
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <section className="py-16 lg:py-20" style={{ background: "#F8FAFC" }}>
+    <section className="py-16 lg:py-20" style={{ background: "#F4EFE8" }}>
       <div className="max-w-2xl mx-auto px-4">
         <div className="text-center mb-10">
           <h2
@@ -1331,7 +1331,7 @@ function FAQSection() {
               className="rounded-2xl overflow-hidden border transition-all duration-200"
               style={{
                 background: "white",
-                borderColor: open === i ? "#BFDBFE" : "#E2E8F0",
+                borderColor: open === i ? "#BFDBFE" : "#D8E8E7",
               }}
             >
               <button
@@ -1346,7 +1346,7 @@ function FAQSection() {
                 </span>
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mr-2 transition-all"
-                  style={{ background: open === i ? "#EFF6FF" : "#F8FAFC" }}
+                  style={{ background: open === i ? "#DFF3F1" : "#F4EFE8" }}
                 >
                   {open === i ? (
                     <ChevronUp size={15} className="text-blue-600" />
@@ -1394,13 +1394,13 @@ export default function Booking() {
   }, [booking.step, confirmed]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#F8FAFC", direction: "rtl" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#F4EFE8", direction: "rtl" }}>
       <Navbar />
 
       {/* Hero */}
       <section
         className="pt-28 pb-10 relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #F8FAFC 0%, #EFF6FF 50%, #F0FDFA 100%)" }}
+        style={{ background: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%)" }}
       >
         {/* Decorative blobs */}
         <div
@@ -1443,7 +1443,7 @@ export default function Booking() {
               احجز جلستك مع{" "}
               <span
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -1473,7 +1473,7 @@ export default function Booking() {
                   <div
                     key={i}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-full"
-                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #E2E8F0" }}
+                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #D8E8E7" }}
                   >
                     <Icon size={13} className="text-teal-500" />
                     <span
@@ -1502,7 +1502,7 @@ export default function Booking() {
               <AnimatedSection delay={100}>
                 <div
                   className="rounded-3xl p-6 sm:p-8"
-                  style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #E2E8F0" }}
+                  style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #D8E8E7" }}
                 >
                   {booking.step === 1 && <Step1 booking={booking} setBooking={setBooking} />}
                   {booking.step === 2 && <Step2 booking={booking} setBooking={setBooking} />}
@@ -1521,7 +1521,7 @@ export default function Booking() {
             <AnimatedSection>
               <div
                 className="rounded-3xl p-6 sm:p-10"
-                style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #E2E8F0" }}
+                style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #D8E8E7" }}
               >
                 <ConfirmationScreen booking={booking} />
               </div>

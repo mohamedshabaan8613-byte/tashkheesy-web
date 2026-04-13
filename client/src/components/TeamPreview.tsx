@@ -10,13 +10,13 @@ export default function TeamPreview() {
         <div className="flex flex-col md:flex-row items-center gap-12">
           {/* Content */}
           <div className="flex-1 text-right">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#EFF6FF] px-4 py-1.5 text-sm font-medium text-[#2563EB] mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#DFF3F1] px-4 py-1.5 text-sm font-medium text-[#1E4E8C] mb-6">
               <Users className="w-4 h-4" />
               <span>فريقنا من الخبراء</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6 leading-tight">
               نخبة من الأخصائيين المعتمدين <br />
-              <span className="text-[#2563EB]">في خدمتك وخدمة طفلك</span>
+              <span className="text-[#1E4E8C]">في خدمتك وخدمة طفلك</span>
             </h2>
             <p className="text-lg text-slate-600 mb-8 leading-relaxed">
               يضم فريقنا نخبة من الأخصائيين الحاصلين على درجات الدكتوراه والماجستير في التربية الخاصة وصعوبات التعلم، مع خبرات عملية تتجاوز 15 عاماً في التشخيص والتقييم.
@@ -55,8 +55,8 @@ export default function TeamPreview() {
             <div className="grid grid-cols-2 gap-4">
               <Card className="border-none shadow-xl shadow-indigo-100/50 bg-white">
                 <CardContent className="p-8 text-center">
-                  <div className="w-12 h-12 bg-[#EFF6FF] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-6 h-6 text-[#2563EB]" />
+                  <div className="w-12 h-12 bg-[#DFF3F1] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-6 h-6 text-[#1E4E8C]" />
                   </div>
                   <div className="text-3xl font-bold text-slate-900 mb-1">4</div>
                   <div className="text-sm text-slate-500 font-medium">أخصائيين معتمدين</div>

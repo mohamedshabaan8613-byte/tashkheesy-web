@@ -42,22 +42,22 @@
   --color-sidebar-ring: var(--sidebar-ring);
   
   /* ── تشخيصي Brand Tokens ─────────────────────────────────── */
-  --ts-bg:         #F8FAFC;
+  --ts-bg:         #F4EFE8;
   --ts-surface:    #FFFFFF;
-  --ts-text-primary:   #0F172A;
-  --ts-text-secondary: #475569;
-  --ts-accent-primary: #2563EB;
-  --ts-accent-secondary: #14B8A6;
-  --ts-accent-warm:    #F59E0B;
-  --ts-border:     #E2E8F0;
-  --ts-border-light: #F1F5F9;
+  --ts-text-primary:   #243B53;
+  --ts-text-secondary: #4A6278;
+  --ts-accent-primary: #1E4E8C;
+  --ts-accent-secondary: #2BBDB6;
+  --ts-accent-warm:    #F4C46A;
+  --ts-border:     #D8E8E7;
+  --ts-border-light: #DFF3F1;
 }
 
 :root {
-  /* ── Primary mapped to تشخيصي blue #2563EB ─── */
-  --primary: oklch(0.488 0.243 264.376);
+  /* ── Primary mapped to تشخيصي blue #1E4E8C ─── */
+  --primary: oklch(0.38 0.12 250);
   --primary-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.38 0.12 250);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --chart-1: oklch(0.75 0.12 220);
   --chart-2: oklch(0.62 0.18 220);
@@ -65,8 +65,8 @@
   --chart-4: oklch(0.42 0.24 220);
   --chart-5: oklch(0.35 0.24 220);
   --radius: 0.75rem;
-  /* ── Background: #F8FAFC ─── */
-  --background: oklch(0.988 0.003 247.839);
+  /* ── Background: #F4EFE8 ─── */
+  --background: oklch(0.955 0.012 60);
   --foreground: oklch(0.129 0.042 264.695);
   /* ── Card: #FFFFFF ─── */
   --card: oklch(1 0 0);
@@ -83,7 +83,7 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.488 0.243 264.376);
+  --ring: oklch(0.38 0.12 250);
   --sidebar: oklch(0.985 0.002 247.839);
   --sidebar-foreground: oklch(0.129 0.042 264.695);
   --sidebar-accent: oklch(0.968 0.007 247.896);
@@ -93,7 +93,7 @@
 }
 
 .dark {
-  --primary: oklch(0.488 0.243 264.376);
+  --primary: oklch(0.38 0.12 250);
   --primary-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.55 0.22 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -113,7 +113,7 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
+  --ring: oklch(0.38 0.12 250);
   --chart-1: oklch(0.75 0.12 220);
   --chart-2: oklch(0.62 0.18 220);
   --chart-3: oklch(0.52 0.22 220);
@@ -135,30 +135,30 @@
     @apply bg-background text-foreground;
     font-family: 'Cairo', 'IBM Plex Sans Arabic', sans-serif;
     direction: rtl;
-    background-color: #F8FAFC;
-    color: #0F172A;
+    background-color: #F4EFE8;
+    color: #243B53;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   h1 {
     font-family: 'Cairo', sans-serif;
     font-weight: 800;
-    color: #0F172A;
+    color: #243B53;
     line-height: 1.2;
   }
   h2 {
     font-family: 'Cairo', sans-serif;
     font-weight: 700;
-    color: #0F172A;
+    color: #243B53;
     line-height: 1.3;
   }
   h3, h4, h5, h6 {
     font-family: 'Cairo', sans-serif;
     font-weight: 600;
-    color: #0F172A;
+    color: #243B53;
   }
   p {
-    color: #475569;
+    color: #4A6278;
     line-height: 1.75;
   }
   button:not(:disabled),
@@ -206,15 +206,15 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: #F8FAFC;
+    background-color: #F4EFE8;
   }
 
   /* ── Page Header — موحَّد لجميع الصفحات ─────────────────── */
   .ts-page-header {
     padding-top: 4rem;
     padding-bottom: 4rem;
-    background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 50%, #F0FDFA 100%);
-    border-bottom: 1px solid #E2E8F0;
+    background: linear-gradient(135deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%);
+    border-bottom: 1px solid #D8E8E7;
     position: relative;
     overflow: hidden;
   }
@@ -233,14 +233,14 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.08em;
-    color: #2563EB;
+    color: #1E4E8C;
     text-transform: uppercase;
   }
 
   /* ── Premium Cards ─────────────────────────────────────── */
   .ts-card {
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #D8E8E7;
     border-radius: 1rem;
     box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.03);
     transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
@@ -252,7 +252,7 @@
   }
   .ts-card-featured {
     background: #FFFFFF;
-    border: 2px solid #2563EB;
+    border: 2px solid #1E4E8C;
     border-radius: 1rem;
     box-shadow: 0 4px 16px rgba(37,99,235,0.12), 0 1px 4px rgba(37,99,235,0.08);
   }
@@ -264,7 +264,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.75rem;
-    background: #2563EB;
+    background: #1E4E8C;
     color: #FFFFFF;
     font-family: 'Cairo', sans-serif;
     font-weight: 600;
@@ -277,7 +277,7 @@
     cursor: pointer;
   }
   .ts-btn-primary:hover {
-    background: #1D4ED8;
+    background: #1A3F73;
     box-shadow: 0 4px 16px rgba(37,99,235,0.35);
     transform: translateY(-1px);
   }
@@ -293,18 +293,18 @@
     gap: 0.5rem;
     padding: 0.75rem 1.75rem;
     background: transparent;
-    color: #2563EB;
+    color: #1E4E8C;
     font-family: 'Cairo', sans-serif;
     font-weight: 600;
     font-size: 0.9375rem;
     border-radius: 0.75rem;
-    border: 1.5px solid #2563EB;
+    border: 1.5px solid #1E4E8C;
     transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     text-decoration: none;
     cursor: pointer;
   }
   .ts-btn-secondary:hover {
-    background: #EFF6FF;
+    background: #DFF3F1;
     box-shadow: 0 2px 8px rgba(37,99,235,0.1);
   }
 
@@ -314,7 +314,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.75rem;
-    background: #14B8A6;
+    background: #2BBDB6;
     color: #FFFFFF;
     font-family: 'Cairo', sans-serif;
     font-weight: 600;
@@ -337,22 +337,22 @@
     width: 3rem;
     height: 3rem;
     border-radius: 0.875rem;
-    background: #EFF6FF;
+    background: #DFF3F1;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #2563EB;
+    color: #1E4E8C;
     flex-shrink: 0;
   }
   .ts-icon-teal {
     width: 3rem;
     height: 3rem;
     border-radius: 0.875rem;
-    background: #F0FDFA;
+    background: #DFF3F1;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #14B8A6;
+    color: #2BBDB6;
     flex-shrink: 0;
   }
   .ts-icon-amber {
@@ -363,18 +363,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #F59E0B;
+    color: #F4C46A;
     flex-shrink: 0;
   }
   .ts-icon-slate {
     width: 3rem;
     height: 3rem;
     border-radius: 0.875rem;
-    background: #F8FAFC;
+    background: #F4EFE8;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #475569;
+    color: #4A6278;
     flex-shrink: 0;
   }
 
@@ -384,7 +384,7 @@
     align-items: center;
     gap: 0.375rem;
     padding: 0.375rem 0.875rem;
-    background: #F0FDFA;
+    background: #DFF3F1;
     border: 1px solid #99F6E4;
     border-radius: 2rem;
     color: #0D9488;
@@ -396,10 +396,10 @@
     align-items: center;
     gap: 0.375rem;
     padding: 0.375rem 0.875rem;
-    background: #EFF6FF;
+    background: #DFF3F1;
     border: 1px solid #BFDBFE;
     border-radius: 2rem;
-    color: #2563EB;
+    color: #1E4E8C;
     font-size: 0.8125rem;
     font-weight: 600;
   }
@@ -408,7 +408,7 @@
   .ts-section-divider {
     width: 3rem;
     height: 3px;
-    background: linear-gradient(90deg, #2563EB, #14B8A6);
+    background: linear-gradient(90deg, #1E4E8C, #2BBDB6);
     border-radius: 2px;
     margin-bottom: 1.5rem;
   }
@@ -429,7 +429,7 @@
 
   /* ── CTA Section ─────────────────────────────────────────── */
   .ts-cta-section {
-    background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #1D4ED8 100%);
+    background: linear-gradient(135deg, #1A3F73 0%, #1E4E8C 50%, #1A3F73 100%);
     border-radius: 1.5rem;
     padding: 3rem 2rem;
     color: #FFFFFF;
@@ -451,7 +451,7 @@
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+    background: linear-gradient(135deg, #1E4E8C, #1A3F73);
     color: #FFFFFF;
     font-weight: 700;
     font-size: 1rem;
@@ -465,7 +465,7 @@
   /* ── Stat Card ─────────────────────────────────────────────── */
   .ts-stat-card {
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #D8E8E7;
     border-radius: 1rem;
     padding: 1.5rem;
     text-align: center;
@@ -475,13 +475,13 @@
     font-family: 'Cairo', sans-serif;
     font-size: 2.25rem;
     font-weight: 800;
-    color: #2563EB;
+    color: #1E4E8C;
     line-height: 1;
     margin-bottom: 0.25rem;
   }
   .ts-stat-label {
     font-size: 0.875rem;
-    color: #475569;
+    color: #4A6278;
     font-weight: 500;
   }
 
@@ -504,7 +504,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.75rem;
-    background: #2563EB;
+    background: #1E4E8C;
     color: #FFFFFF;
     font-family: 'Cairo', sans-serif;
     font-weight: 600;
@@ -518,7 +518,7 @@
   }
   .tashkhisi-btn-primary:hover,
   .tashkheesy-btn-primary:hover {
-    background: #1D4ED8;
+    background: #1A3F73;
     box-shadow: 0 4px 16px rgba(37,99,235,0.35);
     transform: translateY(-1px);
   }
@@ -530,19 +530,19 @@
     gap: 0.5rem;
     padding: 0.75rem 1.75rem;
     background: transparent;
-    color: #2563EB;
+    color: #1E4E8C;
     font-family: 'Cairo', sans-serif;
     font-weight: 600;
     font-size: 0.9375rem;
     border-radius: 0.75rem;
-    border: 1.5px solid #2563EB;
+    border: 1.5px solid #1E4E8C;
     transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     text-decoration: none;
     cursor: pointer;
   }
   .tashkhisi-btn-outline:hover,
   .tashkheesy-btn-outline:hover {
-    background: #EFF6FF;
+    background: #DFF3F1;
     box-shadow: 0 2px 8px rgba(37,99,235,0.1);
   }
 
@@ -550,13 +550,13 @@
   /* Legacy alias — kept for backward compat, prefer .ts-gradient-text */
   .tashkhisi-gradient-text,
   .tashkheesy-gradient-text {
-    background: linear-gradient(135deg, #2563EB 0%, #14B8A6 100%);
+    background: linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .ts-gradient-text-warm {
-    background: linear-gradient(135deg, #2563EB 0%, #F59E0B 100%);
+    background: linear-gradient(135deg, #1E4E8C 0%, #F4C46A 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -565,7 +565,7 @@
   /* ── Accordion ─────────────────────────────────────────── */
   .ts-accordion-item {
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #D8E8E7;
     border-radius: 0.875rem;
     overflow: hidden;
     margin-bottom: 0.75rem;
@@ -576,7 +576,7 @@
     box-shadow: 0 2px 8px rgba(37,99,235,0.06);
   }
   .ts-accordion-item[data-state="open"] {
-    border-color: #2563EB;
+    border-color: #1E4E8C;
     box-shadow: 0 2px 12px rgba(37,99,235,0.1);
   }
 
@@ -585,16 +585,16 @@
     width: 100%;
     padding: 0.75rem 1rem;
     background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
+    border: 1.5px solid #D8E8E7;
     border-radius: 0.75rem;
-    color: #0F172A;
+    color: #243B53;
     font-family: 'Cairo', sans-serif;
     font-size: 0.9375rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     outline: none;
   }
   .ts-input:focus {
-    border-color: #2563EB;
+    border-color: #1E4E8C;
     box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
   }
   .ts-input::placeholder {
@@ -604,13 +604,13 @@
   /* ── Progress Bar ─────────────────────────────────────────── */
   .ts-progress-track {
     height: 0.5rem;
-    background: #E2E8F0;
+    background: #D8E8E7;
     border-radius: 2rem;
     overflow: hidden;
   }
   .ts-progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #2563EB, #14B8A6);
+    background: linear-gradient(90deg, #1E4E8C, #2BBDB6);
     border-radius: 2rem;
     transition: width 0.6s ease;
   }
@@ -624,7 +624,7 @@
     position: absolute;
     inset: -1px;
     border-radius: 1.125rem;
-    background: linear-gradient(135deg, #2563EB, #14B8A6);
+    background: linear-gradient(135deg, #1E4E8C, #2BBDB6);
     z-index: -1;
   }
 

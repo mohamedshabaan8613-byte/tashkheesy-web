@@ -16,8 +16,8 @@ const steps = [
     title: "أجب على أسئلة الفحص",
     desc: "فحص منظم وموجَّه يستغرق ١٥ دقيقة فقط، مصمم بعناية من قِبل متخصصين في صعوبات التعلم والانتباه.",
     detail: "يشمل الفحص: القراءة، الكتابة، الحساب، الانتباه، والسلوك",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     gradient: "from-blue-500 to-blue-600",
     aiTag: null,
   },
@@ -28,8 +28,8 @@ const steps = [
     title: "الذكاء الاصطناعي يُحلّل إجاباتك",
     desc: "يُحلّل نظام الذكاء الاصطناعي إجاباتك فورياً ويُنشئ شرحاً مفصلاً بلغة عربية واضحة وغير مُخيفة.",
     detail: "تقرير فوري مدعوم بالذكاء الاصطناعي — يساعدك على فهم المؤشرات",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     gradient: "from-teal-500 to-teal-600",
     aiTag: "مدعوم بالذكاء الاصطناعي",
   },
@@ -40,7 +40,7 @@ const steps = [
     title: "احجز مع متخصص",
     desc: "إذا أشارت النتائج إلى الحاجة لمزيد من التقييم، نوصلك بمتخصص معتمد يناسب حالتك.",
     detail: "متخصصون معتمدون في التربية الخاصة وعلم النفس",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     gradient: "from-amber-500 to-amber-600",
     aiTag: null,
@@ -52,8 +52,8 @@ const steps = [
     title: "توجيه نحو الخطوة التالية",
     desc: "بعد فهم النتائج، نوجهك نحو الخطوة التالية المناسبة — سواء كانت حجز موعد مع متخصص أو استشارة متخصصة.",
     detail: "يوجّهك إلى الدعم المناسب بناءً على مؤشرات الفحص",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     gradient: "from-blue-500 to-teal-500",
     aiTag: null,
   },
@@ -96,7 +96,7 @@ export default function HowItWorks() {
             أربع خطوات{" "}
             <span
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -215,7 +215,7 @@ export default function HowItWorks() {
         <div
           className="fade-in-up rounded-3xl p-6 sm:p-8 mb-10 relative overflow-hidden"
           style={{
-            background: "linear-gradient(135deg, #0F172A 0%, #1e3a8a 55%, #0f766e 100%)",
+            background: "linear-gradient(135deg, #243B53 0%, #1e3a8a 55%, #0f766e 100%)",
             boxShadow: "0 16px 48px rgba(15,23,42,0.2)",
           }}
         >
@@ -327,7 +327,7 @@ export default function HowItWorks() {
             href="/start"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:-translate-y-1"
             style={{
-              background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+              background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
               fontFamily: "'Cairo', sans-serif",
               fontWeight: 700,
               boxShadow: "0 6px 20px rgba(37,99,235,0.3)",
