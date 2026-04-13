@@ -1,7 +1,7 @@
 /*
  * تشخيصي ImpactSection — Editorial Healthcare (Rewritten)
  * ─────────────────────────────────────────────────────────────────
- * Design: Dark premium section — #0F172A background, teal/blue accents
+ * Design: Dark premium section — #243B53 background, teal/blue accents
  * Purpose: أثر الفهم المبكر — defensible for hackathon judges & public users
  *
  * Rewrite principles:
@@ -23,28 +23,28 @@ const impactPoints = [
     emoji: "📚",
     title: "أثر تعليمي",
     desc: "الفهم المبكر لمؤشرات صعوبات القراءة والكتابة والانتباه يُمكّن الأسرة من التحرك قبل تراكم الفجوات الأكاديمية — كل فصل دراسي بوضوح أفضل من فصل بدونه.",
-    color: "#14B8A6",
+    color: "#2BBDB6",
   },
   {
     icon: Heart,
     emoji: "💙",
     title: "أثر نفسي",
     desc: "عندما يُفهم الطفل بدلاً من أن يُحكم عليه، تتغير علاقته بالتعلم. الوضوح يُزيل الوصمة ويُعيد بناء الثقة — للطفل ولأسرته معاً.",
-    color: "#2563EB",
+    color: "#1E4E8C",
   },
   {
     icon: Globe,
     emoji: "🌍",
     title: "أثر اجتماعي",
     desc: "أداة عربية تُخاطب الأسرة بلغتها وثقافتها تُقلل الحاجز الاجتماعي أمام طلب الدعم — وهو أحد أكبر العوائق في السياق العربي.",
-    color: "#14B8A6",
+    color: "#2BBDB6",
   },
   {
     icon: Lightbulb,
     emoji: "💡",
     title: "أثر اقتصادي",
     desc: "الخطوة الأولى الواضحة تُقلل الوقت الضائع بين القلق الأول والتدخل المناسب — وهو ما تستهدف المنصة قياسه وتحسينه.",
-    color: "#F59E0B",
+    color: "#F4C46A",
   },
 ];
 
@@ -54,21 +54,21 @@ const needContext = [
     value: "١ من كل ٥",
     label: "أطفال في سن المدرسة قد يواجهون شكلاً من أشكال تحديات التعلم أو الانتباه",
     frame: "تقدير عالمي",
-    color: "#14B8A6",
+    color: "#2BBDB6",
     note: "وفق تقديرات منظمات التعليم الدولية — تتفاوت الأرقام حسب المنطقة والتعريف المستخدم",
   },
   {
     value: "سنوات",
     label: "قد تمر بين أول ملاحظة من الأسرة وأول خطوة دعم فعلية — في غياب أداة واضحة للبداية",
     frame: "الفجوة التي نستهدفها",
-    color: "#2563EB",
+    color: "#1E4E8C",
     note: "هذه الفجوة الزمنية هي المشكلة الجوهرية التي تعالجها المنصة",
   },
   {
     value: "الفهم",
     label: "وحده يُحدث فارقاً — حتى قبل أي تدخل رسمي. الأسرة التي تعرف من أين تبدأ تتصرف بثقة",
     frame: "مبدأ المنصة",
-    color: "#F59E0B",
+    color: "#F4C46A",
     note: "الهدف الأول ليس التشخيص — بل تحويل الحيرة إلى خطوة واضحة",
   },
 ];
@@ -79,21 +79,21 @@ const measurableTargets = [
     icon: Users,
     label: "عدد الأسر التي تُكمل الفحص الأولي",
     sub: "مؤشر الوصول والبداية",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
   {
     icon: TrendingUp,
     label: "نسبة من ينتقلون إلى خطوة دعم لاحقة",
     sub: "مؤشر التحويل الفعلي",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     icon: Clock,
     label: "الزمن بين القلق الأول وأول خطوة واضحة",
     sub: "مؤشر تقليص الفجوة الزمنية",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
   },
   {
@@ -131,7 +131,7 @@ export default function ImpactSection() {
       id="impact"
       ref={sectionRef}
       className="py-20 lg:py-28 relative overflow-hidden"
-      style={{ background: "#0F172A" }}
+      style={{ background: "#243B53" }}
     >
       {/* Background image overlay */}
       <div
@@ -150,11 +150,11 @@ export default function ImpactSection() {
       />
       <div
         className="absolute top-0 left-0 right-0 h-24"
-        style={{ background: "linear-gradient(to bottom, #0F172A, transparent)" }}
+        style={{ background: "linear-gradient(to bottom, #243B53, transparent)" }}
       />
       <div
         className="absolute bottom-0 left-0 right-0 h-24"
-        style={{ background: "linear-gradient(to top, #0F172A, transparent)" }}
+        style={{ background: "linear-gradient(to top, #243B53, transparent)" }}
       />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -163,7 +163,7 @@ export default function ImpactSection() {
         <div className="text-center mb-16 fade-in-up">
           <span
             className="section-label block mb-3"
-            style={{ color: "#14B8A6" }}
+            style={{ color: "#2BBDB6" }}
           >
             لماذا يهم هذا؟
           </span>
@@ -174,7 +174,7 @@ export default function ImpactSection() {
             أثر{" "}
             <span
               style={{
-                background: "linear-gradient(135deg, #14B8A6 0%, #2563EB 100%)",
+                background: "linear-gradient(135deg, #2BBDB6 0%, #1E4E8C 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -299,10 +299,10 @@ export default function ImpactSection() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 mb-3">
-              <Target size={16} style={{ color: "#14B8A6" }} />
+              <Target size={16} style={{ color: "#2BBDB6" }} />
               <span
                 className="text-sm font-bold"
-                style={{ color: "#14B8A6", fontFamily: "'IBM Plex Sans Arabic', sans-serif", letterSpacing: "0.04em" }}
+                style={{ color: "#2BBDB6", fontFamily: "'IBM Plex Sans Arabic', sans-serif", letterSpacing: "0.04em" }}
               >
                 مؤشرات الأثر التي نتابعها
               </span>

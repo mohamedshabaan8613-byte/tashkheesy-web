@@ -1,7 +1,7 @@
 /**
  * تشخيصي — صفحة الأسعار
  * Editorial Healthcare Design System
- * Background: #F8FAFC | Surface: #FFFFFF | Primary: #2563EB | Secondary: #14B8A6 | Warm: #F59E0B
+ * Background: #F4EFE8 | Surface: #FFFFFF | Primary: #1E4E8C | Secondary: #2BBDB6 | Warm: #F4C46A
  */
 import Navbar from "@/components/Navbar";
 import { useSEO } from "@/hooks/useSEO";
@@ -102,11 +102,11 @@ export default function Pricing() {
           <div className="container relative z-10">
             <div className="text-center max-w-3xl mx-auto">
               <span className="section-label block mb-4">الأسعار والباقات</span>
-              <h1 className="text-4xl md:text-5xl font-bold text-[#0F172A] mb-5 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-bold text-[#243B53] mb-5 leading-tight">
                 أسعار شفافة،{" "}
                 <span className="tashkhisi-gradient-text">قيمة حقيقية</span>
               </h1>
-              <p className="text-lg text-[#475569] leading-relaxed max-w-2xl mx-auto">
+              <p className="text-lg text-[#4A6278] leading-relaxed max-w-2xl mx-auto">
                 كل باقة مصمَّمة لتقديم أقصى قيمة ممكنة. لا رسوم خفية، لا مفاجآت — فقط دعم واضح وموثوق.
               </p>
             </div>
@@ -114,7 +114,7 @@ export default function Pricing() {
         </section>
 
         {/* ── Trust Strip ─────────────────────────────────────── */}
-        <section className="py-8 bg-white border-b border-[#E2E8F0]">
+        <section className="py-8 bg-white border-b border-[#D8E8E7]">
           <div className="container">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
               {trustPoints.map((tp, i) => (
@@ -123,8 +123,8 @@ export default function Pricing() {
                     <tp.icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#0F172A]">{tp.label}</p>
-                    <p className="text-xs text-[#475569]">{tp.desc}</p>
+                    <p className="text-sm font-semibold text-[#243B53]">{tp.label}</p>
+                    <p className="text-xs text-[#4A6278]">{tp.desc}</p>
                   </div>
                 </div>
               ))}
@@ -133,7 +133,7 @@ export default function Pricing() {
         </section>
 
         {/* ── Pricing Cards ─────────────────────────────────────── */}
-        <section className="py-20 bg-[#F8FAFC]">
+        <section className="py-20 bg-[#F4EFE8]">
           <div className="container">
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {pricingPlans.map((plan) => (
@@ -141,7 +141,7 @@ export default function Pricing() {
                   key={plan.id}
                   className={`relative flex flex-col rounded-2xl overflow-visible ${
                     plan.popular
-                      ? "bg-white border-2 border-[#2563EB] shadow-xl shadow-blue-100"
+                      ? "bg-white border-2 border-[#1E4E8C] shadow-xl shadow-blue-100"
                       : "ts-card"
                   }`}
                 >
@@ -150,8 +150,8 @@ export default function Pricing() {
                     <div className="absolute -top-4 right-1/2 translate-x-1/2 z-10">
                       <div className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-md ${
                         plan.popular
-                          ? "bg-[#2563EB] text-white"
-                          : "bg-[#14B8A6] text-white"
+                          ? "bg-[#1E4E8C] text-white"
+                          : "bg-[#2BBDB6] text-white"
                       }`}>
                         <Sparkles className="w-3.5 h-3.5" />
                         {plan.badge}
@@ -162,25 +162,25 @@ export default function Pricing() {
                   <div className="p-8 flex flex-col flex-1">
                     {/* Plan Name */}
                     <div className="mb-6">
-                      <h3 className="text-xl font-bold text-[#0F172A] mb-1">{plan.name}</h3>
-                      <p className="text-sm text-[#475569]">{plan.subtitle}</p>
+                      <h3 className="text-xl font-bold text-[#243B53] mb-1">{plan.name}</h3>
+                      <p className="text-sm text-[#4A6278]">{plan.subtitle}</p>
                     </div>
 
                     {/* Price */}
-                    <div className="mb-6 pb-6 border-b border-[#F1F5F9]">
+                    <div className="mb-6 pb-6 border-b border-[#DFF3F1]">
                       <div className="flex items-baseline gap-1.5 mb-2">
-                        <span className="text-5xl font-extrabold text-[#0F172A]">{plan.price}</span>
-                        <span className="text-lg text-[#475569] font-medium">{plan.currency}</span>
+                        <span className="text-5xl font-extrabold text-[#243B53]">{plan.price}</span>
+                        <span className="text-lg text-[#4A6278] font-medium">{plan.currency}</span>
                       </div>
-                      <p className="text-sm text-[#475569] leading-relaxed">{plan.description}</p>
+                      <p className="text-sm text-[#4A6278] leading-relaxed">{plan.description}</p>
                     </div>
 
                     {/* Features */}
                     <ul className="space-y-3 mb-8 flex-1">
                       {plan.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-3">
-                          <CheckCircle2 className="w-4.5 h-4.5 text-[#14B8A6] flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-[#475569]">{feature}</span>
+                          <CheckCircle2 className="w-4.5 h-4.5 text-[#2BBDB6] flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-[#4A6278]">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -189,8 +189,8 @@ export default function Pricing() {
                     <Link href="/booking">
                       <button className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
                         plan.popular
-                          ? "bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-md shadow-blue-200 hover:shadow-lg hover:-translate-y-0.5"
-                          : "border-1.5 border-[#2563EB] text-[#2563EB] hover:bg-[#EFF6FF]"
+                          ? "bg-[#1E4E8C] text-white hover:bg-[#1A3F73] shadow-md shadow-blue-200 hover:shadow-lg hover:-translate-y-0.5"
+                          : "border-1.5 border-[#1E4E8C] text-[#1E4E8C] hover:bg-[#DFF3F1]"
                       }`}>
                         احجز الآن
                       </button>
@@ -203,7 +203,7 @@ export default function Pricing() {
             {/* Disclaimer */}
             <div className="mt-10 max-w-2xl mx-auto">
               <div className="ts-disclaimer-note">
-                <Shield className="w-5 h-5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+                <Shield className="w-5 h-5 text-[#F4C46A] flex-shrink-0 mt-0.5" />
                 <p>
                   <strong>ضمان الرضا:</strong> يمكن استرداد المبلغ كاملاً في حال الإلغاء قبل 24 ساعة من موعد الجلسة. نحن ملتزمون بتقديم قيمة حقيقية أو استرداد المبلغ.
                 </p>
@@ -218,10 +218,10 @@ export default function Pricing() {
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-14">
                 <span className="section-label block mb-3">للمؤسسات التعليمية</span>
-                <h2 className="text-3xl md:text-4xl font-bold text-[#0F172A] mb-4">
+                <h2 className="text-3xl md:text-4xl font-bold text-[#243B53] mb-4">
                   حلول مخصصة للمدارس والجامعات
                 </h2>
-                <p className="text-[#475569] max-w-2xl mx-auto">
+                <p className="text-[#4A6278] max-w-2xl mx-auto">
                   نقدم برامج متكاملة للمؤسسات التعليمية مع خصومات على الأعداد الكبيرة ودعم مستمر.
                 </p>
               </div>
@@ -234,25 +234,25 @@ export default function Pricing() {
                       <div className="ts-icon-blue">
                         <Building2 className="w-5 h-5" />
                       </div>
-                      <h3 className="text-xl font-bold text-[#0F172A]">ما نقدمه للمؤسسات</h3>
+                      <h3 className="text-xl font-bold text-[#243B53]">ما نقدمه للمؤسسات</h3>
                     </div>
                     <ul className="space-y-3">
                       {institutionalFeatures.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-3">
-                          <CheckCircle2 className="w-4.5 h-4.5 text-[#2563EB] flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-[#475569]">{feature}</span>
+                          <CheckCircle2 className="w-4.5 h-4.5 text-[#1E4E8C] flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-[#4A6278]">{feature}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
                   {/* Discount Tiers */}
-                  <div className="bg-gradient-to-br from-[#EFF6FF] to-[#F0FDFA] p-8 md:p-10">
+                  <div className="bg-gradient-to-br from-[#DFF3F1] to-[#DFF3F1] p-8 md:p-10">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="ts-icon-teal">
                         <Users className="w-5 h-5" />
                       </div>
-                      <h3 className="text-xl font-bold text-[#0F172A]">خصومات الأعداد</h3>
+                      <h3 className="text-xl font-bold text-[#243B53]">خصومات الأعداد</h3>
                     </div>
 
                     <div className="space-y-3 mb-8">
@@ -262,10 +262,10 @@ export default function Pricing() {
                         { range: "أكثر من 100 طالب", discount: "خصم 35%", color: "amber" },
                       ].map((tier, i) => (
                         <div key={i} className="bg-white rounded-xl p-4 flex items-center justify-between shadow-sm">
-                          <span className="text-sm text-[#475569]">{tier.range}</span>
+                          <span className="text-sm text-[#4A6278]">{tier.range}</span>
                           <span className={`font-bold text-lg ${
-                            tier.color === "blue" ? "text-[#2563EB]" :
-                            tier.color === "teal" ? "text-[#14B8A6]" : "text-[#F59E0B]"
+                            tier.color === "blue" ? "text-[#1E4E8C]" :
+                            tier.color === "teal" ? "text-[#2BBDB6]" : "text-[#F4C46A]"
                           }`}>{tier.discount}</span>
                         </div>
                       ))}
@@ -285,12 +285,12 @@ export default function Pricing() {
         </section>
 
         {/* ── FAQ Section ─────────────────────────────────────── */}
-        <section className="py-20 bg-[#F8FAFC]">
+        <section className="py-20 bg-[#F4EFE8]">
           <div className="container">
             <div className="max-w-3xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-[#0F172A] mb-3">أسئلة شائعة عن الأسعار</h2>
-                <p className="text-[#475569]">إجابات واضحة على أكثر الأسئلة شيوعاً</p>
+                <h2 className="text-3xl font-bold text-[#243B53] mb-3">أسئلة شائعة عن الأسعار</h2>
+                <p className="text-[#4A6278]">إجابات واضحة على أكثر الأسئلة شيوعاً</p>
               </div>
 
               <div className="space-y-3">
@@ -317,8 +317,8 @@ export default function Pricing() {
                   }
                 ].map((faq, i) => (
                   <div key={i} className="ts-card rounded-2xl p-6">
-                    <h3 className="font-semibold text-[#0F172A] mb-2 text-base">{faq.q}</h3>
-                    <p className="text-sm text-[#475569] leading-relaxed">{faq.a}</p>
+                    <h3 className="font-semibold text-[#243B53] mb-2 text-base">{faq.q}</h3>
+                    <p className="text-sm text-[#4A6278] leading-relaxed">{faq.a}</p>
                   </div>
                 ))}
               </div>
@@ -348,7 +348,7 @@ export default function Pricing() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Link href="/start">
-                    <button className="bg-white text-[#2563EB] font-semibold px-8 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-md">
+                    <button className="bg-white text-[#1E4E8C] font-semibold px-8 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-md">
                       ابدأ الفحص المجاني
                     </button>
                   </Link>

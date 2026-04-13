@@ -2,7 +2,7 @@
  * Impact.tsx — صفحة "لماذا تشخيصي؟"
  * ─────────────────────────────────────────────────────────────────
  * Design Philosophy: Editorial Healthcare — Calm, Credible, Human
- * Palette: #F8FAFC bg | #FFFFFF surface | #0F172A text | #2563EB primary | #14B8A6 teal | #F59E0B warm
+ * Palette: #F4EFE8 bg | #FFFFFF surface | #243B53 text | #1E4E8C primary | #2BBDB6 teal | #F4C46A warm
  * Typography: Cairo (headings) + IBM Plex Sans Arabic (body)
  * Purpose: سرد قوي للهاكاثون — المشكلة الخفية، دور AI، الأثر الاجتماعي
  * Tone: دافئ، موثوق، غير طبي، عربي أولاً
@@ -51,7 +51,7 @@ function useFadeIn(threshold = 0.1) {
 }
 
 // ─── Section Label ─────────────────────────────────────────────────
-function SectionLabel({ children, color = "#2563EB" }: { children: React.ReactNode; color?: string }) {
+function SectionLabel({ children, color = "#1E4E8C" }: { children: React.ReactNode; color?: string }) {
   return (
     <span
       className="inline-flex items-center gap-2 text-xs font-bold px-4 py-1.5 rounded-full mb-5"
@@ -95,7 +95,7 @@ export default function Impact() {
     <div
       className="min-h-screen"
       dir="rtl"
-      style={{ background: "#F8FAFC", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+      style={{ background: "#F4EFE8", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
     >
       <Navbar />
 
@@ -104,16 +104,16 @@ export default function Impact() {
       ════════════════════════════════════════════════════════════ */}
       <section
         className="relative pt-28 pb-24 lg:pt-36 lg:pb-32 overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #F0F7FF 0%, #F8FAFC 55%, #F0FDFA 100%)" }}
+        style={{ background: "linear-gradient(160deg, #F0F7FF 0%, #F4EFE8 55%, #DFF3F1 100%)" }}
       >
         {/* Decorative blobs */}
         <div
           className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-20 blur-3xl pointer-events-none"
-          style={{ background: "radial-gradient(circle, #2563EB 0%, transparent 70%)", transform: "translate(30%, -30%)" }}
+          style={{ background: "radial-gradient(circle, #1E4E8C 0%, transparent 70%)", transform: "translate(30%, -30%)" }}
         />
         <div
           className="absolute bottom-0 left-0 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none"
-          style={{ background: "radial-gradient(circle, #14B8A6 0%, transparent 70%)", transform: "translate(-30%, 30%)" }}
+          style={{ background: "radial-gradient(circle, #2BBDB6 0%, transparent 70%)", transform: "translate(-30%, 30%)" }}
         />
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -123,23 +123,23 @@ export default function Impact() {
               الرئيسية
             </Link>
             <ChevronRight size={14} className="opacity-50" />
-            <span style={{ color: "#2563EB", fontWeight: 600 }}>لماذا تشخيصي؟</span>
+            <span style={{ color: "#1E4E8C", fontWeight: 600 }}>لماذا تشخيصي؟</span>
           </nav>
 
-          <SectionLabel color="#14B8A6">
+          <SectionLabel color="#2BBDB6">
             <Sparkles size={12} />
             المشكلة والأثر
           </SectionLabel>
 
           <h1
             className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black mb-6"
-            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A", lineHeight: 1.2 }}
+            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53", lineHeight: 1.2 }}
           >
             كثير من الأطفال يعانون في صمت
             <br />
             <span
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -151,7 +151,7 @@ export default function Impact() {
 
           <p
             className="text-base sm:text-lg lg:text-xl max-w-2xl mx-auto mb-8 sm:mb-10"
-            style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+            style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
           >
             صعوبات التعلم وتحديات الانتباه غالباً ما تكون خفية — الأسرة تلاحظ شيئاً ما، لكنها لا تعرف كيف تبدأ.
             تشخيصي وُجد ليكون تلك الخطوة الأولى الأكثر وضوحاً.
@@ -162,7 +162,7 @@ export default function Impact() {
               href="/start"
               className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-xl font-bold text-white transition-all hover:shadow-lg hover:-translate-y-0.5 w-full sm:w-auto"
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #1A3F73 100%)",
                 fontFamily: "'Cairo', sans-serif",
                 fontWeight: 700,
                 fontSize: "1rem",
@@ -177,7 +177,7 @@ export default function Impact() {
               className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-xl font-semibold transition-all hover:bg-blue-50 w-full sm:w-auto"
               style={{
                 border: "1.5px solid #CBD5E1",
-                color: "#475569",
+                color: "#4A6278",
                 fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                 fontSize: "0.95rem",
               }}
@@ -195,7 +195,7 @@ export default function Impact() {
               { icon: <Globe size={14} />, text: "عربي أولاً" },
             ].map((badge, i) => (
               <div key={i} className="flex items-center gap-1.5 text-sm" style={{ color: "#64748B", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
-                <span style={{ color: "#14B8A6" }}>{badge.icon}</span>
+                <span style={{ color: "#2BBDB6" }}>{badge.icon}</span>
                 {badge.text}
               </div>
             ))}
@@ -215,13 +215,13 @@ export default function Impact() {
             </SectionLabel>
             <h2
               className="text-3xl lg:text-4xl font-black mb-4"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A" }}
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53" }}
             >
               الحاجز الحقيقي ليس الإعاقة — بل غياب الوضوح
             </h2>
             <p
               className="text-base max-w-2xl mx-auto"
-              style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
             >
               معظم صعوبات التعلم لا تظهر بوضوح في البداية. وهذا بالضبط ما يجعلها أكثر خطورة على المدى البعيد.
             </p>
@@ -239,7 +239,7 @@ export default function Impact() {
                 icon: <Compass size={20} />,
                 title: "الأسرة تلاحظ لكن لا تعرف",
                 desc: "الأهل يشعرون أن شيئاً ما ليس على ما يرام، لكن لا يعرفون هل يتحدثون مع المعلمة أم الطبيب أم المرشد — فيبقون في دائرة الحيرة.",
-                color: "#F59E0B",
+                color: "#F4C46A",
               },
               {
                 icon: <Clock size={20} />,
@@ -251,13 +251,13 @@ export default function Impact() {
                 icon: <Layers size={20} />,
                 title: "الخيارات مشتتة ومكلفة",
                 desc: "التقييم التقليدي يتطلب أشهراً من الانتظار وآلاف الريالات — مما يجعل كثيراً من الأسر تتأخر في اتخاذ الخطوة الأولى.",
-                color: "#2563EB",
+                color: "#1E4E8C",
               },
             ].map((item, i) => (
               <FadeCard key={i} delay={i * 100}>
                 <div
                   className="p-6 rounded-2xl h-full hover:-translate-y-1 transition-all duration-300"
-                  style={{ background: "#F8FAFC", border: `1px solid ${item.color}20` }}
+                  style={{ background: "#F4EFE8", border: `1px solid ${item.color}20` }}
                 >
                   <div
                     className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
@@ -267,13 +267,13 @@ export default function Impact() {
                   </div>
                   <h3
                     className="text-base font-bold mb-2"
-                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#0F172A" }}
+                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#243B53" }}
                   >
                     {item.title}
                   </h3>
                   <p
                     className="text-sm"
-                    style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+                    style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
                   >
                     {item.desc}
                   </p>
@@ -287,26 +287,26 @@ export default function Impact() {
       {/* ════════════════════════════════════════════════════════════
           3. HUMAN STORY — Illustrative, respectful, non-dramatic
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-20 lg:py-28" style={{ background: "#F8FAFC" }}>
+      <section className="py-20 lg:py-28" style={{ background: "#F4EFE8" }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeCard>
             <div
               className="rounded-3xl overflow-hidden"
-              style={{ border: "1px solid #E2E8F0", background: "#FFFFFF" }}
+              style={{ border: "1px solid #D8E8E7", background: "#FFFFFF" }}
             >
               {/* Top accent bar */}
               <div
                 className="h-1 w-full"
-                style={{ background: "linear-gradient(90deg, #2563EB, #14B8A6)" }}
+                style={{ background: "linear-gradient(90deg, #1E4E8C, #2BBDB6)" }}
               />
 
               <div className="p-8 lg:p-12">
                 <div className="flex items-center gap-3 mb-8">
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: "#EFF6FF" }}
+                    style={{ background: "#DFF3F1" }}
                   >
-                    <MessageCircle size={18} style={{ color: "#2563EB" }} />
+                    <MessageCircle size={18} style={{ color: "#1E4E8C" }} />
                   </div>
                   <div>
                     <p
@@ -329,17 +329,17 @@ export default function Impact() {
                     {
                       emoji: "👦",
                       text: "ريان، ثمانية أعوام، يبذل جهداً مضاعفاً في القراءة كل يوم — لكن النتائج لا تعكس ما يبذله.",
-                      color: "#2563EB",
+                      color: "#1E4E8C",
                     },
                     {
                       emoji: "👨‍👩‍👦",
                       text: "أسرته تلاحظ أنه يتعب بسرعة من الكتابة، وأحياناً يقلب الحروف — لكنها لا تعرف هل هذا طبيعي في هذه السن أم يستحق متابعة.",
-                      color: "#14B8A6",
+                      color: "#2BBDB6",
                     },
                     {
                       emoji: "💡",
                       text: "بعد فحص أولي أوضح أن لديه مؤشرات تستحق تقييماً متخصصاً، توجهت الأسرة بثقة نحو الخطوة التالية — بدلاً من الانتظار سنوات أخرى.",
-                      color: "#F59E0B",
+                      color: "#F4C46A",
                     },
                   ].map((line, i) => (
                     <div key={i} className="flex items-start gap-4">
@@ -360,15 +360,15 @@ export default function Impact() {
 
                 <div
                   className="mt-8 pt-6 flex items-start gap-3"
-                  style={{ borderTop: "1px solid #F1F5F9" }}
+                  style={{ borderTop: "1px solid #DFF3F1" }}
                 >
                   <div
                     className="w-1 rounded-full flex-shrink-0 mt-1"
-                    style={{ height: "52px", background: "linear-gradient(180deg, #2563EB, #14B8A6)" }}
+                    style={{ height: "52px", background: "linear-gradient(180deg, #1E4E8C, #2BBDB6)" }}
                   />
                   <p
                     className="text-sm font-medium"
-                    style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+                    style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
                   >
                     هذا ما تفعله تشخيصي — لا تُصدر حكماً، بل تُقدّم وضوحاً. وضوح يُمكّن الأسرة من اتخاذ الخطوة الصحيحة في الوقت المناسب.
                   </p>
@@ -385,19 +385,19 @@ export default function Impact() {
       <section className="py-20 lg:py-28" style={{ background: "#FFFFFF" }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <SectionLabel color="#14B8A6">
+            <SectionLabel color="#2BBDB6">
               <Clock size={12} />
               لماذا التبكير مهم؟
             </SectionLabel>
             <h2
               className="text-3xl lg:text-4xl font-black mb-4"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A" }}
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53" }}
             >
               الفهم المبكر يُغيّر المسار
             </h2>
             <p
               className="text-base max-w-2xl mx-auto"
-              style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
             >
               الفهم المبكر لا يعني التشخيص الفوري — بل يعني أن الأسرة تملك خارطة طريق واضحة
               بدلاً من الحيرة والانتظار.
@@ -411,21 +411,21 @@ export default function Impact() {
                 icon: <Lightbulb size={18} />,
                 title: "الفهم يُزيل الحيرة والقلق",
                 desc: "عندما تعرف الأسرة أن ما تلاحظه له تفسير، يتحول القلق إلى طاقة إيجابية نحو الحل. الوضوح وحده يُحدث فارقاً كبيراً في كيفية التعامل مع الموقف.",
-                color: "#2563EB",
+                color: "#1E4E8C",
               },
               {
                 step: "٢",
                 icon: <Target size={18} />,
                 title: "الخطوات الأذكى تبدأ مبكراً",
                 desc: "الدعم المبكر يمنع تراكم الفجوات الأكاديمية ويُمكّن الطالب من الوصول لإمكاناته الحقيقية. كل فصل دراسي بوضوح أفضل من فصل بدونه.",
-                color: "#14B8A6",
+                color: "#2BBDB6",
               },
               {
                 step: "٣",
                 icon: <Heart size={18} />,
                 title: "الثقة بالنفس تُبنى بالوضوح",
                 desc: "الطفل الذي يُفهم أسلوب تعلمه يبني علاقة صحية مع التعلم بدلاً من الإحساس بالنقص. هذا الأثر النفسي لا يُقدَّر بثمن.",
-                color: "#F59E0B",
+                color: "#F4C46A",
               },
               {
                 step: "٤",
@@ -438,7 +438,7 @@ export default function Impact() {
               <FadeCard key={i} delay={i * 100}>
                 <div
                   className="flex gap-5 p-6 rounded-2xl h-full"
-                  style={{ background: "#F8FAFC", border: `1px solid ${item.color}20` }}
+                  style={{ background: "#F4EFE8", border: `1px solid ${item.color}20` }}
                 >
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 font-black text-white text-lg"
@@ -451,14 +451,14 @@ export default function Impact() {
                       <span style={{ color: item.color }}>{item.icon}</span>
                       <h3
                         className="text-base font-bold"
-                        style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#0F172A" }}
+                        style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#243B53" }}
                       >
                         {item.title}
                       </h3>
                     </div>
                     <p
                       className="text-sm"
-                      style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+                      style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
                     >
                       {item.desc}
                     </p>
@@ -473,22 +473,22 @@ export default function Impact() {
       {/* ════════════════════════════════════════════════════════════
           5. WHY TASHKHEESY — Platform positioning
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-20 lg:py-28" style={{ background: "#F8FAFC" }}>
+      <section className="py-20 lg:py-28" style={{ background: "#F4EFE8" }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <SectionLabel color="#2563EB">
+            <SectionLabel color="#1E4E8C">
               <Sparkles size={12} />
               لماذا تشخيصي؟
             </SectionLabel>
             <h2
               className="text-3xl lg:text-4xl font-black mb-4"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A" }}
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53" }}
             >
               الجسر من القلق إلى الوضوح
             </h2>
             <p
               className="text-base max-w-2xl mx-auto"
-              style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
             >
               تشخيصي ليست بديلاً عن المتخصص — بل هي الخطوة التي تُمكّن الأسرة من الوصول إليه
               بثقة وبفهم أوضح.
@@ -501,19 +501,19 @@ export default function Impact() {
                 icon: <Globe size={22} />,
                 title: "عربي أولاً",
                 desc: "مصمّم للسياق العربي — اللغة، الثقافة، الحساسيات الاجتماعية. ليس ترجمة لأداة غربية، بل حل مبني من الداخل.",
-                color: "#2563EB",
+                color: "#1E4E8C",
               },
               {
                 icon: <Brain size={22} />,
                 title: "مدعوم بالذكاء الاصطناعي",
                 desc: "الذكاء الاصطناعي يُنظّم إجاباتك ويُقدّم شرحاً منظماً — لا يُصدر أحكاماً، بل يُضيء الصورة ويُساعدك على معرفة من أين تبدأ.",
-                color: "#14B8A6",
+                color: "#2BBDB6",
               },
               {
                 icon: <Shield size={22} />,
                 title: "آمن عاطفياً",
                 desc: "لغة دافئة وغير مُقلقة. لا وصمة، لا أحكام، لا مصطلحات طبية مُخيفة. فضاء آمن للأسرة لتبدأ رحلة الفهم.",
-                color: "#F59E0B",
+                color: "#F4C46A",
               },
               {
                 icon: <Target size={22} />,
@@ -531,13 +531,13 @@ export default function Impact() {
                 icon: <BookOpen size={22} />,
                 title: "جسر نحو المتخصص",
                 desc: "تشخيصي لا تنهي الرحلة — بل تبدأها. نتائج الفحص تُساعدك على الوصول إلى المتخصص بفهم أوضح وسؤال أدق.",
-                color: "#14B8A6",
+                color: "#2BBDB6",
               },
             ].map((item, i) => (
               <FadeCard key={i} delay={i * 80}>
                 <div
                   className="p-6 rounded-2xl h-full hover:-translate-y-1 transition-all duration-300"
-                  style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+                  style={{ background: "#FFFFFF", border: "1px solid #D8E8E7", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
@@ -547,13 +547,13 @@ export default function Impact() {
                   </div>
                   <h3
                     className="text-base font-bold mb-2"
-                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#0F172A" }}
+                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#243B53" }}
                   >
                     {item.title}
                   </h3>
                   <p
                     className="text-sm"
-                    style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+                    style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
                   >
                     {item.desc}
                   </p>
@@ -576,13 +576,13 @@ export default function Impact() {
             </SectionLabel>
             <h2
               className="text-3xl lg:text-4xl font-black mb-4"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A" }}
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53" }}
             >
               الذكاء الاصطناعي يُضيء — لا يُصدر أحكاماً
             </h2>
             <p
               className="text-base max-w-2xl mx-auto"
-              style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
             >
               نؤمن بالشفافية الكاملة في كيفية استخدام الذكاء الاصطناعي. إليك ما يفعله وما لا يفعله.
             </p>
@@ -601,7 +601,7 @@ export default function Impact() {
                   </div>
                   <h3
                     className="text-lg font-bold"
-                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#0F172A" }}
+                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#243B53" }}
                   >
                     ما يفعله الذكاء الاصطناعي
                   </h3>
@@ -640,7 +640,7 @@ export default function Impact() {
                   </div>
                   <h3
                     className="text-lg font-bold"
-                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#0F172A" }}
+                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#243B53" }}
                   >
                     ما لا يفعله الذكاء الاصطناعي
                   </h3>
@@ -681,13 +681,13 @@ export default function Impact() {
                 <div>
                   <h4
                     className="text-base font-bold mb-2"
-                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#0F172A" }}
+                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#243B53" }}
                   >
                     مبدأ الشفافية الكاملة
                   </h4>
                   <p
                     className="text-sm"
-                    style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+                    style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
                   >
                     الذكاء الاصطناعي في تشخيصي أداة دعم للفهم — وليس بديلاً عن الحكم الإنساني المتخصص.
                     نتائج الفحص هي <strong style={{ color: "#7C3AED" }}>مؤشرات توجيهية أولية</strong>، مُراجَعة من متخصصين،
@@ -703,22 +703,22 @@ export default function Impact() {
       {/* ════════════════════════════════════════════════════════════
           7. SOCIAL RELEVANCE — Arab context, KSCDR alignment
       ════════════════════════════════════════════════════════════ */}
-      <section className="py-20 lg:py-28" style={{ background: "#F8FAFC" }}>
+      <section className="py-20 lg:py-28" style={{ background: "#F4EFE8" }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
-            <SectionLabel color="#14B8A6">
+            <SectionLabel color="#2BBDB6">
               <Globe size={12} />
               الأثر الاجتماعي
             </SectionLabel>
             <h2
               className="text-3xl lg:text-4xl font-black mb-4"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A" }}
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53" }}
             >
               لماذا يهم هذا الآن في السياق العربي؟
             </h2>
             <p
               className="text-base max-w-2xl mx-auto"
-              style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
             >
               صعوبات التعلم وتحديات الانتباه حاضرة في كل مجتمع — لكن الوصول إلى الدعم في العالم العربي
               يواجه تحديات إضافية تجعل الحل الرقمي العربي ضرورة وليس رفاهية.
@@ -731,36 +731,36 @@ export default function Impact() {
                 icon: "🌐",
                 title: "فجوة الوصول",
                 desc: "كثير من الأسر في المناطق البعيدة لا تستطيع الوصول إلى متخصصين. الحل الرقمي يُزيل هذا الحاجز الجغرافي.",
-                color: "#2563EB",
+                color: "#1E4E8C",
               },
               {
                 icon: "🤝",
                 title: "الوصمة الاجتماعية",
                 desc: "في كثير من السياقات العربية، البحث عن مساعدة نفسية أو تعليمية يحمل وصمة. تشخيصي توفر فضاءً خاصاً وآمناً للبداية.",
-                color: "#14B8A6",
+                color: "#2BBDB6",
               },
               {
                 icon: "📚",
                 title: "فجوة المحتوى العربي",
                 desc: "معظم أدوات الفحص المتاحة مُترجمة من الإنجليزية وغير مُكيَّفة ثقافياً. تشخيصي مبنية من الصفر للسياق العربي.",
-                color: "#F59E0B",
+                color: "#F4C46A",
               },
             ].map((item, i) => (
               <FadeCard key={i} delay={i * 100}>
                 <div
                   className="p-6 rounded-2xl text-center h-full"
-                  style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
+                  style={{ background: "#FFFFFF", border: "1px solid #D8E8E7" }}
                 >
                   <div className="text-4xl mb-4">{item.icon}</div>
                   <h3
                     className="text-base font-bold mb-3"
-                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#0F172A" }}
+                    style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700, color: "#243B53" }}
                   >
                     {item.title}
                   </h3>
                   <p
                     className="text-sm"
-                    style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+                    style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
                   >
                     {item.desc}
                   </p>
@@ -774,7 +774,7 @@ export default function Impact() {
             <div
               className="rounded-3xl p-8"
               style={{
-                background: "linear-gradient(135deg, #0F172A 0%, #1E3A5F 60%, #0F4C4C 100%)",
+                background: "linear-gradient(135deg, #243B53 0%, #1E3A5F 60%, #0F4C4C 100%)",
                 boxShadow: "0 20px 60px rgba(15,23,42,0.15)",
               }}
             >
@@ -866,19 +866,19 @@ export default function Impact() {
           <FadeCard>
             {/* Header */}
             <div className="text-center mb-12">
-              <SectionLabel color="#2563EB">
+              <SectionLabel color="#1E4E8C">
                 <Target size={12} />
                 إطار قياس الأثر
               </SectionLabel>
               <h2
                 className="text-3xl lg:text-4xl font-black mb-4"
-                style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A" }}
+                style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53" }}
               >
                 ما الذي تقيسه المنصة
               </h2>
               <p
                 className="text-base max-w-2xl mx-auto"
-                style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+                style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
               >
                 نستهدف قياس الأثر الحقيقي للمنصة عبر مؤشرات واضحة ومحددة — هذه المؤشرات تمثّل أهدافنا التي نسعى لتحقيقها، لا إنجازات مؤكدة.
               </p>
@@ -889,8 +889,8 @@ export default function Impact() {
               {[
                 {
                   icon: Users,
-                  color: "#2563EB",
-                  bg: "#EFF6FF",
+                  color: "#1E4E8C",
+                  bg: "#DFF3F1",
                   border: "#DBEAFE",
                   label: "عدد الأسر التي تبدأ الفحص",
                   description: "نقيس كم أسرة وصلت إلى خطوة أولى واضحة بدلاً من الانتظار أو التردد.",
@@ -898,8 +898,8 @@ export default function Impact() {
                 },
                 {
                   icon: TrendingUp,
-                  color: "#14B8A6",
-                  bg: "#F0FDFA",
+                  color: "#2BBDB6",
+                  bg: "#DFF3F1",
                   border: "#CCFBF1",
                   label: "نسبة الانتقال إلى خطوة دعم تالية",
                   description: "من الفحص الأولي إلى حجز متخصص أو طلب دعم من المدرسة أو الأسرة.",
@@ -907,7 +907,7 @@ export default function Impact() {
                 },
                 {
                   icon: Clock,
-                  color: "#F59E0B",
+                  color: "#F4C46A",
                   bg: "#FFFBEB",
                   border: "#FEF3C7",
                   label: "الزمن بين القلق الأول وأول خطوة واضحة",
@@ -935,7 +935,7 @@ export default function Impact() {
                 {
                   icon: BookOpen,
                   color: "#0F766E",
-                  bg: "#F0FDFA",
+                  bg: "#DFF3F1",
                   border: "#CCFBF1",
                   label: "نسبة الفحوص المكتملة",
                   description: "من بدأوا الفحص وأكملوه حتى النهاية وحصلوا على شرح الذكاء الاصطناعي.",
@@ -974,7 +974,7 @@ export default function Impact() {
                     </div>
                     <h3
                       className="text-sm font-bold"
-                      style={{ color: "#0F172A", fontFamily: "'Cairo', sans-serif", fontWeight: 700, lineHeight: 1.5 }}
+                      style={{ color: "#243B53", fontFamily: "'Cairo', sans-serif", fontWeight: 700, lineHeight: 1.5 }}
                     >
                       {kpi.label}
                     </h3>
@@ -992,7 +992,7 @@ export default function Impact() {
             {/* Transparency note */}
             <div
               className="rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
-              style={{ background: "linear-gradient(135deg, #0F172A 0%, #1e3a8a 100%)" }}
+              style={{ background: "linear-gradient(135deg, #243B53 0%, #1e3a8a 100%)" }}
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -1024,23 +1024,23 @@ export default function Impact() {
       ════════════════════════════════════════════════════════════ */}
       <section
         className="py-20 lg:py-28"
-        style={{ background: "linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 100%)" }}
+        style={{ background: "linear-gradient(135deg, #DFF3F1 0%, #DFF3F1 100%)" }}
       >
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeCard>
-            <SectionLabel color="#2563EB">
+            <SectionLabel color="#1E4E8C">
               <ArrowLeft size={12} />
               ابدأ الفحص الأولي — مجاناً
             </SectionLabel>
             <h2
               className="text-3xl lg:text-4xl font-black mb-5"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#0F172A" }}
+              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, color: "#243B53" }}
             >
               خطوتك الأولى نحو الوضوح
               <br />
               <span
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -1051,7 +1051,7 @@ export default function Impact() {
             </h2>
             <p
               className="text-base mb-8"
-              style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
             >
               فحص أولي مجاني، يستغرق ١٥ دقيقة، مدعوم بالذكاء الاصطناعي.
               لا تسجيل، لا بيانات شخصية مطلوبة، لا قلق.
@@ -1061,7 +1061,7 @@ export default function Impact() {
                 href="/start"
                 className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-4 rounded-xl font-bold text-white transition-all hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #1A3F73 100%)",
                   fontFamily: "'Cairo', sans-serif",
                   fontWeight: 700,
                   fontSize: "1.05rem",
@@ -1076,7 +1076,7 @@ export default function Impact() {
                 className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-4 rounded-xl font-semibold transition-all hover:bg-white w-full sm:w-auto"
                 style={{
                   border: "1.5px solid #CBD5E1",
-                  color: "#475569",
+                  color: "#4A6278",
                   fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                   fontSize: "0.95rem",
                 }}

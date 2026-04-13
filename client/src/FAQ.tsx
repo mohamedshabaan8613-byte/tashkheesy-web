@@ -2,7 +2,7 @@
  * تشخيصي — صفحة الأسئلة الشائعة
  * Editorial Healthcare · Arabic-first · Warm & Reassuring
  * Accordion layout · 5 sections · 18+ questions
- * Palette: #F8FAFC bg · #0F172A text · #2563EB accent · #14B8A6 secondary
+ * Palette: #F4EFE8 bg · #243B53 text · #1E4E8C accent · #2BBDB6 secondary
  *
  * v2 — إضافة قسم "مخاوف شائعة لدى الأسر" بـ 8 أسئلة ثقافية وعاطفية
  */
@@ -79,8 +79,8 @@ const faqSections = [
     id: "screening",
     icon: HelpCircle,
     title: "عن الفحص والتقييم",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "#BFDBFE",
     highlight: false,
     questions: [
@@ -110,8 +110,8 @@ const faqSections = [
     id: "privacy",
     icon: Shield,
     title: "الخصوصية وحماية البيانات",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "#99F6E4",
     highlight: false,
     questions: [
@@ -133,8 +133,8 @@ const faqSections = [
     id: "specialists",
     icon: UserCheck,
     title: "المتخصصون والاستشارات",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "#BFDBFE",
     highlight: false,
     questions: [
@@ -156,7 +156,7 @@ const faqSections = [
     id: "booking",
     icon: Calendar,
     title: "الحجز والمتابعة",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     border: "#FDE68A",
     highlight: false,
@@ -200,7 +200,7 @@ function FAQItem({
       className="rounded-2xl overflow-hidden transition-all duration-200"
       style={{
         background: "white",
-        border: `1px solid ${isOpen ? accentColor + "40" : "#F1F5F9"}`,
+        border: `1px solid ${isOpen ? accentColor + "40" : "#DFF3F1"}`,
         boxShadow: isOpen
           ? `0 4px 20px ${accentColor}15`
           : "0 1px 4px rgba(0,0,0,0.04)",
@@ -222,7 +222,7 @@ function FAQItem({
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
           style={{
-            background: isOpen ? accentColor : "#F8FAFC",
+            background: isOpen ? accentColor : "#F4EFE8",
             transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
           }}
         >
@@ -284,7 +284,7 @@ export default function FAQ() {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#F8FAFC", direction: "rtl" }}
+      style={{ background: "#F4EFE8", direction: "rtl" }}
     >
       <Navbar />
 
@@ -293,21 +293,21 @@ export default function FAQ() {
         className="pt-28 pb-16 relative overflow-hidden"
         style={{
           background:
-            "linear-gradient(135deg, #EFF6FF 0%, #F0FDFA 50%, #F8FAFC 100%)",
+            "linear-gradient(135deg, #DFF3F1 0%, #DFF3F1 50%, #F4EFE8 100%)",
         }}
       >
         {/* Decorative circles */}
         <div
           className="absolute top-0 left-0 w-96 h-96 rounded-full opacity-20 pointer-events-none"
           style={{
-            background: "radial-gradient(circle, #2563EB40, transparent 70%)",
+            background: "radial-gradient(circle, #1E4E8C40, transparent 70%)",
             transform: "translate(-40%, -40%)",
           }}
         />
         <div
           className="absolute bottom-0 right-0 w-72 h-72 rounded-full opacity-20 pointer-events-none"
           style={{
-            background: "radial-gradient(circle, #14B8A640, transparent 70%)",
+            background: "radial-gradient(circle, #2BBDB640, transparent 70%)",
             transform: "translate(30%, 30%)",
           }}
         />
@@ -333,8 +333,8 @@ export default function FAQ() {
           </div>
 
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
-            <Sparkles size={14} style={{ color: "#2563EB" }} />
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ background: "#DFF3F1", border: "1px solid #BFDBFE" }}>
+            <Sparkles size={14} style={{ color: "#1E4E8C" }} />
             <span className="text-xs font-semibold text-blue-700" style={{ fontFamily: "'Cairo', sans-serif" }}>
               {totalQuestions} سؤالاً وجواباً
             </span>
@@ -348,7 +348,7 @@ export default function FAQ() {
             <span
               className="mx-3"
               style={{
-                background: "linear-gradient(135deg, #2563EB, #14B8A6)",
+                background: "linear-gradient(135deg, #1E4E8C, #2BBDB6)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -382,15 +382,15 @@ export default function FAQ() {
               className="w-full py-4 pr-12 pl-5 rounded-2xl text-sm text-slate-900 outline-none transition-all"
               style={{
                 background: "white",
-                border: "1.5px solid #E2E8F0",
+                border: "1.5px solid #D8E8E7",
                 fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                 boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
               }}
               onFocus={(e) =>
-                (e.target.style.border = "1.5px solid #2563EB")
+                (e.target.style.border = "1.5px solid #1E4E8C")
               }
               onBlur={(e) =>
-                (e.target.style.border = "1.5px solid #E2E8F0")
+                (e.target.style.border = "1.5px solid #D8E8E7")
               }
             />
           </div>
@@ -406,9 +406,9 @@ export default function FAQ() {
               className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all"
               style={{
                 fontFamily: "'Cairo', sans-serif",
-                background: !activeSection ? "#2563EB" : "#F8FAFC",
+                background: !activeSection ? "#1E4E8C" : "#F4EFE8",
                 color: !activeSection ? "white" : "#64748B",
-                border: !activeSection ? "none" : "1px solid #E2E8F0",
+                border: !activeSection ? "none" : "1px solid #D8E8E7",
               }}
             >
               الكل
@@ -431,7 +431,7 @@ export default function FAQ() {
                         ? section.color
                         : section.highlight && !activeSection
                         ? "#F5F3FF"
-                        : "#F8FAFC",
+                        : "#F4EFE8",
                     color:
                       activeSection === section.id
                         ? "white"
@@ -443,7 +443,7 @@ export default function FAQ() {
                         ? "none"
                         : section.highlight && !activeSection
                         ? "1px solid #DDD6FE"
-                        : "1px solid #E2E8F0",
+                        : "1px solid #D8E8E7",
                   }}
                 >
                   <Icon size={14} />
@@ -628,21 +628,21 @@ export default function FAQ() {
           <div
             className="rounded-3xl p-10 text-center relative overflow-hidden"
             style={{
-              background: "linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%)",
+              background: "linear-gradient(135deg, #1E3A8A 0%, #243B53 100%)",
             }}
           >
             {/* Decorative */}
             <div
               className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
               style={{
-                background: "radial-gradient(circle, #14B8A6, transparent 70%)",
+                background: "radial-gradient(circle, #2BBDB6, transparent 70%)",
                 transform: "translate(30%, -30%)",
               }}
             />
             <div
               className="absolute bottom-0 left-0 w-48 h-48 rounded-full opacity-10 pointer-events-none"
               style={{
-                background: "radial-gradient(circle, #2563EB, transparent 70%)",
+                background: "radial-gradient(circle, #1E4E8C, transparent 70%)",
                 transform: "translate(-30%, 30%)",
               }}
             />
@@ -725,23 +725,23 @@ export default function FAQ() {
                 title: "ابدأ الفحص",
                 desc: "أجرِ فحصاً مجانياً الآن",
                 href: "/children",
-                color: "#2563EB",
-                bg: "#EFF6FF",
+                color: "#1E4E8C",
+                bg: "#DFF3F1",
               },
               {
                 icon: "📋",
                 title: "شاهد نموذج النتائج",
                 desc: "كيف تبدو نتائج الفحص",
                 href: "/result-demo",
-                color: "#14B8A6",
-                bg: "#F0FDFA",
+                color: "#2BBDB6",
+                bg: "#DFF3F1",
               },
               {
                 icon: "📅",
                 title: "احجز استشارة",
                 desc: "تحدث مع متخصص معتمد",
                 href: "/booking",
-                color: "#F59E0B",
+                color: "#F4C46A",
                 bg: "#FFFBEB",
               },
             ].map((item, i) => (

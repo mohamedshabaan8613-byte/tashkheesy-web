@@ -13,23 +13,23 @@ const signs = [
     icon: BookOpen,
     title: "صعوبة في القراءة",
     desc: "يقضي وقتاً طويلاً في قراءة نصوص بسيطة، أو يخلط بين الحروف المتشابهة دون أن يُدرك السبب.",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     borderColor: "rgba(37,99,235,0.15)",
   },
   {
     icon: Brain,
     title: "تشتت الانتباه",
     desc: "يجد صعوبة في التركيز لفترات طويلة، أو ينتقل من نشاط لآخر بسرعة حتى في الأشياء التي يُحبها.",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     borderColor: "rgba(20,184,166,0.15)",
   },
   {
     icon: GraduationCap,
     title: "إحباط مدرسي",
     desc: "يشعر بالإحباط من المدرسة رغم بذل الجهد، أو يتجنب الواجبات المنزلية دون سبب واضح.",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     borderColor: "rgba(245,158,11,0.15)",
   },
@@ -37,23 +37,23 @@ const signs = [
     icon: Clock,
     title: "تأخر في الوصول إلى الدعم المناسب",
     desc: "مرت سنوات دون فهم واضح، وتراكمت الفجوات الأكاديمية تدريجياً دون أن يعرف أحد السبب.",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     borderColor: "rgba(37,99,235,0.15)",
   },
   {
     icon: Heart,
     title: "تراجع الثقة بالنفس",
     desc: "بدأ يقارن نفسه بزملائه وأصبح يتشكك في قدراته الحقيقية، رغم أنه يملك إمكانات كبيرة.",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     borderColor: "rgba(20,184,166,0.15)",
   },
   {
     icon: MessageCircle,
     title: "ملاحظات المعلمين",
     desc: "تتكرر ملاحظات المعلمين حول الأداء أو السلوك، وأنت تشعر أن هناك شيئًا ما لا تراه بوضوح.",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     borderColor: "rgba(245,158,11,0.15)",
   },
@@ -84,7 +84,7 @@ export default function AwarenessSection() {
       id="awareness"
       ref={sectionRef}
       className="py-20 lg:py-28"
-      style={{ background: "#F8FAFC" }}
+      style={{ background: "#F4EFE8" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -97,7 +97,7 @@ export default function AwarenessSection() {
             هل تلاحظ شيئاً{" "}
             <span
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",

@@ -10,7 +10,7 @@
  * إلى: /self-assessment?pathType=...&mode=self
  *
  * التصميم: Editorial Healthcare Calm
- * اللوحة اللونية: #F8FAFC | #2563EB | #14B8A6 | #F59E0B
+ * اللوحة اللونية: #F4EFE8 | #1E4E8C | #2BBDB6 | #F4C46A
  */
 
 import { useEffect, useState } from "react";
@@ -35,12 +35,12 @@ const PATHS = [
       "يُركّز هذا المسار على رصد المؤشرات المرتبطة بصعوبات القراءة والكتابة والفهم وأثرها على أدائك الأكاديمي أو المهني — ويساعدك على فهم ما قد تواجهه بشكل أوضح.",
     areas: ["صعوبات القراءة", "الكتابة", "الفهم", "الدراسة الجامعية أو المهنية", "أثر ذلك على الأداء"],
     icon: BookOpen,
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "#BFDBFE",
     badge: "صعوبات التعلم",
-    badgeBg: "#EFF6FF",
-    badgeColor: "#1D4ED8",
+    badgeBg: "#DFF3F1",
+    badgeColor: "#1A3F73",
     duration: "١٠–١٥ دقيقة",
   },
   {
@@ -51,7 +51,7 @@ const PATHS = [
       "يُركّز هذا المسار على رصد المؤشرات المرتبطة بتشتت الانتباه وصعوبة التركيز وإدارة الوقت والاندفاعية — ويساعدك على فهم أنماط تفكيرك وسلوكك بشكل أعمق.",
     areas: ["التشتت", "التنظيم", "إدارة الوقت", "الانتباه المستمر", "الاندفاعية"],
     icon: Zap,
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     border: "#FDE68A",
     badge: "فرط الحركة وتشتت الانتباه",
@@ -82,7 +82,7 @@ export default function ChooseSelfPath() {
     <div
       className="min-h-screen flex flex-col"
       dir="rtl"
-      style={{ background: "linear-gradient(160deg, #F8FAFC 0%, #F0FDFA 50%, #EFF6FF 100%)" }}
+      style={{ background: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%)" }}
     >
       {/* ─── شريط التنقل ─────────────────────────────────────────────────── */}
       <header
@@ -112,7 +112,7 @@ export default function ChooseSelfPath() {
         >
           <span
             className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)" }}
+            style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)" }}
             aria-hidden="true"
           >
             <Brain size={14} style={{ color: "white" }} />
@@ -170,7 +170,7 @@ export default function ChooseSelfPath() {
               ما الذي تريد{" "}
               <span
                 style={{
-                  background: "linear-gradient(135deg, #14B8A6 0%, #2563EB 100%)",
+                  background: "linear-gradient(135deg, #2BBDB6 0%, #1E4E8C 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -200,7 +200,7 @@ export default function ChooseSelfPath() {
                   className="text-right w-full rounded-3xl p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
                   style={{
                     background: isSelected ? path.bg : "white",
-                    border: `2px solid ${isSelected ? path.color : "#E2E8F0"}`,
+                    border: `2px solid ${isSelected ? path.color : "#D8E8E7"}`,
                     boxShadow: isSelected
                       ? `0 8px 32px ${path.color}22`
                       : "0 2px 12px rgba(0,0,0,0.04)",
@@ -284,13 +284,13 @@ export default function ChooseSelfPath() {
           {/* ─── ضمانات الثقة ─────────────────────────────────────────────── */}
           <div
             className="rounded-2xl p-5"
-            style={{ background: "white", border: "1px solid #F1F5F9", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+            style={{ background: "white", border: "1px solid #DFF3F1", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
           >
             <div className="grid sm:grid-cols-3 gap-4">
               {[
-                { icon: Shield, text: "فهم أولي مجاني — ليس تشخيصاً رسمياً", color: "#14B8A6" },
-                { icon: CheckCircle2, text: "بياناتك محمية وسرية تماماً", color: "#2563EB" },
-                { icon: Brain, text: "تقرير أولي مدعوم بالذكاء الاصطناعي بعد الانتهاء", color: "#F59E0B" },
+                { icon: Shield, text: "فهم أولي مجاني — ليس تشخيصاً رسمياً", color: "#2BBDB6" },
+                { icon: CheckCircle2, text: "بياناتك محمية وسرية تماماً", color: "#1E4E8C" },
+                { icon: Brain, text: "تقرير أولي مدعوم بالذكاء الاصطناعي بعد الانتهاء", color: "#F4C46A" },
               ].map(({ icon: Icon, text, color }) => (
                 <div key={text} className="flex items-start gap-2.5">
                   <Icon size={14} style={{ color, flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />

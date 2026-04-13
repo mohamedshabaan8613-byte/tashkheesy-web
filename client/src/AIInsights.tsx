@@ -47,10 +47,10 @@ export default function AIInsights() {
           <div className="container relative z-10">
             <div className="text-center max-w-3xl mx-auto">
               <span className="section-label block mb-4">محرّك الذكاء الاصطناعي</span>
-              <h1 className="text-4xl md:text-5xl font-bold text-[#0F172A] mb-5 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-bold text-[#243B53] mb-5 leading-tight">
                 كيف يُفسّر <span className="tashkhisi-gradient-text">الذكاء الاصطناعي</span> نتائجك؟
               </h1>
-              <p className="text-lg text-[#475569] leading-relaxed max-w-2xl mx-auto">
+              <p className="text-lg text-[#4A6278] leading-relaxed max-w-2xl mx-auto">
                 لا مجرد أرقام — بل شرح إنساني دقيق يُحوّل نتيجة الفحص إلى فهم حقيقي وخطوة عملية واضحة.
               </p>
             </div>
@@ -61,41 +61,41 @@ export default function AIInsights() {
           <div className="container">
             <div className="text-center mb-14">
               <span className="section-label block mb-3">ما يُميّز محرّكنا</span>
-              <h2 className="text-3xl font-bold text-[#0F172A]">قدرات الذكاء الاصطناعي في تشخيصي</h2>
+              <h2 className="text-3xl font-bold text-[#243B53]">قدرات الذكاء الاصطناعي في تشخيصي</h2>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {features.map((f, i) => (
                 <div key={i} className="ts-card rounded-2xl p-6">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                    f.color === "blue" ? "bg-[#EFF6FF] text-[#2563EB]" :
-                    f.color === "teal" ? "bg-[#F0FDFA] text-[#14B8A6]" :
-                    "bg-[#FFFBEB] text-[#F59E0B]"
+                    f.color === "blue" ? "bg-[#DFF3F1] text-[#1E4E8C]" :
+                    f.color === "teal" ? "bg-[#DFF3F1] text-[#2BBDB6]" :
+                    "bg-[#FFFBEB] text-[#F4C46A]"
                   }`}>
                     <f.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="font-bold text-[#0F172A] mb-2">{f.title}</h3>
-                  <p className="text-sm text-[#475569] leading-relaxed">{f.desc}</p>
+                  <h3 className="font-bold text-[#243B53] mb-2">{f.title}</h3>
+                  <p className="text-sm text-[#4A6278] leading-relaxed">{f.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="py-20 bg-[#F8FAFC]">
+        <section className="py-20 bg-[#F4EFE8]">
           <div className="container">
             <div className="text-center mb-14">
               <span className="section-label block mb-3">خطوة بخطوة</span>
-              <h2 className="text-3xl font-bold text-[#0F172A]">كيف يعمل المحرّك؟</h2>
+              <h2 className="text-3xl font-bold text-[#243B53]">كيف يعمل المحرّك؟</h2>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
               {howItWorks.map((step, i) => (
                 <div key={i} className="ts-card rounded-2xl p-6 relative">
-                  <div className="text-4xl font-black text-[#2563EB]/10 mb-3">{step.step}</div>
-                  <h3 className="font-bold text-[#0F172A] mb-2">{step.title}</h3>
-                  <p className="text-sm text-[#475569] leading-relaxed">{step.desc}</p>
+                  <div className="text-4xl font-black text-[#1E4E8C]/10 mb-3">{step.step}</div>
+                  <h3 className="font-bold text-[#243B53] mb-2">{step.title}</h3>
+                  <p className="text-sm text-[#4A6278] leading-relaxed">{step.desc}</p>
                   {i < howItWorks.length - 1 && (
                     <div className="hidden lg:flex absolute -left-3 top-1/2 -translate-y-1/2 z-10">
-                      <ChevronLeft className="w-6 h-6 text-[#2563EB]/30" />
+                      <ChevronLeft className="w-6 h-6 text-[#1E4E8C]/30" />
                     </div>
                   )}
                 </div>
@@ -110,36 +110,36 @@ export default function AIInsights() {
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
                   <span className="section-label block mb-3">مبادئنا الأساسية</span>
-                  <h2 className="text-3xl font-bold text-[#0F172A] mb-6">الذكاء الاصطناعي بمسؤولية</h2>
-                  <p className="text-[#475569] leading-relaxed mb-8">
+                  <h2 className="text-3xl font-bold text-[#243B53] mb-6">الذكاء الاصطناعي بمسؤولية</h2>
+                  <p className="text-[#4A6278] leading-relaxed mb-8">
                     نؤمن بأن الذكاء الاصطناعي في الرعاية الصحية يجب أن يكون شفافاً وأخلاقياً ومسؤولاً.
                   </p>
                   <div className="space-y-3">
                     {principles.map((p, i) => (
                       <div key={i} className="flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-[#14B8A6] flex-shrink-0 mt-0.5" />
-                        <p className="text-sm text-[#475569]">{p}</p>
+                        <CheckCircle2 className="w-5 h-5 text-[#2BBDB6] flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-[#4A6278]">{p}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-[#EFF6FF] to-[#F0FDFA] rounded-3xl p-8">
+                <div className="bg-gradient-to-br from-[#DFF3F1] to-[#DFF3F1] rounded-3xl p-8">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                      <Sparkles className="w-6 h-6 text-[#2563EB]" />
+                      <Sparkles className="w-6 h-6 text-[#1E4E8C]" />
                     </div>
                     <div>
-                      <p className="font-bold text-[#0F172A]">نموذج الشرح</p>
-                      <p className="text-xs text-[#475569]">مثال على مخرجات الذكاء الاصطناعي</p>
+                      <p className="font-bold text-[#243B53]">نموذج الشرح</p>
+                      <p className="text-xs text-[#4A6278]">مثال على مخرجات الذكاء الاصطناعي</p>
                     </div>
                   </div>
                   <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <p className="text-sm text-[#0F172A] leading-relaxed mb-4">
-                      <span className="font-semibold text-[#2563EB]">تحليل مجال القراءة:</span>{" "}
+                    <p className="text-sm text-[#243B53] leading-relaxed mb-4">
+                      <span className="font-semibold text-[#1E4E8C]">تحليل مجال القراءة:</span>{" "}
                       تُظهر الإجابات أنماطاً تتوافق مع صعوبات في الطلاقة القرائية. هذا لا يعني ضعف الذكاء — كثير من الأطفال الموهوبين يواجهون هذه الصعوبة وتتحسن بشكل ملحوظ مع الدعم المناسب.
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-[#475569]">
-                      <Shield className="w-3.5 h-3.5 text-[#14B8A6]" />
+                    <div className="flex items-center gap-2 text-xs text-[#4A6278]">
+                      <Shield className="w-3.5 h-3.5 text-[#2BBDB6]" />
                       <span>مراجَع من متخصص معتمد</span>
                     </div>
                   </div>
@@ -150,18 +150,18 @@ export default function AIInsights() {
         </section>
 
         {/* ─── قسم قصة AI للحكام ─── */}
-        <section className="py-20 bg-[#F8FAFC]">
+        <section className="py-20 bg-[#F4EFE8]">
           <div className="container">
             <div className="text-center mb-14">
               <span className="section-label block mb-3">شفافية كاملة</span>
               <h2
-                className="text-3xl font-bold text-[#0F172A] mb-4"
+                className="text-3xl font-bold text-[#243B53] mb-4"
                 style={{ fontFamily: "'Cairo', sans-serif" }}
               >
                 قصة الذكاء الاصطناعي في{" "}
                 <span
                   style={{
-                    background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                    background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
@@ -171,7 +171,7 @@ export default function AIInsights() {
                 </span>
               </h2>
               <p
-                className="text-[#475569] max-w-2xl mx-auto leading-relaxed"
+                className="text-[#4A6278] max-w-2xl mx-auto leading-relaxed"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
               >
                 كيف بنينا محرك التحليل — ولماذا صممناه بهذه الطريقة تحديداً
@@ -184,7 +184,7 @@ export default function AIInsights() {
               <div
                 className="rounded-3xl p-6 sm:p-8 mb-6 relative overflow-hidden"
                 style={{
-                  background: "linear-gradient(135deg, #0F172A 0%, #1e3a8a 55%, #0f766e 100%)",
+                  background: "linear-gradient(135deg, #243B53 0%, #1e3a8a 55%, #0f766e 100%)",
                   boxShadow: "0 20px 60px rgba(15,23,42,0.22)",
                 }}
               >
@@ -246,7 +246,7 @@ export default function AIInsights() {
               <div className="flex justify-center mb-6">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ background: "#EFF6FF", border: "2px solid #DBEAFE" }}
+                  style={{ background: "#DFF3F1", border: "2px solid #DBEAFE" }}
                 >
                   <ArrowLeft size={18} className="text-blue-600 rotate-90" />
                 </div>
@@ -256,7 +256,7 @@ export default function AIInsights() {
               <div
                 className="rounded-3xl p-6 sm:p-8 mb-6"
                 style={{
-                  background: "linear-gradient(135deg, #ECFDF5 0%, #F0FDFA 100%)",
+                  background: "linear-gradient(135deg, #ECFDF5 0%, #DFF3F1 100%)",
                   border: "1.5px solid rgba(20,184,166,0.25)",
                   boxShadow: "0 8px 32px rgba(20,184,166,0.1)",
                 }}
@@ -285,8 +285,8 @@ export default function AIInsights() {
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {[
-                    { q: "ما الذي رصده الفحص؟", color: "#2563EB", bg: "#EFF6FF" },
-                    { q: "ماذا قد يعني ذلك؟", color: "#14B8A6", bg: "#F0FDFA" },
+                    { q: "ما الذي رصده الفحص؟", color: "#1E4E8C", bg: "#DFF3F1" },
+                    { q: "ماذا قد يعني ذلك؟", color: "#2BBDB6", bg: "#DFF3F1" },
                     { q: "لماذا يهمّ ذلك؟", color: "#059669", bg: "#ECFDF5" },
                     { q: "ما الخطوة التالية الأنسب؟", color: "#D97706", bg: "#FFFBEB" },
                   ].map((item, i) => (
@@ -317,13 +317,13 @@ export default function AIInsights() {
                 className="rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
                 style={{
                   background: "white",
-                  border: "1.5px solid #F1F5F9",
+                  border: "1.5px solid #DFF3F1",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
                 }}
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "#EFF6FF" }}
+                  style={{ background: "#DFF3F1" }}
                 >
                   <Info size={18} className="text-blue-600" />
                 </div>
@@ -358,11 +358,11 @@ export default function AIInsights() {
           </div>
         </section>
 
-        <section className="py-16 bg-[#F8FAFC]">
+        <section className="py-16 bg-[#F4EFE8]">
           <div className="container">
             <div className="text-center mb-12">
               <span className="section-label block mb-3">اعرف أكثر</span>
-              <h2 className="text-3xl font-bold text-[#0F172A]">مصادر ذات صلة</h2>
+              <h2 className="text-3xl font-bold text-[#243B53]">مصادر ذات صلة</h2>
             </div>
             <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {[
@@ -372,11 +372,11 @@ export default function AIInsights() {
               ].map((r, i) => (
                 <Link key={i} href={r.href}>
                   <div className="ts-card rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer group">
-                    <div className="w-12 h-12 bg-[#EFF6FF] text-[#2563EB] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#DBEAFE] transition-colors">
+                    <div className="w-12 h-12 bg-[#DFF3F1] text-[#1E4E8C] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#DBEAFE] transition-colors">
                       <r.icon className="w-6 h-6" />
                     </div>
-                    <h3 className="font-bold text-[#0F172A] mb-1">{r.title}</h3>
-                    <p className="text-sm text-[#475569]">{r.desc}</p>
+                    <h3 className="font-bold text-[#243B53] mb-1">{r.title}</h3>
+                    <p className="text-sm text-[#4A6278]">{r.desc}</p>
                   </div>
                 </Link>
               ))}
@@ -392,7 +392,7 @@ export default function AIInsights() {
                 <p className="text-blue-100 mb-6">ابدأ الفحص الآن وستحصل على شرح مفصّل فور الانتهاء.</p>
                 <div className="flex flex-wrap gap-4 justify-center">
                   <Link href="/children">
-                    <button className="bg-white text-[#2563EB] font-semibold px-8 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-md">
+                    <button className="bg-white text-[#1E4E8C] font-semibold px-8 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-md">
                       ابدأ الفحص المجاني
                     </button>
                   </Link>

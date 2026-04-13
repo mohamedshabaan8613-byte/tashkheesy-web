@@ -3,7 +3,7 @@
  *
  * التصميم: Editorial Healthcare Calm
  * الهوية البصرية: Cairo + IBM Plex Sans Arabic
- * اللوحة اللونية: #F8FAFC خلفية | #2563EB أزرق | #14B8A6 أخضر
+ * اللوحة اللونية: #F4EFE8 خلفية | #1E4E8C أزرق | #2BBDB6 أخضر
  *
  * الهدف: شرح القمع الكامل (فحص → فهم → متخصص → دعم)
  * وبيعه بوضوح دون ادعاءات مبالغ فيها
@@ -42,8 +42,8 @@ const FUNNEL_STEPS = [
     title: "فحص أولي مجاني",
     desc: "أسئلة منظمة تغطي مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — تستغرق 10-15 دقيقة فقط.",
     icon: Brain,
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "rgba(37,99,235,0.15)",
     tag: "مجاني تماماً",
     tagColor: "#059669",
@@ -53,11 +53,11 @@ const FUNNEL_STEPS = [
     title: "فهم المؤشرات",
     desc: "تحليل أولي مدعوم بالذكاء الاصطناعي يشرح ما رصده الفحص في مجالات القراءة والكتابة والانتباه والتركيز.",
     icon: Target,
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "rgba(20,184,166,0.15)",
     tag: "مُضمَّن في الفحص",
-    tagColor: "#14B8A6",
+    tagColor: "#2BBDB6",
   },
   {
     num: "٣",
@@ -75,7 +75,7 @@ const FUNNEL_STEPS = [
     title: "حجز الجلسة",
     desc: "حجز مباشر مع المتخصص المناسب — جلسة أولى تُعطيك تقييماً أعمق وخطة دعم مخصصة.",
     icon: Calendar,
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     border: "rgba(245,158,11,0.15)",
     tag: "تبدأ من ٢٠٠ ريال",
@@ -91,7 +91,7 @@ const SERVICE_TIERS = [
     subtitle: "ابدأ هنا",
     price: "مجاني",
     priceNote: "بدون بطاقة ائتمان",
-    color: "#2563EB",
+    color: "#1E4E8C",
     bg: "white",
     border: "rgba(37,99,235,0.2)",
     highlight: false,
@@ -113,8 +113,8 @@ const SERVICE_TIERS = [
     subtitle: "الأكثر طلباً",
     price: "تبدأ من ٢٠٠ ريال",
     priceNote: "للجلسة الواحدة",
-    color: "#14B8A6",
-    bg: "linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #0F766E 100%)",
+    color: "#2BBDB6",
+    bg: "linear-gradient(135deg, #243B53 0%, #1E3A8A 55%, #0F766E 100%)",
     border: "transparent",
     highlight: true,
     features: [
@@ -159,15 +159,15 @@ const WHO_BENEFITS = [
     icon: Heart,
     title: "أولياء الأمور",
     desc: "تلاحظ أن طفلك يجد صعوبة في القراءة أو الكتابة أو التركيز — وتريد فهماً أوضح قبل اتخاذ أي خطوة.",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
   {
     icon: GraduationCap,
     title: "الطلاب والبالغون",
     desc: "تشعر بأن هناك تحديات في القراءة أو الانتباه أثرت على مسيرتك الأكاديمية أو المهنية.",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     icon: BookOpen,
@@ -183,11 +183,11 @@ export default function Services() {
   useSEO({
     title: "خدماتنا — تشخيصي | Tashkheesy",
     description:
-      "فحص أولي مجاني لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — مع مطابقة متخصص وحجز جلسة مباشر.",
+      "فحص أولي لمؤشرات صعوبات التعلم، فرط الحركة وتشتت الانتباه — مع مطابقة متخصص وحجز جلسة مباشر.",
   });
 
   return (
-    <div className="min-h-screen" dir="rtl" style={{ background: "#F8FAFC" }}>
+    <div className="min-h-screen" dir="rtl" style={{ background: "#F4EFE8" }}>
       <Navbar />
 
       {/* ─── Hero ──────────────────────────────────────────────────────────────── */}
@@ -200,10 +200,10 @@ export default function Services() {
               border: "1px solid rgba(37,99,235,0.15)",
             }}
           >
-            <Sparkles size={13} style={{ color: "#2563EB" }} />
+            <Sparkles size={13} style={{ color: "#1E4E8C" }} />
             <span
               className="text-xs font-semibold"
-              style={{ color: "#2563EB", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              style={{ color: "#1E4E8C", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
             >
               من الفحص إلى الدعم — في خطوات واضحة
             </span>
@@ -219,7 +219,7 @@ export default function Services() {
             className="text-base sm:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
           >
-            نبدأ بفحص أولي مجاني لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه، ثم نوجهك نحو المتخصص المناسب — بخطوات واضحة وبدون تعقيد.
+            نبدأ بفحص أولي لمؤشرات صعوبات التعلم، فرط الحركة وتشتت الانتباه، ثم نوجهك نحو المتخصص المناسب — معك خطوة بخطوة نحو فهم أوضح.
           </p>
         </div>
       </section>
@@ -334,7 +334,7 @@ export default function Services() {
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full mb-3"
                       style={{ background: "rgba(255,255,255,0.15)" }}
                     >
-                      <Star size={11} style={{ color: "#F59E0B", fill: "#F59E0B" }} />
+                      <Star size={11} style={{ color: "#F4C46A", fill: "#F4C46A" }} />
                       <span
                         className="text-xs font-bold text-white"
                         style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
@@ -355,7 +355,7 @@ export default function Services() {
                     style={{
                       fontFamily: "'Cairo', sans-serif",
                       fontWeight: 900,
-                      color: tier.highlight ? "white" : "#0F172A",
+                      color: tier.highlight ? "white" : "#243B53",
                     }}
                   >
                     {tier.title}
@@ -428,7 +428,7 @@ export default function Services() {
                       ...(tier.ctaStyle === "filled"
                         ? {
                             background: "white",
-                            color: "#0F172A",
+                            color: "#243B53",
                             boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
                           }
                         : {
@@ -507,12 +507,12 @@ export default function Services() {
               border: "1px solid rgba(37,99,235,0.1)",
             }}
           >
-            <Shield size={16} style={{ color: "#2563EB", flexShrink: 0, marginTop: "2px" }} />
+            <Shield size={16} style={{ color: "#1E4E8C", flexShrink: 0, marginTop: "2px" }} />
             <p
               className="text-sm text-slate-500 leading-relaxed"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
             >
-              <strong style={{ color: "#0F172A" }}>تشخيصي منصة فحص أولي مجانية.</strong> لا تُصدر تشخيصاً طبياً أو نفسياً رسمياً. نتائج الفحص مؤشرات توجيهية أولية — التشخيص الرسمي يتطلب تقييماً شاملاً من متخصص معتمد.
+              <strong style={{ color: "#243B53" }}>تشخيصي منصة فحص أولي مجانية.</strong> لا تُصدر تشخيصاً طبياً أو نفسياً رسمياً. نتائج الفحص مؤشرات توجيهية أولية — التشخيص الرسمي يتطلب تقييماً شاملاً من متخصص معتمد.
             </p>
           </div>
 
@@ -532,7 +532,7 @@ export default function Services() {
             <button
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-white font-bold text-base transition-all duration-200 hover:-translate-y-0.5"
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                 fontFamily: "'Cairo', sans-serif",
                 boxShadow: "0 8px 24px rgba(37,99,235,0.3)",
               }}

@@ -1,7 +1,7 @@
 /*
  * تشخيصي ScreeningIntro — Editorial Healthcare
  * Calm, reassuring intro step before screening questions
- * Design: Light mode, #F8FAFC bg, #2563EB primary, #14B8A6 secondary
+ * Design: Light mode, #F4EFE8 bg, #1E4E8C primary, #2BBDB6 secondary
  * Typography: Cairo (headings) + IBM Plex Sans Arabic (body)
  * Tone: warm, medically credible, non-judgmental, premium
  *
@@ -33,23 +33,23 @@ const SCREENING_AREAS = [
     icon: BookOpen,
     label: "القراءة",
     desc: "الطلاقة والفهم القرائي",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "rgba(37,99,235,0.15)",
   },
   {
     icon: Pencil,
     label: "الكتابة",
     desc: "الإملاء والتعبير الكتابي",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "rgba(20,184,166,0.15)",
   },
   {
     icon: Zap,
     label: "الانتباه",
     desc: "التركيز والتنظيم الذاتي",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     border: "rgba(245,158,11,0.15)",
   },
@@ -108,12 +108,12 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
 
   // محاور الفحص بحسب المسار
   const ADHD_AREAS = [
-    { icon: Zap,      label: "الانتباه",       desc: "التركيز والتنظيم الذاتي",      color: "#F59E0B", bg: "#FFFBEB",  border: "rgba(245,158,11,0.15)" },
+    { icon: Zap,      label: "الانتباه",       desc: "التركيز والتنظيم الذاتي",      color: "#F4C46A", bg: "#FFFBEB",  border: "rgba(245,158,11,0.15)" },
     { icon: Brain,    label: "فرط الحركة",     desc: "النشاط الزائد والاندفاعية",    color: "#8B5CF6", bg: "#F5F3FF",  border: "rgba(139,92,246,0.15)" },
     { icon: Users,    label: "الاجتماعي",      desc: "التفاعل والمهارات الاجتماعية", color: "#059669", bg: "#ECFDF5",  border: "rgba(5,150,105,0.15)" },
-    { icon: Shield,   label: "التنظيم",        desc: "تنظيم الوقت والمهام",          color: "#2563EB", bg: "#EFF6FF",  border: "rgba(37,99,235,0.15)" },
+    { icon: Shield,   label: "التنظيم",        desc: "تنظيم الوقت والمهام",          color: "#1E4E8C", bg: "#DFF3F1",  border: "rgba(37,99,235,0.15)" },
     { icon: Sparkles, label: "المزاج",         desc: "الاستجابة العاطفية والتقلبات", color: "#DC2626", bg: "#FEF2F2",  border: "rgba(220,38,38,0.15)" },
-    { icon: Clock,    label: "الذاكرة العاملة", desc: "الاحتفاظ بالمعلومات آنياً",   color: "#14B8A6", bg: "#F0FDFA",  border: "rgba(20,184,166,0.15)" },
+    { icon: Clock,    label: "الذاكرة العاملة", desc: "الاحتفاظ بالمعلومات آنياً",   color: "#2BBDB6", bg: "#DFF3F1",  border: "rgba(20,184,166,0.15)" },
   ];
   const activeAreas = pathType === "adhd" ? ADHD_AREAS : SCREENING_AREAS;
 
@@ -134,19 +134,19 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#F8FAFC", direction: "rtl" }}
+      style={{ background: "#F4EFE8", direction: "rtl" }}
     >
       {/* ─── شريط التنقل العلوي ─────────────────────────────────────────────── */}
       <header
         className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b"
-        style={{ borderColor: "#E2E8F0" }}
+        style={{ borderColor: "#D8E8E7" }}
       >
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           {/* زر العودة */}
           <button
             onClick={() => navigate("/children")}
             className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-blue-600"
-            style={{ color: "#475569", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+            style={{ color: "#4A6278", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
           >
             <ChevronLeft size={16} />
             العودة
@@ -160,11 +160,11 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
           >
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)" }}
+              style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)" }}
             >
               <Brain size={14} className="text-white" />
             </div>
-            <span className="font-black text-sm" style={{ color: "#0F172A" }}>
+            <span className="font-black text-sm" style={{ color: "#243B53" }}>
               تشخيصي
             </span>
           </a>
@@ -214,7 +214,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
                   لنبدأ بخطوة أولى تساعدك على{" "}
                   <span
                     style={{
-                      background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                      background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
@@ -228,7 +228,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
                   لنبدأ بخطوة أولى تساعدك على{" "}
                   <span
                     style={{
-                      background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                      background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
@@ -253,7 +253,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
             style={{
               ...animStyle(160),
               background: "white",
-              border: "1px solid #E2E8F0",
+              border: "1px solid #D8E8E7",
               boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
             }}
           >
@@ -265,9 +265,9 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
             </h2>
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                { icon: Clock, value: "١٥ دقيقة", label: "المدة التقريبية", color: "#2563EB", bg: "#EFF6FF" },
-                { icon: Brain, value: "٦ محاور", label: "مجالات التقييم", color: "#14B8A6", bg: "#F0FDFA" },
-                { icon: Sparkles, value: "فوري", label: "شرح AI للنتائج", color: "#F59E0B", bg: "#FFFBEB" },
+                { icon: Clock, value: "١٥ دقيقة", label: "المدة التقريبية", color: "#1E4E8C", bg: "#DFF3F1" },
+                { icon: Brain, value: "٦ محاور", label: "مجالات التقييم", color: "#2BBDB6", bg: "#DFF3F1" },
+                { icon: Sparkles, value: "فوري", label: "شرح AI للنتائج", color: "#F4C46A", bg: "#FFFBEB" },
               ].map((item, i) => {
                 const Icon = item.icon;
                 return (
@@ -302,7 +302,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
             {/* نصيحة الإجابة */}
             <div
               className="flex items-start gap-3 rounded-xl p-3"
-              style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+              style={{ background: "#F4EFE8", border: "1px solid #D8E8E7" }}
             >
               <Info size={15} className="text-blue-500 flex-shrink-0 mt-0.5" />
               <p
@@ -435,7 +435,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
             style={{
               ...animStyle(400),
               background: "white",
-              border: "1px solid #E2E8F0",
+              border: "1px solid #D8E8E7",
               boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
             }}
           >
@@ -452,7 +452,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
                   <div key={i} className="flex items-start gap-3">
                     <div
                       className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: "#F0FDFA" }}
+                      style={{ background: "#DFF3F1" }}
                     >
                       <Icon size={14} className="text-teal-600" />
                     </div>
@@ -475,7 +475,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
               onClick={() => navigate(screeningHref)}
               className="flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:-translate-y-1 active:translate-y-0"
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)",
                 fontFamily: "'Cairo', sans-serif",
                 fontWeight: 700,
                 boxShadow: "0 6px 20px rgba(37,99,235,0.35)",
@@ -497,8 +497,8 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
               className="sm:w-auto flex items-center justify-center gap-2 py-4 px-6 rounded-2xl font-semibold text-sm transition-all duration-200 hover:-translate-y-0.5"
               style={{
                 background: "white",
-                color: "#475569",
-                border: "1.5px solid #E2E8F0",
+                color: "#4A6278",
+                border: "1.5px solid #D8E8E7",
                 fontFamily: "'Cairo', sans-serif",
               }}
             >

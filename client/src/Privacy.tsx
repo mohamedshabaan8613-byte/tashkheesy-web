@@ -2,7 +2,7 @@
  * تشخيصي — صفحة سياسة الخصوصية (نسخة محسّنة)
  * Editorial Healthcare · Arabic-first · Human-readable · Reassuring
  * Simple, transparent, respectful — not a heavy legal document
- * Palette: #F8FAFC bg · #0F172A text · #2563EB accent · #14B8A6 secondary
+ * Palette: #F4EFE8 bg · #243B53 text · #1E4E8C accent · #2BBDB6 secondary
  */
 import { Link } from "wouter";
 import Navbar from "@/components/Navbar";
@@ -25,8 +25,8 @@ const sections = [
     icon: Eye,
     title: "ما الذي نجمعه؟",
     subtitle: "فقط ما هو ضروري لتقديم الخدمة",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "#BFDBFE",
     items: [
       {
@@ -52,8 +52,8 @@ const sections = [
     icon: Heart,
     title: "كيف نستخدم بياناتك؟",
     subtitle: "لخدمتك فقط، لا لأغراض أخرى",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "#99F6E4",
     items: [
       {
@@ -75,8 +75,8 @@ const sections = [
     icon: Lock,
     title: "كيف نحمي بياناتك؟",
     subtitle: "أمان تقني من أعلى المستويات",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
     border: "#BFDBFE",
     items: [
       {
@@ -98,7 +98,7 @@ const sections = [
     icon: Shield,
     title: "حقوقك كاملة",
     subtitle: "أنت تتحكم في بياناتك دائماً",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
     border: "#FDE68A",
     items: [
@@ -125,8 +125,8 @@ const sections = [
     icon: Trash2,
     title: "متى نحذف بياناتك؟",
     subtitle: "لا نحتفظ بما لا نحتاجه",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
     border: "#99F6E4",
     items: [
       {
@@ -215,7 +215,7 @@ export default function Privacy() {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#F8FAFC", direction: "rtl" }}
+      style={{ background: "#F4EFE8", direction: "rtl" }}
     >
       <Navbar />
 
@@ -223,13 +223,13 @@ export default function Privacy() {
       <section
         className="pt-28 pb-16 relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #F0FDFA 0%, #EFF6FF 50%, #F8FAFC 100%)",
+          background: "linear-gradient(135deg, #DFF3F1 0%, #DFF3F1 50%, #F4EFE8 100%)",
         }}
       >
         <div
           className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-20 pointer-events-none"
           style={{
-            background: "radial-gradient(circle, #14B8A640, transparent 70%)",
+            background: "radial-gradient(circle, #2BBDB640, transparent 70%)",
             transform: "translate(30%, -30%)",
           }}
         />
@@ -256,7 +256,7 @@ export default function Privacy() {
           <div className="flex items-start gap-6">
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, #14B8A6, #2563EB)" }}
+              style={{ background: "linear-gradient(135deg, #2BBDB6, #1E4E8C)" }}
             >
               <Shield size={28} className="text-white" />
             </div>
@@ -269,7 +269,7 @@ export default function Privacy() {
                 <span
                   className="mr-3"
                   style={{
-                    background: "linear-gradient(135deg, #14B8A6, #2563EB)",
+                    background: "linear-gradient(135deg, #2BBDB6, #1E4E8C)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                   }}
@@ -303,9 +303,9 @@ export default function Privacy() {
                 className="flex items-center gap-2 px-4 py-2 rounded-full text-sm"
                 style={{
                   background: "white",
-                  border: "1px solid #E2E8F0",
+                  border: "1px solid #D8E8E7",
                   fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  color: "#475569",
+                  color: "#4A6278",
                   boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
                 }}
               >
@@ -390,7 +390,7 @@ export default function Privacy() {
           {/* Children note */}
           <div
             className="rounded-2xl p-6"
-            style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}
+            style={{ background: "#DFF3F1", border: "1px solid #BFDBFE" }}
           >
             <div className="flex gap-4">
               <span className="text-2xl flex-shrink-0">👶</span>
@@ -419,7 +419,7 @@ export default function Privacy() {
           {/* Updates note */}
           <div
             className="rounded-2xl p-6"
-            style={{ background: "white", border: "1px solid #E2E8F0" }}
+            style={{ background: "white", border: "1px solid #D8E8E7" }}
           >
             <p
               className="text-sm text-slate-500 leading-relaxed"
@@ -439,7 +439,7 @@ export default function Privacy() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             className="rounded-3xl p-10 text-center"
-            style={{ background: "linear-gradient(135deg, #0F172A, #1E3A8A)" }}
+            style={{ background: "linear-gradient(135deg, #243B53, #1E3A8A)" }}
           >
             <div
               className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center"
@@ -466,7 +466,7 @@ export default function Privacy() {
                 href="mailto:privacy@tashkheesy.com"
                 className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all hover:scale-105"
                 style={{
-                  background: "linear-gradient(135deg, #2563EB, #14B8A6)",
+                  background: "linear-gradient(135deg, #1E4E8C, #2BBDB6)",
                   color: "white",
                   fontFamily: "'Cairo', sans-serif",
                   textDecoration: "none",

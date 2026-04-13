@@ -26,7 +26,7 @@
  *   3. Arabic-first UX — cultural fit
  *   4. Structured next step — clarity over confusion
  *
- * Design: asymmetric two-column, light #F8FAFC background, preserved
+ * Design: asymmetric two-column, light #F4EFE8 background, preserved
  */
 
 import { useEffect, useRef } from "react";
@@ -37,29 +37,29 @@ const reasons = [
     icon: Brain,
     title: "تحليل أولي مدعوم بالذكاء الاصطناعي",
     desc: "بعد إتمام الفحص، يُنظّم الذكاء الاصطناعي المؤشرات ويشرحها بلغة عربية واضحة — يساعدك على فهم ما رصده الفحص دون أن يُصدر حكماً أو تشخيصاً رسمياً.",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
   {
     icon: BookOpen,
     title: "مؤشرات القراءة والكتابة والانتباه والتركيز",
     desc: "الفحص يُغطي مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — بما فيها تحديات القراءة والكتابة والانتباه والتركيز — بصورة منظمة وقابلة للفهم.",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
   },
   {
     icon: Languages,
     title: "تجربة مبنية للسياق العربي",
     desc: "المحتوى مكتوب بالعربية ومصمم لمراعاة الحساسية الثقافية للأسرة العربية — دون تعقيد طبي أو لغة أكاديمية مُربكة.",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     icon: Compass,
     title: "خطوة أولى منظمة بدل الحيرة",
     desc: "بدلاً من البدء من الصفر أو الانتظار، تحصل على فهم أولي واضح للمؤشرات وتوجيه نحو الخطوة التالية الأكثر ملاءمة لحالتك.",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
 ];
 
@@ -67,22 +67,22 @@ const valueGrid = [
   {
     value: "مجاني",
     label: "فحص أولي بدون أي رسوم — بدون حواجز للبدء",
-    color: "#14B8A6",
+    color: "#2BBDB6",
   },
   {
     value: "عربي",
     label: "شرح أولي بالعربية — لغةً وثقافةً وحساسيةً",
-    color: "#2563EB",
+    color: "#1E4E8C",
   },
   {
     value: "٦ محاور",
     label: "تغطية مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه",
-    color: "#F59E0B",
+    color: "#F4C46A",
   },
   {
     value: "خطوة واضحة",
     label: "توجيه نحو الخطوة التالية الأنسب — بدل الحيرة",
-    color: "#2563EB",
+    color: "#1E4E8C",
   },
 ];
 
@@ -111,7 +111,7 @@ export default function WhyTashkheesy() {
       id="why-tashkheesy"
       ref={sectionRef}
       className="py-20 lg:py-28"
-      style={{ background: "#F8FAFC" }}
+      style={{ background: "#F4EFE8" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
@@ -129,7 +129,7 @@ export default function WhyTashkheesy() {
               خطوتك الأولى{" "}
               <span
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",

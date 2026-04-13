@@ -38,7 +38,7 @@ export default function FinalCTA() {
       <div
         className="absolute inset-0"
         style={{
-          background: "linear-gradient(135deg, #1e3a8a 0%, #2563EB 45%, #0f766e 100%)",
+          background: "linear-gradient(135deg, #1e3a8a 0%, #1E4E8C 45%, #0f766e 100%)",
         }}
       />
 
@@ -108,7 +108,7 @@ export default function FinalCTA() {
           className="fade-in-up text-xl text-blue-100 max-w-2xl mx-auto mb-10 leading-relaxed"
           style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
         >
-          فحص أولي مجاني لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه —
+          فحص أولي لمؤشرات صعوبات التعلم، فرط الحركة وتشتت الانتباه —
           سواء كنت والداً يلاحظ شيئاً ما، أو بالغاً يبحث عن فهم أعمق لنفسه.
         </p>
 

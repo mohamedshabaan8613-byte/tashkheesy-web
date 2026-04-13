@@ -12,39 +12,39 @@ const testimonials = [
     name: "أم محمد",
     role: "والدة طالب في الصف الثالث الابتدائي",
     avatar: "أ",
-    avatarColor: "#2563EB",
-    avatarBg: "#EFF6FF",
+    avatarColor: "#1E4E8C",
+    avatarBg: "#DFF3F1",
     quote:
       "كنت أعرف أن هناك شيئاً ما، لكن لم أكن أعرف من أين أبدأ. تشخيصي أعطاني وضوحاً لم أجده في أي مكان آخر — وفي أقل من ربع ساعة.",
     stars: 5,
     tag: "صعوبة في القراءة",
-    tagColor: "#2563EB",
-    tagBg: "#EFF6FF",
+    tagColor: "#1E4E8C",
+    tagBg: "#DFF3F1",
   },
   {
     name: "أحمد",
     role: "طالب جامعي، ٢٢ عاماً",
     avatar: "ح",
-    avatarColor: "#14B8A6",
-    avatarBg: "#F0FDFA",
+    avatarColor: "#2BBDB6",
+    avatarBg: "#DFF3F1",
     quote:
       "طول حياتي أُقال لي 'أنت كسول'. بعد الفحص اكتشفت أن لديّ صعوبة تعلم حقيقية. الآن أفهم نفسي أكثر وأعرف كيف أتعامل مع دراستي.",
     stars: 5,
     tag: "تشتت الانتباه",
-    tagColor: "#14B8A6",
-    tagBg: "#F0FDFA",
+    tagColor: "#2BBDB6",
+    tagBg: "#DFF3F1",
   },
   {
     name: "د. سارة",
     role: "معلمة تربية خاصة — ١٢ سنة خبرة",
     avatar: "س",
-    avatarColor: "#F59E0B",
+    avatarColor: "#F4C46A",
     avatarBg: "#FFFBEB",
     quote:
       "أنصح كل أهل طلابي باستخدام تشخيصي كخطوة أولى. التقرير الذي يحصلون عليه يساعدني أنا أيضاً في فهم الطالب بشكل أعمق.",
     stars: 5,
     tag: "توصية متخصصة",
-    tagColor: "#F59E0B",
+    tagColor: "#F4C46A",
     tagBg: "#FFFBEB",
   },
 ];
@@ -86,7 +86,7 @@ export default function Testimonials() {
             ماذا قالوا{" "}
             <span
               style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -144,7 +144,7 @@ export default function Testimonials() {
               {/* Author */}
               <div
                 className="flex items-center gap-3 pt-5"
-                style={{ borderTop: "1px solid #F1F5F9" }}
+                style={{ borderTop: "1px solid #DFF3F1" }}
               >
                 <div
                   className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"

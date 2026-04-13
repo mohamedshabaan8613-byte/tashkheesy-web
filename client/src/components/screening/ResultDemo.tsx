@@ -114,14 +114,14 @@ export default function ResultDemo() {
     <div
       className="min-h-screen flex items-center justify-center p-6"
       dir="rtl"
-      style={{ background: "#F8FAFC", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+      style={{ background: "#F4EFE8", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
     >
       <div className="max-w-lg w-full">
         {/* رأس الصفحة */}
         <div className="text-center mb-8">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)" }}
+            style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)" }}
           >
             <span className="text-white text-2xl font-black" style={{ fontFamily: "'Cairo', sans-serif" }}>ت</span>
           </div>

@@ -82,7 +82,7 @@ export default function Step3DataConfirmation() {
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-[#2563EB]" />
+            <User className="w-5 h-5 text-[#1E4E8C]" />
             <h3 className="text-lg font-bold text-slate-900">
               بياناتك الشخصية
             </h3>
@@ -156,7 +156,7 @@ export default function Step3DataConfirmation() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-4">
             {isChildService ? (
-              <Baby className="w-5 h-5 text-[#2563EB]" />
+              <Baby className="w-5 h-5 text-[#1E4E8C]" />
             ) : (
               <GraduationCap className="w-5 h-5 text-emerald-600" />
             )}
@@ -267,7 +267,7 @@ export default function Step3DataConfirmation() {
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-[#2563EB]" />
+            <FileText className="w-5 h-5 text-[#1E4E8C]" />
             <h3 className="text-lg font-bold text-slate-900">
               ملاحظات إضافية (اختياري)
             </h3>
@@ -305,7 +305,7 @@ export default function Step3DataConfirmation() {
               />
               <span className="text-slate-700">
                 أوافق على{" "}
-                <Link href="/privacy" className="text-[#2563EB] underline">
+                <Link href="/privacy" className="text-[#1E4E8C] underline">
                   سياسة الخصوصية
                 </Link>{" "}
                 واستخدام بياناتي لأغراض تقديم خدمة التشخيص.{" "}
@@ -325,7 +325,7 @@ export default function Step3DataConfirmation() {
               <span className="text-slate-700">
                 أفهم أن المنصة لا تقدم خدمات طوارئ، وأن التوصيات لا تُغني عن
                 مراجعة طبيب عند الضرورة. (
-                <Link href="/disclaimer" className="text-[#2563EB] underline">
+                <Link href="/disclaimer" className="text-[#1E4E8C] underline">
                   إخلاء المسؤولية
                 </Link>
                 ) <span className="text-red-500">*</span>

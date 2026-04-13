@@ -9,7 +9,7 @@
  * - إضافة صورة حقيقية في كل بطاقة مع fallback avatar
  * - تحسين Hero section ليتوافق مع باقي الصفحات
  *
- * Palette: #F8FAFC bg, #FFFFFF surface, #0F172A text, #2563EB primary, #14B8A6 secondary
+ * Palette: #F4EFE8 bg, #FFFFFF surface, #243B53 text, #1E4E8C primary, #2BBDB6 secondary
  */
 
 import { useSEO } from "@/hooks/useSEO";
@@ -36,8 +36,8 @@ const TEAM = [
     // امرأة محترفة، خلفية هادئة، مناسبة للسياق الصحي التعليمي
     image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&crop=face&auto=format&q=80",
     initials: "لش",
-    accentColor: "#2563EB",
-    accentBg: "#EFF6FF",
+    accentColor: "#1E4E8C",
+    accentBg: "#DFF3F1",
     qualifications: [
       "دكتوراه في التربية الخاصة — جامعة الملك سعود",
       "ماجستير في صعوبات التعلم — جامعة الإمام",
@@ -60,8 +60,8 @@ const TEAM = [
     // رجل محترف، مظهر أكاديمي هادئ
     image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face&auto=format&q=80",
     initials: "مع",
-    accentColor: "#14B8A6",
-    accentBg: "#F0FDFA",
+    accentColor: "#2BBDB6",
+    accentBg: "#DFF3F1",
     qualifications: [
       "ماجستير في التربية الخاصة — جامعة أم القرى",
       "بكالوريوس صعوبات التعلم — جامعة الطائف",
@@ -84,7 +84,7 @@ const TEAM = [
     // امرأة محترفة، ابتسامة دافئة، مناسبة للسياق التعليمي
     image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=400&h=400&fit=crop&crop=face&auto=format&q=80",
     initials: "نخ",
-    accentColor: "#F59E0B",
+    accentColor: "#F4C46A",
     accentBg: "#FFFBEB",
     qualifications: [
       "ماجستير في صعوبات التعلم — جامعة الملك سعود",
@@ -128,10 +128,10 @@ const TEAM = [
 ];
 
 const STATS = [
-  { icon: Users, value: "٤", label: "أخصائيين معتمدين", color: "#2563EB", bg: "#EFF6FF" },
-  { icon: GraduationCap, value: "٤٥+", label: "سنة خبرة مجمعة", color: "#14B8A6", bg: "#F0FDFA" },
+  { icon: Users, value: "٤", label: "أخصائيين معتمدين", color: "#1E4E8C", bg: "#DFF3F1" },
+  { icon: GraduationCap, value: "٤٥+", label: "سنة خبرة مجمعة", color: "#2BBDB6", bg: "#DFF3F1" },
   { icon: BookOpen, value: "٣٥٠٠+", label: "جلسة تشخيص", color: "#7C3AED", bg: "#F5F3FF" },
-  { icon: Star, value: "٤.٨", label: "متوسط التقييم", color: "#F59E0B", bg: "#FFFBEB" },
+  { icon: Star, value: "٤.٨", label: "متوسط التقييم", color: "#F4C46A", bg: "#FFFBEB" },
 ];
 
 const ACCREDITATIONS = [
@@ -197,7 +197,7 @@ export default function Team() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "#F8FAFC", direction: "rtl", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+      style={{ background: "#F4EFE8", direction: "rtl", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
     >
       <Navbar />
       <main className="flex-grow">
@@ -206,7 +206,7 @@ export default function Team() {
         <section
           className="relative py-20 overflow-hidden"
           style={{
-            background: "linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #0F766E 100%)",
+            background: "linear-gradient(135deg, #243B53 0%, #1E3A8A 60%, #0F766E 100%)",
           }}
         >
           {/* نقاط خلفية */}
@@ -251,7 +251,7 @@ export default function Team() {
                     className="rounded-2xl p-5 text-center"
                     style={{
                       background: "white",
-                      border: "1px solid #E2E8F0",
+                      border: "1px solid #D8E8E7",
                       boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
                     }}
                   >
@@ -281,7 +281,7 @@ export default function Team() {
             <div className="text-center mb-12">
               <p
                 className="text-xs font-bold uppercase tracking-widest mb-3"
-                style={{ color: "#2563EB", letterSpacing: "0.12em" }}
+                style={{ color: "#1E4E8C", letterSpacing: "0.12em" }}
               >
                 تعرف على الفريق
               </p>
@@ -303,7 +303,7 @@ export default function Team() {
                   className="rounded-2xl overflow-hidden group transition-all duration-300 hover:-translate-y-1"
                   style={{
                     background: "white",
-                    border: "1px solid #E2E8F0",
+                    border: "1px solid #D8E8E7",
                     boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
                   }}
                 >
@@ -323,7 +323,7 @@ export default function Team() {
                       {/* شارة التقييم */}
                       <div
                         className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold"
-                        style={{ background: "rgba(255,255,255,0.92)", color: "#0F172A" }}
+                        style={{ background: "rgba(255,255,255,0.92)", color: "#243B53" }}
                       >
                         <Star size={10} className="fill-amber-400 text-amber-400" />
                         {member.rating}
@@ -356,7 +356,7 @@ export default function Team() {
                         </span>
                         <span
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                          style={{ background: "#F1F5F9", color: "#475569" }}
+                          style={{ background: "#DFF3F1", color: "#4A6278" }}
                         >
                           <Award size={10} />
                           {member.experience} خبرة
@@ -414,12 +414,12 @@ export default function Team() {
         </section>
 
         {/* ─── Accreditations ───────────────────────────────────────────────── */}
-        <section className="py-16" style={{ background: "#F1F5F9" }}>
+        <section className="py-16" style={{ background: "#DFF3F1" }}>
           <div className="container mx-auto px-4">
             <div className="text-center mb-10">
               <p
                 className="text-xs font-bold uppercase tracking-widest mb-3"
-                style={{ color: "#2563EB", letterSpacing: "0.12em" }}
+                style={{ color: "#1E4E8C", letterSpacing: "0.12em" }}
               >
                 اعتماداتنا
               </p>
@@ -439,15 +439,15 @@ export default function Team() {
                   className="rounded-2xl p-5 text-center"
                   style={{
                     background: "white",
-                    border: "1px solid #E2E8F0",
+                    border: "1px solid #D8E8E7",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                   }}
                 >
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3"
-                    style={{ background: "#EFF6FF" }}
+                    style={{ background: "#DFF3F1" }}
                   >
-                    <Award size={18} style={{ color: "#2563EB" }} />
+                    <Award size={18} style={{ color: "#1E4E8C" }} />
                   </div>
                   <p className="text-xs text-slate-700 font-semibold leading-relaxed">{name}</p>
                 </div>
@@ -462,7 +462,7 @@ export default function Team() {
             <div
               className="rounded-3xl p-10 md:p-14 text-center relative overflow-hidden"
               style={{
-                background: "linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #0F766E 100%)",
+                background: "linear-gradient(135deg, #243B53 0%, #1E3A8A 60%, #0F766E 100%)",
               }}
             >
               <div

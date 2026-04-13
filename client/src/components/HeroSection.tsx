@@ -38,7 +38,7 @@ export default function HeroSection() {
     <section
       id="hero"
       className="relative min-h-screen flex flex-col justify-center overflow-hidden"
-      style={{ background: "linear-gradient(160deg, #F8FAFC 0%, #EFF6FF 50%, #F0FDFA 100%)" }}
+      style={{ background: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%)" }}
     >
       {/* Background image */}
       <div
@@ -85,7 +85,7 @@ export default function HeroSection() {
                 className="text-xs font-semibold text-blue-700"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", letterSpacing: "0.02em" }}
               >
-                مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — فحص أولي مجاني
+                فحص أولي لمؤشرات صعوبات التعلم، فرط الحركة وتشتت الانتباه
               </span>
             </div>
 
@@ -103,7 +103,7 @@ export default function HeroSection() {
               <span
                 className="block text-xl sm:text-2xl lg:text-3xl font-black mb-1.5"
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -117,7 +117,7 @@ export default function HeroSection() {
               <br />
               <span
                 style={{
-                  background: "linear-gradient(135deg, #2563EB 0%, #14B8A6 100%)",
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -140,9 +140,9 @@ export default function HeroSection() {
               }}
             >
               <span className="hidden sm:inline">
-                <strong style={{ fontWeight: 700, color: "#1e40af" }}>تشخيصي (Tashkheesy)</strong> تقدم فحصاً أولياً مجانياً مدعوماً بالذكاء الاصطناعي، يساعدك في فهم مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه، ويساعدك على اتخاذ خطوة أولى أكثر وضوحاً نحو الدعم المناسب.
+                <strong style={{ fontWeight: 700, color: "#1E4E8C" }}>تشخيصي (Tashkheesy)</strong> — معك خطوة بخطوة نحو فهم أوضح. فحص أولي لمؤشرات صعوبات التعلم، فرط الحركة وتشتت الانتباه، مدعوم بالذكاء الاصطناعي.
               </span>
-              <span className="sm:hidden">فحص أولي مجاني لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — خطوة أولى أوضح نحو الدعم المناسب.</span>
+              <span className="sm:hidden">فحص أولي لمؤشرات صعوبات التعلم، فرط الحركة وتشتت الانتباه — معك خطوة بخطوة نحو فهم أوضح.</span>
             </p>
 
             {/* CTAs */}
@@ -157,7 +157,7 @@ export default function HeroSection() {
                   href="/start"
                   className="group flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-white font-bold text-base transition-all duration-200"
                   style={{
-                    background: "linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)",
+                    background: "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)",
                     fontFamily: "'Cairo', sans-serif",
                     fontWeight: 700,
                     boxShadow: "0 6px 20px rgba(37,99,235,0.35)",
@@ -180,7 +180,7 @@ export default function HeroSection() {
                   href="#how-it-works"
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm transition-all duration-200"
                   style={{
-                    color: "#475569",
+                    color: "#4A6278",
                     border: "1.5px solid rgba(71,85,105,0.18)",
                     fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                     background: "rgba(248,250,252,0.9)",
@@ -188,12 +188,12 @@ export default function HeroSection() {
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.background = "rgba(37,99,235,0.04)";
                     (e.currentTarget as HTMLElement).style.borderColor = "rgba(37,99,235,0.25)";
-                    (e.currentTarget as HTMLElement).style.color = "#2563EB";
+                    (e.currentTarget as HTMLElement).style.color = "#1E4E8C";
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLElement).style.background = "rgba(248,250,252,0.9)";
                     (e.currentTarget as HTMLElement).style.borderColor = "rgba(71,85,105,0.18)";
-                    (e.currentTarget as HTMLElement).style.color = "#475569";
+                    (e.currentTarget as HTMLElement).style.color = "#4A6278";
                   }}
                 >
                   اكتشف كيف يعمل الفحص
@@ -209,7 +209,7 @@ export default function HeroSection() {
                   lineHeight: 1.7,
                 }}
               >
-                فحص أولي آمن وسري — ليس تشخيصاً رسمياً، يساعدك على فهم الخطوة التالية بثقة.
+                فحص أولي آمن وسري — ليس تشخيصاً طبياً رسمياً، معك خطوة بخطوة نحو فهم أوضح.
               </p>
             </div>
 
@@ -270,7 +270,7 @@ export default function HeroSection() {
                 <div key={i} className="flex items-center gap-2.5">
                   <div
                     className="w-1 h-10 rounded-full"
-                    style={{ background: i === 0 ? "#2563EB" : i === 1 ? "#14B8A6" : "#F59E0B" }}
+                    style={{ background: i === 0 ? "#1E4E8C" : i === 1 ? "#2BBDB6" : "#F4C46A" }}
                   />
                   <div>
                     <div
@@ -325,7 +325,7 @@ export default function HeroSection() {
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "#F0FDFA" }}
+                  style={{ background: "#DFF3F1" }}
                 >
                   <span className="text-teal-600 text-lg font-bold">✓</span>
                 </div>

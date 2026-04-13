@@ -11,35 +11,35 @@ const trustBadges = [
     icon: Shield,
     title: "خصوصية تامة",
     desc: "بياناتك لن تُشارك مع أي جهة",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
   {
     icon: Globe,
     title: "عربي أولاً",
     desc: "محتوى مصمم للمجتمع العربي",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     icon: UserCheck,
     title: "مسار متخصص",
     desc: "موجَّه من قِبل متخصصين معتمدين",
-    color: "#2563EB",
-    bg: "#EFF6FF",
+    color: "#1E4E8C",
+    bg: "#DFF3F1",
   },
   {
     icon: RefreshCw,
     title: "متابعة منظمة",
     desc: "خطة دعم واضحة بعد الفحص",
-    color: "#14B8A6",
-    bg: "#F0FDFA",
+    color: "#2BBDB6",
+    bg: "#DFF3F1",
   },
   {
     icon: Cpu,
     title: "رؤى بالذكاء الاصطناعي",
     desc: "تحليل مدعوم بتقنية متقدمة",
-    color: "#F59E0B",
+    color: "#F4C46A",
     bg: "#FFFBEB",
   },
 ];
@@ -48,7 +48,7 @@ export default function TrustRibbon() {
   return (
     <section
       className="bg-white py-8 lg:py-10 relative"
-      style={{ borderTop: "1px solid #F1F5F9", borderBottom: "1px solid #F1F5F9" }}
+      style={{ borderTop: "1px solid #DFF3F1", borderBottom: "1px solid #DFF3F1" }}
     >
       {/* Subtle background pattern */}
       <div
@@ -70,7 +70,7 @@ export default function TrustRibbon() {
                 className="flex items-center gap-3 px-5 py-3.5 rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 style={{
                   background: "white",
-                  border: "1px solid #F1F5F9",
+                  border: "1px solid #DFF3F1",
                   boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
                   minWidth: "185px",
                 }}
