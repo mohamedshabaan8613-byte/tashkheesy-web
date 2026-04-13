@@ -1,6 +1,6 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
-export const APP_TITLE = import.meta.env.VITE_APP_TITLE || "تشخيصي";
+export const APP_TITLE = import.meta.env.VITE_APP_TITLE || "تشخيصي | Tashkheesy";
 
 export const APP_LOGO = "https://placehold.co/128x128/6366F1/FFFFFF?text=T";
 
