@@ -1,0 +1,19 @@
+{
+  "name": "تشخيصي | Tashkheesy",
+  "short_name": "تشخيصي",
+  "display": "standalone",
+  "background_color": "#F4EFE8",
+  "theme_color": "#1E4E8C",
+  "icons": [
+    {
+      "src": "/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
