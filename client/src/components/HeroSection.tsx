@@ -307,8 +307,8 @@ export default function HeroSection() {
                 }}
               >
                 <img
-                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663154655019/XUztTXmhcQeCV4Ng5pyz4t/screening-illustration-NJYSTiwfewSdiFVVNAnSXW.webp"
-                  alt="رسم توضيحي لمنصة تشخيصي — كتاب ودماغ وعلامة صح"
+                  src="/hero-illustration.png"
+                  alt="رسم توضيحي لمنصة تشخيصي — أم وطفل مع لوحة تقييم"
                   className="w-full h-auto"
                   style={{ maxHeight: "360px", objectFit: "contain", padding: "2.5rem 2rem" }}
                 />
