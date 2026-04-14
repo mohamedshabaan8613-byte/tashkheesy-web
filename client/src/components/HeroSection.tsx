@@ -291,9 +291,9 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Illustration — 2 cols — مخفية على الجوال لتوفير مساحة للنص */}
+          {/* Illustration — 2 cols — تظهر على الجوال أسفل النص وعلى الـ lg في العمود الثاني */}
           <div
-            className={`hidden lg:flex lg:col-span-2 order-1 lg:order-2 justify-center ${animClass(150)}`}
+            className={`flex lg:col-span-2 order-1 lg:order-2 justify-center ${animClass(150)}`}
             style={animStyle(150)}
           >
             <div className="relative w-full max-w-sm lg:max-w-full">
@@ -306,12 +306,15 @@ export default function HeroSection() {
                   boxShadow: "0 20px 60px rgba(37,99,235,0.12), 0 4px 16px rgba(0,0,0,0.06)",
                 }}
               >
-                <img
-                  src="/hero-illustration.png"
-                  alt="رسم توضيحي لمنصة تشخيصي — أم وطفل مع لوحة تقييم"
-                  className="w-full h-auto"
-                  style={{ maxHeight: "360px", objectFit: "contain", padding: "2.5rem 2rem" }}
-                />
+                <picture>
+                  <source srcSet="/hero-illustration.webp" type="image/webp" />
+                  <img
+                    src="/hero-illustration.png"
+                    alt="رسم توضيحي لمنصة تشخيصي — أم وطفل مع لوحة تقييم"
+                    className="w-full h-auto"
+                    style={{ maxHeight: "360px", objectFit: "contain", padding: "2.5rem 2rem" }}
+                  />
+                </picture>
               </div>
 
               {/* Floating badge — bottom right */}
