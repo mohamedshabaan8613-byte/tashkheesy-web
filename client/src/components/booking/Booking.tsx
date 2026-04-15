@@ -139,54 +139,105 @@ const SERVICES: ServiceType[] = [
 const SPECIALISTS: Specialist[] = [
   {
     id: "sp1",
-    name: "د. سارة المنصور",
+    name: "أ. سارة المنصور",
     title: "أخصائية صعوبات التعلم",
     specialty: "ديسلكسيا وصعوبات القراءة",
-    bio: "دكتوراه في التربية الخاصة من جامعة الملك عبدالعزيز. متخصصة في تشخيص وعلاج صعوبات القراءة والكتابة لدى الأطفال والمراهقين.",
+    bio: "ماجستير تربية خاصة. متخصصة في تشخيص وعلاج صعوبات القراءة والكتابة والدسلكسيا لدى الأطفال والمراهقين.",
     experience: "+١٢ سنة خبرة",
     languages: ["العربية", "الإنجليزية"],
-    qualifications: ["دكتوراه تربية خاصة", "شهادة CALT", "عضو ASHA"],
-    focus: ["ديسلكسيا", "صعوبات القراءة", "الوعي الصوتي"],
+    qualifications: ["ماجستير تربية خاصة", "شهادة CALT"],
+    focus: ["صعوبات القراءة والكتابة", "الدسلكسيا", "التدخل المبكر"],
     rating: 4.9,
     sessions: 1240,
     avatar: "",
     avatarBg: "from-blue-400 to-blue-600",
     initials: "سم",
-    available: "أقرب موعد: الثلاثاء",
+    available: "متاحة هذا الأسبوع",
   },
   {
     id: "sp2",
-    name: "أ. خالد العتيبي",
-    title: "أخصائي اضطرابات الانتباه",
-    specialty: "ADHD وصعوبات التركيز",
-    bio: "ماجستير في علم النفس التربوي. خبرة واسعة في تقييم وعلاج اضطراب نقص الانتباه وفرط الحركة لدى الأطفال وطلاب الجامعات.",
-    experience: "+٨ سنوات خبرة",
+    name: "د. خالد العمري",
+    title: "معالج نفسي تربوي",
+    specialty: "صعوبات التعلم والقلق المدرسي",
+    bio: "دكتوراه علم نفس تربوي. خبرة واسعة في تقييم صعوبات التعلم، القلق المدرسي، والدعم الأسري.",
+    experience: "+٩ سنوات خبرة",
     languages: ["العربية"],
-    qualifications: ["ماجستير علم نفس تربوي", "معالج سلوكي معتمد", "مدرب ADHD"],
-    focus: ["ADHD", "صعوبات التركيز", "إدارة السلوك"],
+    qualifications: ["دكتوراه علم نفس تربوي"],
+    focus: ["صعوبات التعلم", "القلق المدرسي", "الدعم الأسري"],
     rating: 4.8,
     sessions: 890,
     avatar: "",
     avatarBg: "from-teal-400 to-teal-600",
     initials: "خع",
-    available: "أقرب موعد: الأربعاء",
+    available: "متاح الأسبوع القادم",
   },
   {
     id: "sp3",
-    name: "د. نورة الشمري",
-    title: "أخصائية نفسية تربوية",
-    specialty: "التقييم الشامل والإرشاد الأسري",
-    bio: "دكتوراه في علم النفس التربوي. متخصصة في التقييم الشامل لصعوبات التعلم، الإرشاد الأسري، وبناء خطط التدخل المبكر.",
+    name: "أ. نورة الزهراني",
+    title: "معلمة تربية خاصة معتمدة",
+    specialty: "التدريب على القراءة والدعم الأكاديمي",
+    bio: "بكالوريوس تربية خاصة + شهادة CALT. متخصصة في التدريب على القراءة والدعم الأكاديمي ومهارات الدراسة.",
+    experience: "+٧ سنوات خبرة",
+    languages: ["العربية"],
+    qualifications: ["بكالوريوس تربية خاصة", "شهادة CALT"],
+    focus: ["التدريب على القراءة", "الدعم الأكاديمي", "مهارات الدراسة"],
+    rating: 4.7,
+    sessions: 760,
+    avatar: "",
+    avatarBg: "from-purple-400 to-purple-600",
+    initials: "نز",
+    available: "متاحة اليوم",
+  },
+  {
+    id: "sp4",
+    name: "د. فيصل الحربي",
+    title: "طبيب نفسي أطفال",
+    specialty: "ADHD وفرط الحركة — التقييم الرسمي",
+    bio: "بورد طب نفسي أطفال. متخصص في التقييم التشخيصي الرسمي لـ ADHD وفرط الحركة والدعم الدوائي.",
     experience: "+١٥ سنة خبرة",
-    languages: ["العربية", "الإنجليزية", "الفرنسية"],
-    qualifications: ["دكتوراه علم نفس", "شهادة BCBA", "مستشارة تربوية معتمدة"],
-    focus: ["التقييم الشامل", "الإرشاد الأسري", "التدخل المبكر"],
-    rating: 5.0,
+    languages: ["العربية", "الإنجليزية"],
+    qualifications: ["بورد طب نفسي أطفال"],
+    focus: ["ADHD وفرط الحركة", "التقييم التشخيصي الرسمي", "الدعم الدوائي"],
+    rating: 4.9,
     sessions: 2100,
     avatar: "",
-    avatarBg: "from-amber-400 to-amber-600",
-    initials: "نش",
-    available: "أقرب موعد: الخميس",
+    avatarBg: "from-violet-400 to-violet-600",
+    initials: "فح",
+    available: "متاح هذا الأسبوع",
+  },
+  {
+    id: "sp5",
+    name: "أ. ريم القحطاني",
+    title: "أخصائية تدريب سلوكي",
+    specialty: "إدارة السلوك والانتباه",
+    bio: "ماجستير تحليل سلوك تطبيقي (ABA). متخصصة في إدارة السلوك، مهارات الانتباه، والتنظيم الذاتي.",
+    experience: "+١٠ سنوات خبرة",
+    languages: ["العربية"],
+    qualifications: ["ماجستير تحليل سلوك تطبيقي ABA"],
+    focus: ["إدارة السلوك", "مهارات الانتباه", "التنظيم الذاتي"],
+    rating: 4.8,
+    sessions: 1100,
+    avatar: "",
+    avatarBg: "from-blue-400 to-indigo-600",
+    initials: "رق",
+    available: "متاحة هذا الأسبوع",
+  },
+  {
+    id: "sp6",
+    name: "د. منى السلمي",
+    title: "معالجة نفسية أطفال",
+    specialty: "ADHD والقلق والدعم الأسري",
+    bio: "دكتوراه علم نفس إكلينيكي. متخصصة في ADHD والقلق والدعم الأسري والمهارات الاجتماعية.",
+    experience: "+٨ سنوات خبرة",
+    languages: ["العربية", "الإنجليزية"],
+    qualifications: ["دكتوراه علم نفس إكلينيكي"],
+    focus: ["ADHD والقلق", "الدعم الأسري", "مهارات اجتماعية"],
+    rating: 4.7,
+    sessions: 830,
+    avatar: "",
+    avatarBg: "from-teal-400 to-cyan-600",
+    initials: "مس",
+    available: "متاحة الأسبوع القادم",
   },
 ];
 
@@ -443,7 +494,18 @@ function Step1({ booking, setBooking }: { booking: BookingState; setBooking: Rea
 }
 
 // ─── Step 2: Specialist Selection ─────────────────────────────────────────────
-function Step2({ booking, setBooking }: { booking: BookingState; setBooking: React.Dispatch<React.SetStateAction<BookingState>> }) {
+function Step2({
+  booking,
+  setBooking,
+  preselectedSpecialist,
+}: {
+  booking: BookingState;
+  setBooking: React.Dispatch<React.SetStateAction<BookingState>>;
+  preselectedSpecialist: Specialist | null;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const hasPreselected = preselectedSpecialist !== null && !showAll;
+  const specialistsToShow = hasPreselected ? [preselectedSpecialist!] : SPECIALISTS;
   return (
     <div>
       <div className="text-center mb-8">
@@ -451,15 +513,17 @@ function Step2({ booking, setBooking }: { booking: BookingState; setBooking: Rea
           className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
           style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
         >
-          اختر متخصصك
+          {hasPreselected ? "متخصصك المقترح" : "اختر متخصصك"}
         </h2>
         <p className="text-slate-500 text-base" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
-          جميع متخصصينا معتمدون ولديهم خبرة واسعة في مجالاتهم
+          {hasPreselected
+            ? "بناءً على نتائج فحصك، هذا المتخصص هو الأنسب لحالتك"
+            : "جميع متخصصينا معتمدون ولديهم خبرة واسعة في مجالاتهم"}
         </p>
       </div>
 
-      <div className="space-y-4 mb-8">
-        {SPECIALISTS.map((sp) => {
+      <div className="space-y-4 mb-4">
+        {specialistsToShow.map((sp) => {
           const selected = booking.specialist?.id === sp.id;
           return (
             <button
@@ -577,6 +641,28 @@ function Step2({ booking, setBooking }: { booking: BookingState; setBooking: Rea
           );
         })}
       </div>
+
+      {/* زر اختيار متخصص آخر */}
+      {hasPreselected && (
+        <div className="mb-6 text-center">
+          <button
+            onClick={() => {
+              setShowAll(true);
+              setBooking((b) => ({ ...b, specialist: null }));
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium transition-all hover:shadow-sm"
+            style={{
+              background: "#F4EFE8",
+              color: "#1E4E8C",
+              border: "1px solid #D8E8E7",
+              fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+            }}
+          >
+            <Users size={15} />
+            اختيار متخصص آخر
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <button
@@ -1376,6 +1462,7 @@ function FAQSection() {
 // ─── Main Booking Page ────────────────────────────────────────────────────────
 export default function Booking() {
   const [confirmed, setConfirmed] = useState(false);
+  const [preselectedSpecialist, setPreselectedSpecialist] = useState<Specialist | null>(null);
   const [booking, setBooking] = useState<BookingState>({
     step: 1,
     service: null,
@@ -1387,6 +1474,19 @@ export default function Booking() {
     phone: "",
     notes: "",
   });
+
+  // Read specialistId from URL query params and preselect specialist
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const specialistId = params.get("specialistId");
+    if (specialistId) {
+      const found = SPECIALISTS.find((s) => s.id === specialistId) ?? null;
+      if (found) {
+        setPreselectedSpecialist(found);
+        setBooking((b) => ({ ...b, specialist: found, step: 2 }));
+      }
+    }
+  }, []);
 
   // Scroll to top on step change
   useEffect(() => {
@@ -1505,7 +1605,7 @@ export default function Booking() {
                   style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #D8E8E7" }}
                 >
                   {booking.step === 1 && <Step1 booking={booking} setBooking={setBooking} />}
-                  {booking.step === 2 && <Step2 booking={booking} setBooking={setBooking} />}
+                  {booking.step === 2 && <Step2 booking={booking} setBooking={setBooking} preselectedSpecialist={preselectedSpecialist} />}
                   {booking.step === 3 && <Step3 booking={booking} setBooking={setBooking} />}
                   {booking.step === 4 && (
                     <Step4
