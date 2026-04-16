@@ -19,8 +19,8 @@ const trustSignals = [
 const platformLinks = [
   { label: "ابدأ الفحص", href: "/start" },
   { label: "كيف يعمل", href: "/#how-it-works" },
-  { label: "خدماتنا", href: "/services" },
-  { label: "الأسعار", href: "/pricing" },
+  { label: "خدمات الدعم", href: "/services" },
+  { label: "الأسعار والباقات", href: "/pricing" },
   { label: "احجز موعداً", href: "/booking" },
 ];
 

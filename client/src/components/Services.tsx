@@ -181,7 +181,8 @@ const WHO_BENEFITS = [
 // ─── المكوّن الرئيسي ──────────────────────────────────────────────────────────
 export default function Services() {
   useSEO({
-    title: "خدماتنا — تشخيصي | Tashkheesy",
+    title: "خدمات الدعم",
+    canonical: "/services",
     description:
       "فحص أولي لمؤشرات صعوبات التعلم، فرط الحركة وتشتت الانتباه — مع مطابقة متخصص وحجز جلسة مباشر.",
   });
@@ -213,7 +214,7 @@ export default function Services() {
             className="text-3xl sm:text-4xl font-black text-slate-900 mb-4"
             style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.25 }}
           >
-            خدمات تشخيصي
+            خدمات الدعم
           </h1>
           <p
             className="text-base sm:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto"
