@@ -26,7 +26,7 @@ const platformLinks = [
 
 // ─── روابط الدعم ───────────────────────────────────────────────────────────────
 const supportLinks = [
-  { label: "لماذا تشخيصي", href: "/impact" },
+  { label: "رؤيتنا", href: "/impact" },
   { label: "الأسئلة الشائعة", href: "/faq" },
   { label: "سياسة الخصوصية", href: "/privacy" },
   { label: "إخلاء المسؤولية", href: "/disclaimer" },

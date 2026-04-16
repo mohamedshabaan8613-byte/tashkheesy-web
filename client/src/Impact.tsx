@@ -123,7 +123,7 @@ export default function Impact() {
               الرئيسية
             </Link>
             <ChevronRight size={14} className="opacity-50" />
-            <span style={{ color: "#1E4E8C", fontWeight: 600 }}>لماذا تشخيصي؟</span>
+            <span style={{ color: "#1E4E8C", fontWeight: 600 }}>الرؤية والأثر</span>
           </nav>
 
           <SectionLabel color="#2BBDB6">
@@ -478,7 +478,7 @@ export default function Impact() {
           <div className="text-center mb-14">
             <SectionLabel color="#1E4E8C">
               <Sparkles size={12} />
-              لماذا تشخيصي؟
+              الرؤية والأثر
             </SectionLabel>
             <h2
               className="text-3xl lg:text-4xl font-black mb-4"
