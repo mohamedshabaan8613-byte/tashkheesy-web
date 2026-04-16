@@ -1,5 +1,5 @@
 /**
- * Impact.tsx — صفحة "لماذا تشخيصي؟"
+ * Impact.tsx — صفحة "الرؤية والأثر"
  * ─────────────────────────────────────────────────────────────────
  * Design Philosophy: Editorial Healthcare — Calm, Credible, Human
  * Palette: #F4EFE8 bg | #FFFFFF surface | #243B53 text | #1E4E8C primary | #2BBDB6 teal | #F4C46A warm
@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useSEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -91,6 +92,11 @@ function FadeCard({ children, delay = 0, className = "", style = {} }: {
 
 // ─── Main Component ────────────────────────────────────────────────
 export default function Impact() {
+  useSEO({
+    title: "الرؤية والأثر",
+    description: "تعرّف على رؤية تشخيصي وأثرها في دعم الأطفال وأسرهم — منصة الفحص المبكر لصعوبات التعلم وفرط الحركة وتشتت الانتباه.",
+    canonical: "/impact",
+  });
   return (
     <div
       className="min-h-screen"
