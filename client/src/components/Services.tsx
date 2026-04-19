@@ -33,6 +33,7 @@ import {
   Calendar,
   Heart,
   GraduationCap,
+  ChevronRight,
 } from "lucide-react";
 
 // ─── بيانات الخطوات ───────────────────────────────────────────────────────────
@@ -190,12 +191,18 @@ export default function Services() {
   return (
     <div className="min-h-screen" dir="rtl" style={{ background: "#F4EFE8" }}>
       <Navbar />
-
-      {/* ─── Hero ──────────────────────────────────────────────────────────────── */}
+      {/* ─── Hero ────────────────────────────────────────────────────────────────────────────────── */}
       <section className="pt-24 pb-16 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6"
+          {/* Breadcrumb */}
+          <nav className="flex items-center justify-center gap-2 text-sm mb-6" style={{ color: "#64748B" }}>
+            <Link href="/" className="hover:text-blue-600 transition-colors" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+              الرئيسية
+            </Link>
+            <ChevronRight size={14} className="opacity-50" />
+            <span style={{ color: "#1E4E8C", fontWeight: 600, fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>خدمات الدعم</span>
+          </nav>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6"
             style={{
               background: "rgba(37,99,235,0.07)",
               border: "1px solid rgba(37,99,235,0.15)",
