@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -24,6 +25,7 @@ import {
   Languages,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Sparkles,
   Heart,
   BookOpen,
@@ -1519,6 +1521,14 @@ export default function Booking() {
         />
 
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center relative">
+          {/* Breadcrumb */}
+          <nav className="flex items-center justify-center gap-2 text-sm mb-6" style={{ color: "#64748B" }}>
+            <Link href="/" className="hover:text-blue-600 transition-colors" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+              الرئيسية
+            </Link>
+            <ChevronRight size={14} className="opacity-50" />
+            <span style={{ color: "#1E4E8C", fontWeight: 600, fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>احجز موعداً</span>
+          </nav>
           <AnimatedSection>
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
