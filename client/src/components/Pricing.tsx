@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import { useSEO } from "@/hooks/useSEO";
 import Footer from "@/components/Footer";
 import { Link } from "wouter";
-import { CheckCircle2, Sparkles, Shield, Clock, FileText, ArrowLeft, Building2, Users, BadgeCheck } from "lucide-react";
+import { CheckCircle2, Sparkles, Shield, Clock, FileText, ArrowLeft, Building2, Users, BadgeCheck, ChevronRight } from "lucide-react";
 
 const pricingPlans = [
   {
@@ -101,6 +101,14 @@ export default function Pricing() {
         <section className="ts-page-header">
           <div className="container relative z-10">
             <div className="text-center max-w-3xl mx-auto">
+              {/* Breadcrumb */}
+              <nav className="flex items-center justify-center gap-2 text-sm mb-5" style={{ color: "#64748B" }}>
+                <Link href="/" className="hover:text-blue-600 transition-colors" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                  الرئيسية
+                </Link>
+                <ChevronRight size={14} className="opacity-50" />
+                <span style={{ color: "#1E4E8C", fontWeight: 600, fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>الأسعار والباقات</span>
+              </nav>
               <span className="section-label block mb-4">الأسعار والباقات</span>
               <h1 className="text-4xl md:text-5xl font-bold text-[#243B53] mb-5 leading-tight">
                 أسعار شفافة،{" "}
