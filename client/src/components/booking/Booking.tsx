@@ -1504,7 +1504,18 @@ export default function Booking() {
       const found = SPECIALISTS.find((s) => s.id === specialistId) ?? null;
       if (found) {
         setPreselectedSpecialist(found);
-        setBooking((b) => ({ ...b, specialist: found, step: 2 }));
+        // Resolve service: prefer serviceId from URL, fall back to "initial"
+        const serviceIdParam = params.get("serviceId");
+        const defaultService =
+          (serviceIdParam ? SERVICES.find((s) => s.id === serviceIdParam) : null) ??
+          SERVICES.find((s) => s.id === "initial") ??
+          null;
+        setBooking((b) => ({
+          ...b,
+          specialist: found,
+          service: b.service ?? defaultService,
+          step: 2,
+        }));
       }
     }
   }, []);
