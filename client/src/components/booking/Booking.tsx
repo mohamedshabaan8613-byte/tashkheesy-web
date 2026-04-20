@@ -952,10 +952,14 @@ function Step4({
   booking,
   setBooking,
   onConfirm,
+  isSubmitting,
+  submitError,
 }: {
   booking: BookingState;
   setBooking: React.Dispatch<React.SetStateAction<BookingState>>;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
+  isSubmitting: boolean;
+  submitError: string | null;
 }) {
   const [agreed, setAgreed] = useState(false);
   const timeLabel = TIME_SLOTS.find((t) => t.id === booking.time)?.time || "";
@@ -1109,24 +1113,39 @@ function Step4({
         </button>
         <button
           onClick={() => {
-            if (!agreed) return;
+            if (!agreed || isSubmitting) return;
             onConfirm();
           }}
-          disabled={!agreed}
+          disabled={!agreed || isSubmitting}
           className="flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-black text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5"
           style={{
-            background: agreed
+            background: agreed && !isSubmitting
               ? "linear-gradient(135deg, #2BBDB6 0%, #0f766e 100%)"
               : "#CBD5E1",
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 800,
-            boxShadow: agreed ? "0 8px 24px rgba(20,184,166,0.35)" : "none",
+            boxShadow: agreed && !isSubmitting ? "0 8px 24px rgba(20,184,166,0.35)" : "none",
           }}
         >
           <CheckCircle size={20} />
-          تأكيد الحجز
+          {isSubmitting ? "جارِ إرسال طلب الحجز..." : "تأكيد الحجز"}
         </button>
       </div>
+
+      {/* Submit error message */}
+      {submitError && (
+        <div
+          className="mt-4 p-4 rounded-2xl text-sm text-center"
+          style={{
+            background: "rgba(239,68,68,0.07)",
+            border: "1px solid rgba(239,68,68,0.2)",
+            color: "#DC2626",
+            fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+          }}
+        >
+          {submitError}
+        </div>
+      )}
 
       {/* Trust strip */}
       <div className="flex flex-wrap justify-center gap-6 mt-6">
@@ -1495,6 +1514,94 @@ export default function Booking() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [booking.step, confirmed]);
 
+  // ─── Formspree submission state ───────────────────────────────────────────
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleConfirm = async (): Promise<void> => {
+    // 1. Validate required fields
+    if (
+      !booking.name.trim() ||
+      !booking.email.trim() ||
+      !booking.service ||
+      !booking.specialist ||
+      !booking.date ||
+      !booking.time
+    ) {
+      setSubmitError("يرجى التأكد من اكتمال بيانات الحجز قبل الإرسال.");
+      return;
+    }
+
+    // 2. Check endpoint
+    const endpoint = import.meta.env.VITE_FORMSPREE_BOOKING_ENDPOINT as string | undefined;
+    if (!endpoint) {
+      console.error("Missing VITE_FORMSPREE_BOOKING_ENDPOINT");
+      setSubmitError("تعذّر إرسال طلب الحجز حالياً. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.");
+      return;
+    }
+
+    // 3. Build payload
+    const params = new URLSearchParams(window.location.search);
+    const timeLabel = TIME_SLOTS.find((t) => t.id === booking.time)?.time || "";
+    const payload = {
+      // Contact
+      full_name: booking.name,
+      email: booking.email,
+      phone: booking.phone || "",
+      notes: booking.notes || "",
+      // Service
+      service_id: booking.service.id,
+      service_title: booking.service.title,
+      service_price: booking.service.price,
+      service_duration: booking.service.duration,
+      // Specialist
+      specialist_id: booking.specialist.id,
+      specialist_name: booking.specialist.name,
+      specialist_title: booking.specialist.title,
+      specialist_specialty: booking.specialist.specialty,
+      // Schedule
+      selected_date: booking.date,
+      selected_time_id: booking.time,
+      selected_time_label: timeLabel,
+      // URL context
+      url_specialist_id: params.get("specialistId") || "",
+      url_service_id: params.get("serviceId") || "",
+      url_from: params.get("from") || "",
+      url_session_id: params.get("sessionId") || "",
+      url_path_type: params.get("pathType") || "",
+      url_child: params.get("child") || "",
+      // Meta
+      source_url: window.location.href,
+      created_at: new Date().toISOString(),
+    };
+
+    // 4. Submit
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        let msg = "تعذّر إرسال طلب الحجز حالياً. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.";
+        try {
+          const data = await res.json();
+          if (data?.errors?.length) msg = data.errors.map((e: { message: string }) => e.message).join(" ");
+        } catch { /* ignore parse error */ }
+        setSubmitError(msg);
+        return;
+      }
+      // Success
+      setConfirmed(true);
+    } catch {
+      setSubmitError("تعذّر إرسال طلب الحجز حالياً. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#F4EFE8", direction: "rtl" }}>
       <Navbar />
@@ -1621,7 +1728,9 @@ export default function Booking() {
                     <Step4
                       booking={booking}
                       setBooking={setBooking}
-                      onConfirm={() => setConfirmed(true)}
+                      onConfirm={handleConfirm}
+                      isSubmitting={isSubmitting}
+                      submitError={submitError}
                     />
                   )}
                 </div>
