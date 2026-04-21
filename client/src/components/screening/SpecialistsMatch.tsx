@@ -171,9 +171,11 @@ export default function SpecialistsMatch() {
 
   function handleBook(specialist: typeof specialists[0]) {
     const params = new URLSearchParams({
-      specialist: specialist.name,
       specialistId: specialist.id,
+      specialist: specialist.name,
+      serviceId: "initial",
       pathType,
+      from: "result",
       ...(childName ? { child: childName } : {}),
       ...(sessionId ? { sessionId } : {}),
     });
