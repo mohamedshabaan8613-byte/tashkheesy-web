@@ -500,12 +500,10 @@ function Step2({
   booking,
   setBooking,
   preselectedSpecialist,
-  isAutoService,
 }: {
   booking: BookingState;
   setBooking: React.Dispatch<React.SetStateAction<BookingState>>;
   preselectedSpecialist: Specialist | null;
-  isAutoService: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   const hasPreselected = preselectedSpecialist !== null && !showAll;
@@ -525,29 +523,6 @@ function Step2({
             : "جميع متخصصينا معتمدون ولديهم خبرة واسعة في مجالاتهم"}
         </p>
       </div>
-
-      {/* ── رسالة الشفافية: تظهر فقط عند الاختيار التلقائي من سياق نتائج الفحص ── */}
-      {isAutoService && (
-        <div
-          className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-6 text-right"
-          style={{
-            background: "rgba(43,189,182,0.07)",
-            border: "1px solid rgba(43,189,182,0.25)",
-          }}
-        >
-          <span className="text-base mt-0.5 flex-shrink-0">ℹ️</span>
-          <p
-            className="text-sm leading-relaxed"
-            style={{
-              color: "#1E4E8C",
-              fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-              lineHeight: 1.85,
-            }}
-          >
-            تم اختيار &ldquo;استشارة أولية&rdquo; تلقائيًا كبداية مناسبة لفهم نتيجة الفحص، ويمكنك تغيير نوع الجلسة من خطوة الخدمة.
-          </p>
-        </div>
-      )}
 
       <div className="space-y-4 mb-4">
         {specialistsToShow.map((sp) => {
@@ -1509,8 +1484,6 @@ function FAQSection() {
 export default function Booking() {
   const [confirmed, setConfirmed] = useState(false);
   const [preselectedSpecialist, setPreselectedSpecialist] = useState<Specialist | null>(null);
-  // Tracks whether service was auto-selected from URL/result context (not manual Step 1)
-  const [isAutoService, setIsAutoService] = useState(false);
   const [booking, setBooking] = useState<BookingState>({
     step: 1,
     service: null,
@@ -1537,7 +1510,6 @@ export default function Booking() {
           (serviceIdParam ? SERVICES.find((s) => s.id === serviceIdParam) : null) ??
           SERVICES.find((s) => s.id === "initial") ??
           null;
-        setIsAutoService(true);
         setBooking((b) => ({
           ...b,
           specialist: found,
@@ -1761,7 +1733,7 @@ export default function Booking() {
                   style={{ background: "white", boxShadow: "0 4px 24px rgba(15,23,42,0.06)", border: "1px solid #D8E8E7" }}
                 >
                   {booking.step === 1 && <Step1 booking={booking} setBooking={setBooking} />}
-                  {booking.step === 2 && <Step2 booking={booking} setBooking={setBooking} preselectedSpecialist={preselectedSpecialist} isAutoService={isAutoService} />}
+                  {booking.step === 2 && <Step2 booking={booking} setBooking={setBooking} preselectedSpecialist={preselectedSpecialist} />}
                   {booking.step === 3 && <Step3 booking={booking} setBooking={setBooking} />}
                   {booking.step === 4 && (
                     <Step4
