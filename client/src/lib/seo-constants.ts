@@ -7,7 +7,7 @@
 
 export const SEO = {
   /** الدومين الرسمي للموقع (بدون trailing slash) */
-  BASE_URL: "https://tashkheesy-web.vercel.app",
+  BASE_URL: "https://www.tashkheesy.com",
 
   /** اسم الموقع كما يظهر في العنوان والـ og:site_name */
   SITE_NAME: "تشخيصي | Tashkheesy",
@@ -21,7 +21,7 @@ export const SEO = {
     "تشخيص صعوبات تعلم, ديسلكسيا السعودية, صعوبات القراءة, تشخيص تربوي, تشخيصي, Tashkheesy",
 
   /** صورة الـ Open Graph الافتراضية */
-  DEFAULT_OG_IMAGE: "https://tashkheesy-web.vercel.app/og-image.jpg",
+  DEFAULT_OG_IMAGE: "https://www.tashkheesy.com/og-image.jpg",
 
   /** اللغة والمنطقة */
   LOCALE: "ar_SA",
@@ -58,7 +58,7 @@ export const buildTitle = (pageTitle: string): string =>
 
 /**
  * دالة مساعدة لبناء الـ canonical URL
- * مثال: buildCanonical("/services") → "https://tashkheesy-web.vercel.app/services"
+ * مثال: buildCanonical("/services") → "https://www.tashkheesy.com/services"
  */
 export const buildCanonical = (path: string): string =>
   `${SEO.BASE_URL}${path}`;

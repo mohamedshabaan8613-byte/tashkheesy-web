@@ -31,7 +31,7 @@ const homeSchema = {
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "Web",
   "description": "منصة عربية تُقدّم فحصاً أولياً مجانياً لمؤشرات صعوبات التعلم والانتباه — خطوة فهم أولية مدعومة بالذكاء الاصطناعي، ليست تشخيصاً طبياً رسمياً، توجهك نحو الدعم المتخصص المناسب بخطوات واضحة.",
-  "url": "https://tashkheesy-web.vercel.app",
+  "url": "https://www.tashkheesy.com",
   "inLanguage": "ar",
   "offers": {
     "@type": "Offer",
@@ -50,7 +50,7 @@ const homeSchema = {
   "publisher": {
     "@type": "Organization",
     "name": "تشخيصي | Tashkheesy",
-    "url": "https://tashkheesy-web.vercel.app"
+    "url": "https://www.tashkheesy.com"
   }
 };
 
