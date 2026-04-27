@@ -31,6 +31,7 @@ const supportLinks = [
   { label: "سياسة الخصوصية", href: "/privacy" },
   { label: "إخلاء المسؤولية", href: "/disclaimer" },
   { label: "تواصل معنا", href: "/contact" },
+  { label: "الشروط والأحكام", href: "/terms" },
   { label: "نموذج النتائج", href: "/result-demo" },
 ];
 
@@ -231,6 +232,15 @@ export default function Footer() {
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
               >
                 إخلاء المسؤولية
+              </span>
+            </Link>
+            <span className="text-slate-700 text-xs">·</span>
+            <Link href="/terms">
+              <span
+                className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                الشروط والأحكام
               </span>
             </Link>
             <span className="text-slate-700 text-xs">·</span>
