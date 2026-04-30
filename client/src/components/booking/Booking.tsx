@@ -125,6 +125,19 @@ const SERVICES: ServiceType[] = [
     badge: "الأكثر طلباً",
   },
   {
+    id: "adhd",
+    title: "جلسة فرط الحركة وتشتت الانتباه",
+    subtitle: "فهم أعمق للانتباه والسلوك",
+    description:
+      "جلسة مخصصة لمراجعة مؤشرات فرط الحركة وتشتت الانتباه، وفهم صعوبات التركيز والتنظيم والاندفاعية، مع توجيه الأسرة أو المستخدم للخطوة المناسبة.",
+    duration: "٦٠ دقيقة",
+    price: "٣٥٠ ريال",
+    icon: Sparkles,
+    color: "#8B5CF6",
+    bg: "#F5F3FF",
+    badge: "ADHD",
+  },
+  {
     id: "followup",
     title: "جلسة متابعة",
     subtitle: "استمرارية الدعم والتقدم",
@@ -725,8 +738,28 @@ function Step2({
 // ─── Step 3: Date & Time Selection ────────────────────────────────────────────
 function Step3({ booking, setBooking }: { booking: BookingState; setBooking: React.Dispatch<React.SetStateAction<BookingState>> }) {
   const [showForm, setShowForm] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
 
-  const canProceed = booking.date && booking.time && booking.name && booking.email;
+  const normalizeDigits = (value: string) =>
+    value
+      .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+
+  const nameValue = booking.name.trim();
+  const emailValue = booking.email.trim();
+  const phoneValue = normalizeDigits(booking.phone.trim());
+  const normalizedPhone = phoneValue.replace(/[\s-]/g, "");
+
+  const isValidName = nameValue.length >= 2;
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailValue);
+  const isValidSaudiPhone =
+    /^05\d{8}$/.test(normalizedPhone) ||
+    /^9665\d{8}$/.test(normalizedPhone) ||
+    /^\+9665\d{8}$/.test(normalizedPhone);
+
+  const isUserInfoComplete = isValidName && isValidEmail && isValidSaudiPhone;
+
+  const canProceed = !!booking.date && !!booking.time && isUserInfoComplete;
 
   return (
     <div>
@@ -795,7 +828,10 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
             <Clock size={16} className="text-teal-600" />
             اختر الوقت
             {!booking.date && (
-              <span className="text-xs text-slate-400 font-normal" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+              <span
+                className="text-xs text-slate-400 font-normal"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
                 (اختر التاريخ أولاً)
               </span>
             )}
@@ -813,16 +849,8 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                   disabled={!booking.date || !slot.available}
                   className="p-3 rounded-xl border-2 text-center transition-all duration-150"
                   style={{
-                    background: !slot.available
-                      ? "#F4EFE8"
-                      : selected
-                      ? "#DFF3F1"
-                      : "white",
-                    borderColor: !slot.available
-                      ? "#D8E8E7"
-                      : selected
-                      ? "#1E4E8C"
-                      : "#D8E8E7",
+                    background: !slot.available ? "#F4EFE8" : selected ? "#DFF3F1" : "white",
+                    borderColor: !slot.available ? "#D8E8E7" : selected ? "#1E4E8C" : "#D8E8E7",
                     opacity: !slot.available ? 0.5 : 1,
                     cursor: !slot.available ? "not-allowed" : "pointer",
                   }}
@@ -865,7 +893,7 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
             >
               بياناتك الشخصية
             </span>
-            {booking.name && (
+            {isUserInfoComplete && (
               <span
                 className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-medium"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
@@ -874,19 +902,57 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
               </span>
             )}
           </div>
-          {showForm ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+          {showForm ? (
+            <ChevronUp size={16} className="text-slate-400" />
+          ) : (
+            <ChevronDown size={16} className="text-slate-400" />
+          )}
         </button>
 
         {showForm && (
           <div className="px-4 pb-4 grid sm:grid-cols-2 gap-4">
             {[
-              { key: "name", label: "الاسم الكامل", placeholder: "مثال: محمد أحمد", icon: User, required: true },
-              { key: "email", label: "البريد الإلكتروني", placeholder: "example@email.com", icon: Mail, required: true },
-              { key: "phone", label: "رقم الجوال", placeholder: "+966 5X XXX XXXX", icon: Phone, required: false },
+              {
+                key: "name",
+                label: "الاسم الكامل",
+                placeholder: "مثال: محمد أحمد",
+                icon: User,
+                required: true,
+              },
+              {
+                key: "email",
+                label: "البريد الإلكتروني",
+                placeholder: "example@email.com",
+                icon: Mail,
+                required: true,
+              },
+              {
+                key: "phone",
+                label: "رقم الجوال",
+                placeholder: "مثال: 05XXXXXXXX",
+                icon: Phone,
+                required: true,
+              },
             ].map((field) => {
               const Icon = field.icon;
+              const hasError =
+                showValidation &&
+                (
+                  (field.key === "name" && !isValidName) ||
+                  (field.key === "email" && !isValidEmail) ||
+                  (field.key === "phone" && !isValidSaudiPhone)
+                );
+              const errorMessage =
+                field.key === "name"
+                  ? "يرجى إدخال الاسم الكامل بشكل صحيح."
+                  : field.key === "email"
+                  ? "يرجى إدخال بريد إلكتروني صحيح مثل example@email.com."
+                  : "يرجى إدخال رقم جوال سعودي صحيح مثل 05XXXXXXXX أو 9665XXXXXXXX.";
               return (
-                <div key={field.key} className={field.key === "name" ? "sm:col-span-2" : ""}>
+                <div
+                  key={field.key}
+                  className={field.key === "name" ? "sm:col-span-2" : ""}
+                >
                   <label
                     className="block text-xs font-medium text-slate-600 mb-1.5"
                     style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
@@ -895,16 +961,38 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                     {field.required && <span className="text-red-400 mr-0.5">*</span>}
                   </label>
                   <div className="relative">
-                    <Icon size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Icon
+                      size={15}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
                     <input
-                      type="text"
+                      type={field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text"}
+                      inputMode={field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text"}
                       placeholder={field.placeholder}
                       value={(booking as any)[field.key] || ""}
-                      onChange={(e) => setBooking((b) => ({ ...b, [field.key]: e.target.value }))}
-                      className="w-full pr-9 pl-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
-                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", direction: "rtl" }}
+                      onChange={(e) => {
+                        setShowValidation(false);
+                        setBooking((b) => ({ ...b, [field.key]: e.target.value }));
+                      }}
+                      className={`w-full pr-9 pl-3 py-2.5 rounded-xl border bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 transition-all ${
+                        hasError
+                          ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                          : "border-slate-200 focus:border-blue-400 focus:ring-blue-100"
+                      }`}
+                      style={{
+                        fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                        direction: "rtl",
+                      }}
                     />
                   </div>
+                  {hasError && (
+                    <p
+                      className="text-xs text-red-500 mt-1.5 leading-relaxed"
+                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                    >
+                      {errorMessage}
+                    </p>
+                  )}
                 </div>
               );
             })}
@@ -921,16 +1009,22 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
                 onChange={(e) => setBooking((b) => ({ ...b, notes: e.target.value }))}
                 rows={3}
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", direction: "rtl" }}
+                style={{
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  direction: "rtl",
+                }}
               />
             </div>
           </div>
         )}
 
-        {!showForm && !booking.name && (
+        {!showForm && !isUserInfoComplete && (
           <div className="px-4 pb-4">
-            <p className="text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
-              انقر لإدخال بياناتك الشخصية (مطلوب لإتمام الحجز)
+            <p
+              className="text-xs text-slate-400"
+              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+            >
+              انقر لإدخال بياناتك الشخصية المطلوبة لإتمام الحجز
             </p>
           </div>
         )}
@@ -945,10 +1039,12 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
           <ArrowRight size={16} />
           رجوع
         </button>
+
         <button
           onClick={() => {
             if (!canProceed) {
               setShowForm(true);
+              setShowValidation(true);
               return;
             }
             setBooking((b) => ({ ...b, step: 4 }));
@@ -961,7 +1057,7 @@ function Step3({ booking, setBooking }: { booking: BookingState; setBooking: Rea
             fontFamily: "'Cairo', sans-serif",
             fontWeight: 700,
             boxShadow: canProceed ? "0 6px 20px rgba(37,99,235,0.3)" : "none",
-            cursor: canProceed ? "pointer" : "default",
+            cursor: canProceed ? "pointer" : "not-allowed",
           }}
         >
           مراجعة الحجز
@@ -1043,6 +1139,7 @@ function Step4({
             { label: "المدة", value: booking.service?.duration || "", icon: Clock, color: "#64748B" },
             { label: "الاسم", value: booking.name, icon: User, color: "#64748B" },
             { label: "البريد الإلكتروني", value: booking.email, icon: Mail, color: "#64748B" },
+            { label: "رقم الجوال", value: booking.phone, icon: Phone, color: "#64748B" },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -1307,6 +1404,8 @@ function ConfirmationScreen({ booking }: { booking: BookingState }) {
             { label: "التاريخ", value: dateObj ? `${dateObj.day}، ${dateObj.label}` : "—" },
             { label: "الوقت", value: timeLabel || "—" },
             ...(booking.name ? [{ label: "الاسم", value: booking.name }] : []),
+            ...(booking.email ? [{ label: "البريد الإلكتروني", value: booking.email }] : []),
+            ...(booking.phone ? [{ label: "رقم الجوال", value: booking.phone }] : []),
           ].map((item) => (
             <div key={item.label} className="flex items-center justify-between gap-4">
               <span
