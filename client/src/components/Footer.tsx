@@ -7,7 +7,7 @@
 import { Link } from "wouter";
 import { Shield, Lock, Heart, Award } from "lucide-react";
 
-// ─── إشارات الثقة ──────────────────────────────────────────────────────────────
+// ─── إشارات الثقة ─────────────────────────────────────────────────────
 const trustSignals = [
   { icon: Shield, text: "نحمي بياناتك بعناية", color: "#2BBDB6" },
   { icon: Lock, text: "لا مشاركة مع أطراف ثالثة", color: "#1E4E8C" },
@@ -24,21 +24,22 @@ const platformLinks = [
   { label: "احجز موعداً", href: "/booking" },
 ];
 
-// ─── روابط الدعم ───────────────────────────────────────────────────────────────
+// ─── روابط الدعم ─────────────────────────────────────────────────────
 const supportLinks = [
   { label: "رؤيتنا", href: "/impact" },
   { label: "الأسئلة الشائعة", href: "/faq" },
   { label: "سياسة الخصوصية", href: "/privacy" },
   { label: "إخلاء المسؤولية", href: "/disclaimer" },
-  { label: "تواصل معنا", href: "/contact" },
   { label: "الشروط والأحكام", href: "/terms" },
+  { label: "سياسة الإلغاء والاسترداد", href: "/refund-policy" },
+  { label: "تواصل معنا", href: "/contact" },
   { label: "نموذج النتائج", href: "/result-demo" },
 ];
 
 export default function Footer() {
   return (
     <footer style={{ background: "#0A0F1E", direction: "rtl" }}>
-      {/* ─── شريط الثقة ────────────────────────────────────────────────────── */}
+      {/* ─── شريط الثقة ──────────────────────────────────────────────────── */}
       <div
         className="border-b"
         style={{ borderColor: "rgba(255,255,255,0.06)" }}
@@ -51,7 +52,10 @@ export default function Footer() {
                 <div key={i} className="flex items-center gap-2.5">
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${signal.color}18`, border: `1px solid ${signal.color}30` }}
+                    style={{
+                      background: `${signal.color}18`,
+                      border: `1px solid ${signal.color}30`,
+                    }}
                   >
                     <Icon size={15} style={{ color: signal.color }} />
                   </div>
@@ -68,10 +72,9 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* ─── المحتوى الرئيسي ────────────────────────────────────────────────── */}
+      {/* ─── المحتوى الرئيسي ──────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-
           {/* Brand */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2.5 mb-3">
@@ -101,6 +104,7 @@ export default function Footer() {
                 </span>
               </div>
             </div>
+
             <p
               className="text-sm text-slate-400 leading-relaxed max-w-sm mb-6"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
@@ -216,6 +220,7 @@ export default function Footer() {
           >
             © ٢٠٢٦ تشخيصي | Tashkheesy. جميع الحقوق محفوظة.
           </p>
+
           <div className="flex items-center gap-4">
             <Link href="/privacy">
               <span
@@ -226,6 +231,7 @@ export default function Footer() {
               </span>
             </Link>
             <span className="text-slate-700 text-xs">·</span>
+
             <Link href="/disclaimer">
               <span
                 className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
@@ -235,6 +241,7 @@ export default function Footer() {
               </span>
             </Link>
             <span className="text-slate-700 text-xs">·</span>
+
             <Link href="/terms">
               <span
                 className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
@@ -244,6 +251,17 @@ export default function Footer() {
               </span>
             </Link>
             <span className="text-slate-700 text-xs">·</span>
+
+            <Link href="/refund-policy">
+              <span
+                className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                الإلغاء والاسترداد
+              </span>
+            </Link>
+            <span className="text-slate-700 text-xs">·</span>
+
             <Link href="/faq">
               <span
                 className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
@@ -253,6 +271,7 @@ export default function Footer() {
               </span>
             </Link>
           </div>
+
           <p
             className="text-xs text-slate-700"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}

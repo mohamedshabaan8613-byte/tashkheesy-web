@@ -102,7 +102,9 @@ export default function WhyTashkheesy() {
       },
       { threshold: 0.1 }
     );
+
     if (sectionRef.current) observer.observe(sectionRef.current);
+
     return () => observer.disconnect();
   }, []);
 
@@ -115,8 +117,7 @@ export default function WhyTashkheesy() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
-
-          {/* Right column: Heading + Paragraph + Value Grid */}
+          {/* Right column: Heading + Paragraph + Trust Note + Value Grid */}
           <div>
             <div className="fade-in-up mb-4">
               <span className="section-label">لماذا تشخيصي؟</span>
@@ -124,7 +125,11 @@ export default function WhyTashkheesy() {
 
             <h2
               className="fade-in-up text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-6"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.2 }}
+              style={{
+                fontFamily: "'Cairo', sans-serif",
+                fontWeight: 900,
+                lineHeight: 1.2,
+              }}
             >
               خطوتك الأولى{" "}
               <span
@@ -140,11 +145,34 @@ export default function WhyTashkheesy() {
             </h2>
 
             <p
-              className="fade-in-up text-lg text-slate-600 leading-relaxed mb-10"
-              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              className="fade-in-up text-lg text-slate-600 leading-relaxed mb-6"
+              style={{
+                fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                lineHeight: 1.85,
+              }}
             >
-              تشخيصي تساعدك على الانتقال من عدم اليقين إلى فهم أولي أوضح لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — بما فيها تحديات القراءة والكتابة والانتباه والتركيز — وتوجيهك نحو الخطوة التالية الأنسب لحالتك.
+              تشخيصي تساعدك على الانتقال من عدم اليقين إلى فهم أولي أوضح
+              لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — بما فيها
+              تحديات القراءة والكتابة والانتباه والتركيز — وتوجيهك نحو الخطوة
+              التالية الأنسب لحالتك.
             </p>
+
+            {/* About / Trust Note */}
+            <div className="fade-in-up mb-10 rounded-2xl bg-white/70 border border-white/70 px-5 py-4 shadow-sm">
+              <p
+                className="text-sm sm:text-base text-slate-600 leading-relaxed"
+                style={{
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  lineHeight: 1.8,
+                }}
+              >
+                <strong className="text-slate-900">من نحن : </strong>
+                تشخيصي كير منصة سعودية تساعد الأسر والبالغين على بدء فحص أولي
+                آمن لمؤشرات صعوبات التعلم والانتباه، مع توجيه واضح للخطوة
+                التالية، دون أن يكون ذلك تشخيصًا طبيًا أو نفسيًا 
+                نهائيًا.
+              </p>
+            </div>
 
             {/* Practical Value Grid — replaces vague stats */}
             <div className="fade-in-up grid grid-cols-2 gap-4">
@@ -178,6 +206,7 @@ export default function WhyTashkheesy() {
           <div className="grid grid-cols-1 gap-4">
             {reasons.map((reason, index) => {
               const Icon = reason.icon;
+
               return (
                 <div
                   key={index}
@@ -189,16 +218,24 @@ export default function WhyTashkheesy() {
                   >
                     <Icon size={22} style={{ color: reason.color }} />
                   </div>
+
                   <div>
                     <h3
                       className="text-base font-bold text-slate-900 mb-1.5"
-                      style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
+                      style={{
+                        fontFamily: "'Cairo', sans-serif",
+                        fontWeight: 700,
+                      }}
                     >
                       {reason.title}
                     </h3>
+
                     <p
                       className="text-sm text-slate-600 leading-relaxed"
-                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
+                      style={{
+                        fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                        lineHeight: 1.7,
+                      }}
                     >
                       {reason.desc}
                     </p>
@@ -207,7 +244,6 @@ export default function WhyTashkheesy() {
               );
             })}
           </div>
-
         </div>
       </div>
     </section>

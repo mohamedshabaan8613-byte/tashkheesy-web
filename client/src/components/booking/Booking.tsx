@@ -1118,11 +1118,15 @@ function Step4({
           className="text-sm text-slate-600 leading-relaxed"
           style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.65 }}
         >
-          أوافق على{" "}
+          أوافق على{" "}
+          <a href="/terms" className="text-blue-600 hover:underline">الشروط والأحكام</a>
+          {" "}و{" "}
           <a href="/privacy" className="text-blue-600 hover:underline">سياسة الخصوصية</a>
-          {" "}و{" "}
+          {" "}و{" "}
           <a href="/disclaimer" className="text-blue-600 hover:underline">إخلاء المسؤولية</a>
-          {" "}وأفهم أن هذه استشارة تربوية وليست تشخيصاً طبياً رسمياً.
+          {" "}و{" "}
+          <a href="/refund-policy" className="text-blue-600 hover:underline">سياسة الإلغاء والاسترداد</a>
+          {" "}وأفهم أن هذه الخدمة استشارة تربوية وليست تشخيصًا طبيًا أو نفسيًا نهائيًا.
         </p>
       </div>
 
