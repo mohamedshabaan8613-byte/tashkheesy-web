@@ -5,11 +5,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import WhatsAppButton from "./components/WhatsAppButton";
 import PageSkeleton from "./components/PageSkeleton";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "./context/AuthContext";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────────────────────
-const Login       = lazy(() => import("./components/Login"));
-const AccountPage = lazy(() => import("./components/Account"));
 const Home         = lazy(() => import("./components/Home"));
 const Services     = lazy(() => import("./components/Services"));
 const Pricing      = lazy(() => import("./components/Pricing"));
@@ -190,8 +187,8 @@ function SpecialistsMatchNoIndex() {
     </SensitiveNoIndex>
   );
 }
+
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Suspense fallback={<PageSkeleton />}>
       <Switch>
@@ -225,10 +222,6 @@ function Router() {
         <Route path="/choose-child-path/:childId" component={ChooseChildPathWrapper} />
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
-        {/* ─── صفحات المصادقة ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */}
-        <Route path="/login"   component={Login} />
-        <Route path="/account" component={AccountPage} />
-
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
@@ -241,11 +234,9 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <Router />
-          <WhatsAppButton />
-          <Toaster richColors position="top-center" />
-        </AuthProvider>
+        <Router />
+        <WhatsAppButton />
+        <Toaster richColors position="top-center" />
       </ThemeProvider>
     </ErrorBoundary>
   );

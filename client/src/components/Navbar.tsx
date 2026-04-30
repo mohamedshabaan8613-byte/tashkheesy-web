@@ -14,30 +14,15 @@
  * Removed from nav:
  *   "الأثر" → /impact  (accessible via Footer and Impact page — not a primary nav item)
  *   "نموذج النتائج" → /result-demo  (available via FounderStory CTA — not a nav item)
- *
- * Sprint 1 — Auth:
- *   زر "تسجيل الدخول" يظهر إذا لم يكن المستخدم مسجلاً
- *   زر "حسابي" يظهر إذا كان المستخدم مسجلاً
  */
 
 import { useState, useEffect } from "react";
-import { Menu, X, User, LogIn } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { APP_LOGO, APP_TITLE } from "@/const";
-import { useSupabaseAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  // Auth state — fail-safe: إذا لم يكن AuthProvider موجوداً لا يكسر الـ Navbar
-  let user = null;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const auth = useSupabaseAuth();
-    user = auth.user;
-  } catch {
-    // AuthProvider غير موجود — نتجاهل الخطأ ونعرض حالة غير مسجل
-  }
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -97,32 +82,8 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Desktop CTAs */}
-          <div className="hidden lg:flex items-center gap-2">
-            {/* زر تسجيل الدخول / الحساب */}
-            {user ? (
-              <a
-                href="/account"
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-[#1E4E8C] hover:bg-[#DFF3F1] border border-[#1E4E8C]/20"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                aria-label="حسابي"
-              >
-                <User size={15} />
-                حسابي
-              </a>
-            ) : (
-              <a
-                href="/login"
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-[#1E4E8C] hover:bg-[#DFF3F1]"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                aria-label="تسجيل الدخول"
-              >
-                <LogIn size={15} />
-                تسجيل الدخول
-              </a>
-            )}
-
-            {/* الزر الرئيسي */}
+          {/* Desktop CTA — single primary action */}
+          <div className="hidden lg:flex items-center">
             <a
               href="/start"
               className="tashkhisi-btn-primary text-sm"
@@ -165,18 +126,6 @@ export default function Navbar() {
                 {link.label}
               </a>
             ))}
-
-            {/* زر تسجيل الدخول / الحساب في الموبايل */}
-            <a
-              href={user ? "/account" : "/login"}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-[#1E4E8C] hover:bg-[#DFF3F1]"
-              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-              onClick={() => setMenuOpen(false)}
-            >
-              {user ? <User size={15} /> : <LogIn size={15} />}
-              {user ? "حسابي" : "تسجيل الدخول"}
-            </a>
-
             <div className="pt-3 border-t border-slate-100">
               <a
                 href="/start"

@@ -9,7 +9,6 @@
  */
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useSupabaseAuth } from "../../context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,26 +86,6 @@ const AGE_GROUP_LABELS: Record<string, string> = {
 // ─── المكوّن الرئيسي ──────────────────────────────────────────────────────────
 export default function ChildrenPage() {
   const [, navigate] = useLocation();
-
-  // ─── Auth Guard ──────────────────────────────────────────────────────────────
-  // إذا لم يكن المستخدم مسجلاً، أعده إلى /login
-  let authUser = null;
-  let authLoading = false;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const auth = useSupabaseAuth();
-    authUser = auth.user;
-    authLoading = auth.loading;
-  } catch {
-    // AuthProvider غير موجود — نتجاهل ونسمح بالوصول
-  }
-
-  useEffect(() => {
-    if (!authLoading && !authUser) {
-      navigate("/login");
-    }
-  }, [authUser, authLoading, navigate]);
-
   const [children, setChildren] = useState<Child[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [childToDelete, setChildToDelete] = useState<Child | null>(null);
