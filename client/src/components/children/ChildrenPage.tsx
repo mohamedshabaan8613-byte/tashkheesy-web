@@ -7,8 +7,9 @@
  * - عرض سجل الفحوصات السابقة من localStorage
  * - تصميم أوضح وأكثر سهولة
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useLocation } from "wouter";
+import { AuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +88,18 @@ const AGE_GROUP_LABELS: Record<string, string> = {
 export default function ChildrenPage() {
   const [, navigate] = useLocation();
   const [children, setChildren] = useState<Child[]>([]);
+
+  // ─── Auth guard (Sprint 1A) ───────────────────────────────────────────────
+  // Reads auth context safely — if AuthProvider is not mounted, authCtx is null
+  // and the guard is skipped (graceful degradation).
+  const authCtx = useContext(AuthContext);
+  useEffect(() => {
+    if (!authCtx) return; // AuthProvider not mounted — skip guard
+    if (authCtx.loading) return; // still loading — wait
+    if (!authCtx.user) {
+      navigate("/login");
+    }
+  }, [authCtx, navigate]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [childToDelete, setChildToDelete] = useState<Child | null>(null);
   const [editingChild, setEditingChild] = useState<Child | null>(null);

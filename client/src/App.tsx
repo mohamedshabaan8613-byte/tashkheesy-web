@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Route, Switch, useParams } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider } from "./context/AuthContext";
 import WhatsAppButton from "./components/WhatsAppButton";
 import PageSkeleton from "./components/PageSkeleton";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,6 +37,9 @@ const SelfAssessment  = lazy(() => import("./components/SelfAssessment"));
 const ChooseChildPath  = lazy(() => import("./components/screening/ChooseChildPath"));
 const ChooseSelfPath   = lazy(() => import("./components/screening/ChooseSelfPath"));
 const SpecialistsMatch = lazy(() => import("./components/screening/SpecialistsMatch"));
+// ─── صفحات المصادقة (Sprint 1A) ─────────────────────────────────────────
+const Login   = lazy(() => import("./components/Login"));
+const Account = lazy(() => import("./components/Account"));
 // ────────────────────────────────────────────────────────────────
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
@@ -222,6 +226,9 @@ function Router() {
         <Route path="/choose-child-path/:childId" component={ChooseChildPathWrapper} />
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
+        {/* ─── صفحات المصادقة (Sprint 1A) ────────────────────────────── */}
+        <Route path="/login"   component={Login} />
+        <Route path="/account" component={Account} />
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
@@ -234,9 +241,11 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <Router />
-        <WhatsAppButton />
-        <Toaster richColors position="top-center" />
+        <AuthProvider>
+          <Router />
+          <WhatsAppButton />
+          <Toaster richColors position="top-center" />
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
