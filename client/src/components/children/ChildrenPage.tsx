@@ -7,8 +7,9 @@
  * - عرض سجل الفحوصات السابقة من localStorage
  * - تصميم أوضح وأكثر سهولة
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useLocation } from "wouter";
+import { AuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +88,11 @@ const AGE_GROUP_LABELS: Record<string, string> = {
 export default function ChildrenPage() {
   const [, navigate] = useLocation();
   const [children, setChildren] = useState<Child[]>([]);
+
+  // ─── Auth guard (Sprint 1B) ───────────────────────────────────────────────
+  // Reads AuthContext safely — null if AuthProvider is not mounted (graceful degradation).
+  // Does NOT delete localStorage. Does NOT migrate data to Supabase.
+  const authCtx = useContext(AuthContext);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [childToDelete, setChildToDelete] = useState<Child | null>(null);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
@@ -163,6 +169,76 @@ export default function ChildrenPage() {
       if (key?.startsWith("result_") && key.includes(childId)) count++;
     }
     return count;
+  }
+
+  // ─── Auth loading state ────────────────────────────────────────────────
+  if (authCtx && authCtx.loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F4EFE8" }}>
+        <p className="text-slate-500 text-sm" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+          جارٍ التحميل...
+        </p>
+      </div>
+    );
+  }
+
+  // ─── Unauthenticated state ───────────────────────────────────────────────
+  // AuthProvider is mounted but user is not logged in — show login prompt.
+  // localStorage is NOT deleted. Data is NOT migrated.
+  if (authCtx && !authCtx.loading && !authCtx.user) {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+        dir="rtl"
+        style={{ background: "linear-gradient(135deg, #F4EFE8 0%, #DFF3F1 100%)" }}
+      >
+        <div
+          className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 text-center"
+          style={{ border: "1px solid #D8E8E7" }}
+        >
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{ background: "linear-gradient(135deg, #1E4E8C 0%, #2563eb 100%)" }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <h2
+            className="text-xl font-black text-slate-800 mb-3"
+            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+          >
+            تسجيل الدخول مطلوب
+          </h2>
+          <p
+            className="text-sm text-slate-600 mb-6"
+            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
+          >
+            لحماية بيانات الأطفال، يرجى تسجيل الدخول بالبريد الإلكتروني لعرض ملفات الأطفال.
+          </p>
+          <a
+            href="/login"
+            className="block w-full py-3 rounded-2xl text-white font-bold text-sm text-center"
+            style={{
+              fontFamily: "'Cairo', sans-serif",
+              fontWeight: 800,
+              background: "linear-gradient(135deg, #1E4E8C 0%, #2563eb 100%)",
+              boxShadow: "0 4px 14px rgba(30,78,140,0.25)",
+            }}
+          >
+            تسجيل الدخول
+          </a>
+          <a
+            href="/"
+            className="block mt-4 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+          >
+            العودة إلى الصفحة الرئيسية
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return (

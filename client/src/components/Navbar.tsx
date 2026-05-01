@@ -1,28 +1,24 @@
 /*
  * تشخيصي | Tashkheesy — Navbar
  * Sticky, transparent-to-white on scroll, Arabic RTL
- * Primary CTA: ابدأ الفحص → /start (unified entry for child & self-assessment)
- * Nav hierarchy: 4 essential links only — no competing CTAs, no marketing highlights
- * Accessibility: aria-labels, aria-expanded, role="navigation"
+ * Primary CTA: ابدأ الفحص → /start
  *
- * Nav links rationale:
- *   كيف يعمل → #how-it-works  (homepage section anchor)
- *   خدماتنا  → #services       (homepage section anchor)
- *   لماذا تشخيصي → #why-tashkheesy (homepage section anchor)
- *   الأسئلة الشائعة → /faq    (standalone page)
- *
- * Removed from nav:
- *   "الأثر" → /impact  (accessible via Footer and Impact page — not a primary nav item)
- *   "نموذج النتائج" → /result-demo  (available via FounderStory CTA — not a nav item)
+ * Sprint 1B: Added auth link (تسجيل الدخول / حسابي)
+ * Uses AuthContext safely via useContext — no crash if AuthProvider is not mounted.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Menu, X } from "lucide-react";
 import { APP_LOGO, APP_TITLE } from "@/const";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Safely read auth context — null if AuthProvider is not mounted
+  const authCtx = useContext(AuthContext);
+  const isLoggedIn = Boolean(authCtx?.user);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -68,7 +64,7 @@ export default function Navbar() {
             </span>
           </a>
 
-          {/* Desktop Nav — 4 essential links */}
+          {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-1" role="navigation" aria-label="القائمة الرئيسية">
             {navLinks.map((link) => (
               <a
@@ -82,8 +78,17 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Desktop CTA — single primary action */}
-          <div className="hidden lg:flex items-center">
+          {/* Desktop CTAs */}
+          <div className="hidden lg:flex items-center gap-3">
+            {/* Auth link */}
+            <a
+              href={isLoggedIn ? "/account" : "/login"}
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-[#1E4E8C] hover:bg-[#DFF3F1] border border-slate-200 bg-white/70"
+              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+            >
+              {isLoggedIn ? "حسابي" : "تسجيل الدخول"}
+            </a>
+            {/* Primary CTA */}
             <a
               href="/start"
               className="tashkhisi-btn-primary text-sm"
@@ -126,7 +131,16 @@ export default function Navbar() {
                 {link.label}
               </a>
             ))}
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              {/* Mobile auth link */}
+              <a
+                href={isLoggedIn ? "/account" : "/login"}
+                className="block px-4 py-3 text-sm font-medium rounded-lg transition-colors text-slate-700 hover:text-[#1E4E8C] hover:bg-[#DFF3F1] text-center border border-slate-200"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                onClick={() => setMenuOpen(false)}
+              >
+                {isLoggedIn ? "حسابي" : "تسجيل الدخول"}
+              </a>
               <a
                 href="/start"
                 className="tashkhisi-btn-primary block text-center text-sm w-full"
