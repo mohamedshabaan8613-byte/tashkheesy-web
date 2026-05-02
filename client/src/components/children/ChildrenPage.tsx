@@ -42,6 +42,15 @@ import AddChildForm from "./AddChildForm";
 import { toast } from "sonner";
 
 // ─── أنواع البيانات ───────────────────────────────────────────────────────────
+interface ScreeningResult {
+  sessionId?: string;
+  childId?: string;
+  childName?: string;
+  screeningType?: string;
+  completedAt?: string;
+  [key: string]: any;
+}
+
 export interface Child {
   id: string;
   name: string;
@@ -159,19 +168,57 @@ export default function ChildrenPage() {
     saveChildren(updated);
     setChildToDelete(null);
     toast.success("تم حذف ملف الطفل بنجاح");
+  }  // ─── عدد الفحوصات السابقة لطفل ───────────────────────────────────────────────
+  function isResultForChild(key: string, parsed: ScreeningResult, childId: string): boolean {
+    if (parsed?.childId === childId) return true;
+    if (typeof parsed?.sessionId === "string" && parsed.sessionId.startsWith(`session_${childId}_`)) return true;
+    if (key.includes(`session_${childId}_`)) return true;
+    return false;
   }
 
-  // ─── عدد الفحوصات السابقة لطفل ───────────────────────────────────────────
+  function getLatestScreeningResult(childId: string): ScreeningResult | null {
+    const usableResults: (ScreeningResult & { key: string })[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith("result_")) continue;
+      try {
+        const stored = localStorage.getItem(key);
+        if (!stored) continue;
+        const parsed = JSON.parse(stored) as ScreeningResult;
+        if (!isResultForChild(key, parsed, childId)) continue;
+        if (!parsed.sessionId || !parsed.completedAt) continue;
+        const completedDate = new Date(parsed.completedAt);
+        if (isNaN(completedDate.getTime())) continue;
+        usableResults.push({ ...parsed, key });
+      } catch {
+        // Skip malformed entries silently
+      }
+    }
+    if (usableResults.length === 0) return null;
+    usableResults.sort((a, b) => {
+      const dateA = new Date(a.completedAt || "").getTime();
+      const dateB = new Date(b.completedAt || "").getTime();
+      return dateB - dateA;
+    });
+    return usableResults[0] || null;
+  }
+
   function getScreeningCount(childId: string): number {
     let count = 0;
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key?.startsWith("result_") && key.includes(childId)) count++;
+      if (!key?.startsWith("result_")) continue;
+      try {
+        const stored = localStorage.getItem(key);
+        if (!stored) continue;
+        const parsed = JSON.parse(stored) as ScreeningResult;
+        if (isResultForChild(key, parsed, childId)) count++;
+      } catch {
+        // Skip malformed entries silently
+      }
     }
     return count;
-  }
-
-  // ─── Auth loading state ────────────────────────────────────────────────
+  }  // ─── Auth loading state ────────────────────────────────────────────────
   if (authCtx && authCtx.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#F4EFE8" }}>
@@ -289,6 +336,8 @@ export default function ChildrenPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {children.map((child) => {
                 const screeningCount = getScreeningCount(child.id);
+                const latestResult = getLatestScreeningResult(child.id);
+                const pathType = latestResult?.screeningType === "adhd" ? "adhd" : "learning";
                 return (
                   <Card key={child.id} className="hover:shadow-md transition-all border-2 hover:border-blue-200">
                     <CardHeader className="pb-3">
@@ -351,15 +400,54 @@ export default function ChildrenPage() {
 
                       {/* أزرار الإجراءات */}
                       <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                        <Button
-                          className="w-full sm:flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-9"
-                          onClick={() =>
-                            navigate(`/choose-child-path/${child.id}?name=${encodeURIComponent(child.name)}&age=${child.ageYears}&ageGroup=${child.ageGroup}`)
-                          }
-                        >
-                          <ClipboardList className="w-4 h-4" />
-                          بدء الفحص
-                        </Button>
+                        {latestResult ? (
+                          <>
+                            {/* Primary: Show Latest Result */}
+                            <Button
+                              className="w-full sm:flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-9"
+                              onClick={() =>
+                                navigate(
+                                  `/screening-result/${latestResult.sessionId}?name=${encodeURIComponent(child.name)}&pathType=${pathType}`
+                                )
+                              }
+                            >
+                              <ClipboardList className="w-4 h-4" />
+                              عرض آخر نتيجة
+                            </Button>
+
+                            {/* Secondary: New Screening */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full sm:w-auto gap-1 text-sm h-9 px-3"
+                              onClick={() =>
+                                navigate(
+                                  `/choose-child-path/${child.id}?name=${encodeURIComponent(child.name)}&age=${child.ageYears}&ageGroup=${child.ageGroup}`
+                                )
+                              }
+                            >
+                              <ClipboardList className="w-3 h-3" />
+                              فحص جديد
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            {/* Default: Start Screening */}
+                            <Button
+                              className="w-full sm:flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-9"
+                              onClick={() =>
+                                navigate(
+                                  `/choose-child-path/${child.id}?name=${encodeURIComponent(child.name)}&age=${child.ageYears}&ageGroup=${child.ageGroup}`
+                                )
+                              }
+                            >
+                              <ClipboardList className="w-4 h-4" />
+                              بدء الفحص
+                            </Button>
+                          </>
+                        )}
+
+                        {/* Booking Button */}
                         <Button
                           variant="outline"
                           size="sm"
