@@ -350,9 +350,9 @@ export default function ChildrenPage() {
                       )}
 
                       {/* أزرار الإجراءات */}
-                      <div className="flex gap-2 pt-1">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-1">
                         <Button
-                          className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-9"
+                          className="w-full sm:flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-sm h-9"
                           onClick={() =>
                             navigate(`/choose-child-path/${child.id}?name=${encodeURIComponent(child.name)}&age=${child.ageYears}&ageGroup=${child.ageGroup}`)
                           }
@@ -363,7 +363,7 @@ export default function ChildrenPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1 text-sm h-9 px-3"
+                          className="w-full sm:w-auto gap-1 text-sm h-9 px-3"
                           onClick={() => navigate(`/booking?child=${encodeURIComponent(child.name)}`)}
                         >
                           <ArrowRight className="w-3 h-3" />
