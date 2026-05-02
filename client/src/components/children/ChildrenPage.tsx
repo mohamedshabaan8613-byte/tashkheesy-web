@@ -169,15 +169,43 @@ export default function ChildrenPage() {
     setChildToDelete(null);
     toast.success("تم حذف ملف الطفل بنجاح");
   }  // ─── عدد الفحوصات السابقة لطفل ───────────────────────────────────────────────
-  function isResultForChild(key: string, parsed: ScreeningResult, childId: string): boolean {
+  function isResultForChild(
+    key: string,
+    parsed: ScreeningResult,
+    childId: string,
+    derivedSessionId?: string
+  ): boolean {
     if (parsed?.childId === childId) return true;
-    if (typeof parsed?.sessionId === "string" && parsed.sessionId.startsWith(`session_${childId}_`)) return true;
+    if (
+      typeof parsed?.sessionId === "string" &&
+      parsed.sessionId.startsWith(`session_${childId}_`)
+    ) return true;
+    if (
+      typeof derivedSessionId === "string" &&
+      derivedSessionId.startsWith(`session_${childId}_`)
+    ) return true;
     if (key.includes(`session_${childId}_`)) return true;
     return false;
   }
 
+  function getSortTimeFromResult(parsed: ScreeningResult, sessionId: string): number {
+    const dateCandidate =
+      parsed.completedAt ||
+      parsed.completed_at ||
+      parsed.createdAt ||
+      parsed.timestamp ||
+      parsed.date ||
+      "";
+    const parsedDate = new Date(dateCandidate as string);
+    if (!isNaN(parsedDate.getTime())) return parsedDate.getTime();
+    const lastToken = sessionId.split("_").pop();
+    const timestamp = Number(lastToken);
+    if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
+    return 0;
+  }
+
   function getLatestScreeningResult(childId: string): ScreeningResult | null {
-    const usableResults: (ScreeningResult & { key: string })[] = [];
+    const usableResults: (ScreeningResult & { key: string; _sortTime: number; sessionId: string })[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key?.startsWith("result_")) continue;
@@ -185,21 +213,21 @@ export default function ChildrenPage() {
         const stored = localStorage.getItem(key);
         if (!stored) continue;
         const parsed = JSON.parse(stored) as ScreeningResult;
-        if (!isResultForChild(key, parsed, childId)) continue;
-        if (!parsed.sessionId || !parsed.completedAt) continue;
-        const completedDate = new Date(parsed.completedAt);
-        if (isNaN(completedDate.getTime())) continue;
-        usableResults.push({ ...parsed, key });
+        const fallbackSessionId = key.replace(/^result_/, "");
+        const sessionId =
+          typeof parsed.sessionId === "string" && parsed.sessionId.trim()
+            ? parsed.sessionId
+            : fallbackSessionId;
+        if (!sessionId) continue;
+        if (!isResultForChild(key, parsed, childId, sessionId)) continue;
+        const sortTime = getSortTimeFromResult(parsed, sessionId);
+        usableResults.push({ ...parsed, sessionId, key, _sortTime: sortTime });
       } catch {
         // Skip malformed entries silently
       }
     }
     if (usableResults.length === 0) return null;
-    usableResults.sort((a, b) => {
-      const dateA = new Date(a.completedAt || "").getTime();
-      const dateB = new Date(b.completedAt || "").getTime();
-      return dateB - dateA;
-    });
+    usableResults.sort((a, b) => b._sortTime - a._sortTime);
     return usableResults[0] || null;
   }
 
@@ -212,7 +240,13 @@ export default function ChildrenPage() {
         const stored = localStorage.getItem(key);
         if (!stored) continue;
         const parsed = JSON.parse(stored) as ScreeningResult;
-        if (isResultForChild(key, parsed, childId)) count++;
+        const fallbackSessionId = key.replace(/^result_/, "");
+        const sessionId =
+          typeof parsed.sessionId === "string" && parsed.sessionId.trim()
+            ? parsed.sessionId
+            : fallbackSessionId;
+        if (!sessionId) continue;
+        if (isResultForChild(key, parsed, childId, sessionId)) count++;
       } catch {
         // Skip malformed entries silently
       }
