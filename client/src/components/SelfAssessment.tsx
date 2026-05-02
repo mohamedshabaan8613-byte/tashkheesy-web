@@ -109,7 +109,7 @@ export default function SelfAssessment() {
     // ترتيب تنازلي بحسب completedAt
     h.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
     setHistory(h);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -160,8 +160,19 @@ export default function SelfAssessment() {
     ? "فرط الحركة وتشتت الانتباه"
     : "صعوبات التعلم";
 
-  const latestResult = history.length > 0 ? history[0] : null;
-  const olderResults = history.length > 1 ? history.slice(1) : [];
+  // ─── تصفية النتائج حسب pathType الحالي ──────────────────────────────────
+  // النتائج التي تطابق المسار الحالي (learning أو adhd) فقط
+  const currentPathResults = history.filter(
+    (item) => item.pathType === pathType
+  );
+  // النتائج التي تنتمي لمسار آخر أو لا تحتوي على pathType صالح
+  const otherPathResults = history.filter(
+    (item) => item.pathType !== pathType
+  );
+  // أحدث نتيجة للمسار الحالي فقط — لا تُستخدم نتيجة مسار آخر كـ fallback
+  const latestResult = currentPathResults.length > 0 ? currentPathResults[0] : null;
+  // النتائج الأقدم للمسار الحالي (بعد الأولى)
+  const olderResults = currentPathResults.length > 1 ? currentPathResults.slice(1) : [];
 
   return (
     <div
@@ -389,6 +400,64 @@ export default function SelfAssessment() {
               >
                 يتم حفظ هذه النتائج على هذا الجهاز فقط. لتخزينها بشكل دائم لاحقًا، سنوفر ربطها بحسابك.
               </p>
+
+              {/* ─── نتائج مسارات أخرى (ثانوية ومخففة) ────────────────────── */}
+              {otherPathResults.length > 0 && (
+                <div
+                  className="mt-4 rounded-xl p-3"
+                  style={{
+                    background: "rgba(148,163,184,0.06)",
+                    border: "1px solid rgba(148,163,184,0.15)",
+                  }}
+                >
+                  <p
+                    className="text-xs font-medium mb-2"
+                    style={{ color: "#94A3B8", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                  >
+                    نتائج أخرى محفوظة على هذا الجهاز
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {otherPathResults.slice(0, 3).map((item) => (
+                      <div
+                        key={item.sessionId}
+                        className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+                        style={{ background: "rgba(148,163,184,0.08)", border: "1px solid rgba(148,163,184,0.12)" }}
+                      >
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span
+                            className="text-xs font-medium truncate"
+                            style={{ color: "#64748B", fontFamily: "'Cairo', sans-serif" }}
+                          >
+                            {item.pathType === "adhd" ? "فرط الحركة وتشتت الانتباه" : "صعوبات التعلم"}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{ color: "#94A3B8", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                          >
+                            {formatArabicDate(item.completedAt)}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/screening-result/${item.sessionId}?name=${encodeURIComponent(item.name)}&pathType=${item.pathType}`
+                            )
+                          }
+                          className="text-xs rounded-lg px-2.5 py-1 transition-colors flex-shrink-0"
+                          style={{
+                            background: "rgba(148,163,184,0.12)",
+                            color: "#64748B",
+                            fontFamily: "'Cairo', sans-serif",
+                            border: "1px solid rgba(148,163,184,0.18)",
+                          }}
+                        >
+                          عرض
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
