@@ -179,8 +179,9 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const childName = searchParams.get("name") ?? "الطفل";
   const childAge = parseInt(searchParams.get("age") ?? "8", 10);
 
-  // قراءة pathType من URL وتعيينه كـ screeningType تلقائياً
+  // قراءة pathType وmode من URL
   const urlPathType = searchParams.get("pathType") ?? "learning";
+  const mode = searchParams.get("mode") ?? ""; // self | "" (child mode)
   // تعيين screeningType من pathType مباشرة — learning يُعيَّن كـ dyslexia (صعوبات التعلم)
   const initialScreeningType: ScreeningType = urlPathType === "adhd" ? "adhd" : "dyslexia";
 
@@ -241,19 +242,44 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
 
     // حفظ النتيجة في localStorage
     const sessionId = `session_${childId}_${Date.now()}`;
-    localStorage.setItem(
-      `result_${sessionId}`,
-      JSON.stringify({
-        sessionId,
-        childName,
-        childAge,
-        screeningType,
-        result,
-        completedAt: new Date().toISOString(),
-        answeredCount,
-        totalCount: totalQuestions,
-      })
-    );
+    const completedAt = new Date().toISOString();
+    const resultPayload = {
+      sessionId,
+      childName,
+      childId,
+      childAge,
+      screeningType,
+      pathType: urlPathType,
+      result,
+      completedAt,
+      answeredCount,
+      totalCount: totalQuestions,
+    };
+    localStorage.setItem(`result_${sessionId}`, JSON.stringify(resultPayload));
+
+    // إذا كان التقييم ذاتياً، حدّث سجل tashkheesy_self_assessments
+    if (mode === "self") {
+      try {
+        const SELF_KEY = "tashkheesy_self_assessments";
+        const existing = localStorage.getItem(SELF_KEY);
+        const list: unknown[] = existing ? JSON.parse(existing) : [];
+        const entry = {
+          id: sessionId,
+          sessionId,
+          name: childName,
+          age: childAge,
+          mode,
+          pathType: urlPathType,
+          screeningType,
+          completedAt,
+          resultKey: `result_${sessionId}`,
+        };
+        list.unshift(entry); // أضف في البداية (الأحدث أولاً)
+        localStorage.setItem(SELF_KEY, JSON.stringify(list));
+      } catch {
+        // تجاهل أخطاء localStorage
+      }
+    }
 
     // مسح بيانات الجلسة المؤقتة
     localStorage.removeItem(STORAGE_KEY);
