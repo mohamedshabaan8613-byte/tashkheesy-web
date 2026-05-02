@@ -168,29 +168,28 @@ export async function updateRemoteChild(
 }
 
 /**
- * Delete a remote child by its Supabase UUID.
+ * Delete a remote child by its local_child_id (the id used in localStorage).
+ * Uses local_child_id + user_id to ensure the correct row is deleted
+ * and no other user's data is affected.
  * Returns true on success.
  */
-export async function deleteRemoteChild(remoteId: string): Promise<boolean> {
+export async function deleteRemoteChild(localChildId: string): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
-  try {
-    const userId = await getCurrentUserId();
-    if (!userId) return false;
 
-    const { error } = await supabase
-      .from("children")
-      .delete()
-      .eq("id", remoteId)
-      .eq("user_id", userId);
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
 
-    if (error) {
-      console.error("[accountData] deleteRemoteChild error:", error.code);
-      return false;
-    }
-    return true;
-  } catch {
+  const { error } = await supabase
+    .from("children")
+    .delete()
+    .eq("local_child_id", localChildId)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("[accountData] deleteRemoteChild error:", error.code);
     return false;
   }
+  return true;
 }
 
 /**
