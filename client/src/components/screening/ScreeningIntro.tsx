@@ -100,6 +100,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
   const childName = searchParams.get("name") ?? "";
   const childAge  = searchParams.get("age")  ?? "";
   const pathType  = searchParams.get("pathType") ?? "learning"; // learning | adhd
+  const mode       = searchParams.get("mode") ?? ""; // self | "" (child mode)
 
   // عنوان المسار المختار
   const pathLabel = pathType === "adhd"
@@ -123,7 +124,7 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
   }, []);
 
   // بناء رابط الفحص مع نفس الـ query params بما فيها pathType
-  const screeningHref = `/screening/${childId}?name=${encodeURIComponent(childName || "الطفل")}&age=${childAge || "8"}&pathType=${pathType}`;
+  const screeningHref = `/screening/${childId}?name=${encodeURIComponent(childName || "الطفل")}&age=${childAge || "8"}&pathType=${pathType}${mode ? `&mode=${mode}` : ""}`;
 
   const anim = (delay: number) =>
     `transition-all duration-700 ease-out ${
