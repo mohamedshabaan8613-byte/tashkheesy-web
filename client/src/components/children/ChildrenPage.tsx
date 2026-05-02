@@ -1,11 +1,11 @@
 /**
- * ChildrenPage — صفحة إدارة ملفات الأطفال المُحسَّنة
+ * ChildrenPage — صفحة إدارة ملفات الأطفال
  *
- * التحسينات:
- * - تخزين الأطفال في localStorage (لا تأخير، لا API)
- * - إضافة/تعديل/حذف فوري
- * - عرض سجل الفحوصات السابقة من localStorage
- * - تصميم أوضح وأكثر سهولة
+ * Sprint 2: Supabase sync
+ * - عند تسجيل الدخول: تحميل الأطفال من Supabase أولاً ثم localStorage كـ fallback
+ * - migration notice: إذا وُجد أطفال في localStorage ولا يوجد في Supabase → اعرض notice
+ * - CRUD: كل عملية تُحدَّث في localStorage + Supabase (fire-and-forget)
+ * - بدون تسجيل دخول: يعمل كالمعتاد من localStorage فقط
  */
 import { useState, useEffect, useContext } from "react";
 import { useLocation } from "wouter";
@@ -40,6 +40,15 @@ import {
 } from "lucide-react";
 import AddChildForm from "./AddChildForm";
 import { toast } from "sonner";
+import {
+  fetchRemoteChildren,
+  upsertRemoteChild,
+  updateRemoteChild,
+  deleteRemoteChild,
+  syncLocalChildrenToSupabase,
+  type RemoteChild,
+} from "@/lib/accountData";
+import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
 // ─── أنواع البيانات ───────────────────────────────────────────────────────────
 interface ScreeningResult {
@@ -93,34 +102,94 @@ const AGE_GROUP_LABELS: Record<string, string> = {
   adult: "البالغون (18+)",
 };
 
+// ─── تحويل RemoteChild → Child ───────────────────────────────────────────────
+function remoteToLocal(r: RemoteChild): Child {
+  const { years, ageGroup } = calculateAge((r.date_of_birth ?? "") as string);
+  return {
+    id: (r.local_child_id || r.id) as string,
+    name: r.name as string,
+    dateOfBirth: r.date_of_birth as string,
+    gender: r.gender as "male" | "female",
+    gradeLevel: r.grade_level ?? undefined,
+    schoolName: r.school_name ?? undefined,
+    notes: r.notes ?? undefined,
+    avatarEmoji: r.avatar_emoji as string,
+    ageYears: years,
+    ageGroup,
+    parentId: (r.user_id ?? "") as string,
+    createdAt: (r.created_at ?? new Date().toISOString()) as string,
+    updatedAt: (r.updated_at ?? new Date().toISOString()) as string,
+  };
+}
+
 // ─── المكوّن الرئيسي ──────────────────────────────────────────────────────────
 export default function ChildrenPage() {
   const [, navigate] = useLocation();
   const [children, setChildren] = useState<Child[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [showMigrationNotice, setShowMigrationNotice] = useState(false);
 
-  // ─── Auth guard (Sprint 1B) ───────────────────────────────────────────────
-  // Reads AuthContext safely — null if AuthProvider is not mounted (graceful degradation).
-  // Does NOT delete localStorage. Does NOT migrate data to Supabase.
+  // ─── Auth context (graceful degradation if AuthProvider not mounted) ──────
   const authCtx = useContext(AuthContext);
+  const isLoggedIn = !!(authCtx && !authCtx.loading && authCtx.user);
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [childToDelete, setChildToDelete] = useState<Child | null>(null);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
 
-  // ─── تحميل الأطفال من localStorage ──────────────────────────────────────
+  // ─── تحميل الأطفال ───────────────────────────────────────────────────────
   useEffect(() => {
-    const stored = localStorage.getItem(CHILDREN_KEY);
-    if (stored) {
+    async function loadChildren() {
+      // 1. تحميل من localStorage دائماً
+      const stored = localStorage.getItem(CHILDREN_KEY);
+      let localList: Child[] = [];
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as Child[];
+          localList = parsed.map((c) => {
+            const { years, ageGroup } = calculateAge(c.dateOfBirth);
+            return { ...c, ageYears: years, ageGroup };
+          });
+        } catch {}
+      }
+
+      // 2. إذا لم يكن مسجلاً أو Supabase غير مُهيَّأ → localStorage فقط
+      if (!isLoggedIn || !isSupabaseConfigured) {
+        setChildren(localList);
+        return;
+      }
+
+      // 3. تحميل من Supabase
+      setIsSyncing(true);
       try {
-        const parsed = JSON.parse(stored) as Child[];
-        // تحديث الأعمار عند التحميل
-        const updated = parsed.map((c) => {
-          const { years, ageGroup } = calculateAge(c.dateOfBirth);
-          return { ...c, ageYears: years, ageGroup };
-        });
-        setChildren(updated);
-      } catch {}
+        const remoteList = await fetchRemoteChildren();
+        if (remoteList.length > 0) {
+          // Supabase هو المصدر الأساسي
+          const converted = remoteList.map(remoteToLocal);
+          setChildren(converted);
+          localStorage.setItem(CHILDREN_KEY, JSON.stringify(converted));
+          // إذا كان localStorage يحتوي على أطفال غير موجودين في Supabase → migration notice
+          const remoteIds = new Set(remoteList.map((r) => r.local_child_id || r.id));
+          const hasUnsynced = localList.some((c) => !remoteIds.has(c.id));
+          if (hasUnsynced) setShowMigrationNotice(true);
+        } else if (localList.length > 0) {
+          // Supabase فارغ لكن localStorage يحتوي بيانات → migration notice
+          setChildren(localList);
+          setShowMigrationNotice(true);
+        } else {
+          setChildren([]);
+        }
+      } catch {
+        // Supabase فشل → fallback إلى localStorage
+        setChildren(localList);
+      } finally {
+        setIsSyncing(false);
+      }
     }
-  }, []);
+
+    loadChildren();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
 
   // ─── حفظ الأطفال في localStorage ─────────────────────────────────────────
   function saveChildren(list: Child[]) {
@@ -129,7 +198,7 @@ export default function ChildrenPage() {
   }
 
   // ─── إضافة طفل جديد ──────────────────────────────────────────────────────
-  function handleAddChild(childData: Omit<Child, "id" | "ageYears" | "ageGroup" | "createdAt" | "updatedAt">) {
+  async function handleAddChild(childData: Omit<Child, "id" | "ageYears" | "ageGroup" | "createdAt" | "updatedAt">) {
     const { years, ageGroup } = calculateAge(childData.dateOfBirth);
     const newChild: Child = {
       ...childData,
@@ -143,10 +212,24 @@ export default function ChildrenPage() {
     saveChildren(updated);
     setIsAddDialogOpen(false);
     toast.success(`تم إضافة ملف ${newChild.name} بنجاح ✅`);
+
+    // Supabase sync (fire-and-forget)
+    if (isLoggedIn && isSupabaseConfigured) {
+      upsertRemoteChild({
+        local_child_id: newChild.id,
+        name: newChild.name,
+        date_of_birth: newChild.dateOfBirth,
+        gender: newChild.gender,
+        grade_level: newChild.gradeLevel ?? null,
+        school_name: newChild.schoolName ?? null,
+        notes: newChild.notes ?? null,
+        avatar_emoji: newChild.avatarEmoji,
+      }).catch(() => {});
+    }
   }
 
   // ─── تعديل طفل ───────────────────────────────────────────────────────────
-  function handleUpdateChild(childData: Partial<Child> & { id: string }) {
+  async function handleUpdateChild(childData: Partial<Child> & { id: string }) {
     const updated = children.map((c) => {
       if (c.id !== childData.id) return c;
       const merged = { ...c, ...childData, updatedAt: new Date().toISOString() };
@@ -160,15 +243,35 @@ export default function ChildrenPage() {
     saveChildren(updated);
     setEditingChild(null);
     toast.success("تم تحديث بيانات الطفل بنجاح ✅");
+
+    // Supabase sync (fire-and-forget)
+    if (isLoggedIn && isSupabaseConfigured) {
+      updateRemoteChild(childData.id, {
+        name: childData.name,
+        date_of_birth: childData.dateOfBirth,
+        gender: childData.gender,
+        grade_level: childData.gradeLevel ?? null,
+        school_name: childData.schoolName ?? null,
+        notes: childData.notes ?? null,
+        avatar_emoji: childData.avatarEmoji,
+      }).catch(() => {});
+    }
   }
 
   // ─── حذف طفل ─────────────────────────────────────────────────────────────
-  function handleDeleteChild(id: string) {
+  async function handleDeleteChild(id: string) {
     const updated = children.filter((c) => c.id !== id);
     saveChildren(updated);
     setChildToDelete(null);
     toast.success("تم حذف ملف الطفل بنجاح");
-  }  // ─── عدد الفحوصات السابقة لطفل ───────────────────────────────────────────────
+
+    // Supabase sync (fire-and-forget)
+    if (isLoggedIn && isSupabaseConfigured) {
+      deleteRemoteChild(id).catch(() => {});
+    }
+  }
+
+  // ─── عدد الفحوصات السابقة لطفل ───────────────────────────────────────────
   function isResultForChild(
     key: string,
     parsed: ScreeningResult,
@@ -252,7 +355,9 @@ export default function ChildrenPage() {
       }
     }
     return count;
-  }  // ─── Auth loading state ────────────────────────────────────────────────
+  }
+
+  // ─── Auth loading state ────────────────────────────────────────────────────
   if (authCtx && authCtx.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#F4EFE8" }}>
@@ -263,9 +368,7 @@ export default function ChildrenPage() {
     );
   }
 
-  // ─── Unauthenticated state ───────────────────────────────────────────────
-  // AuthProvider is mounted but user is not logged in — show login prompt.
-  // localStorage is NOT deleted. Data is NOT migrated.
+  // ─── Unauthenticated state ─────────────────────────────────────────────────
   if (authCtx && !authCtx.loading && !authCtx.user) {
     return (
       <div
@@ -348,8 +451,56 @@ export default function ChildrenPage() {
 
       {/* ─── Content ─────────────────────────────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-4 py-6">
+
+        {/* ─── Syncing indicator ────────────────────────────────────────────── */}
+        {isSyncing && (
+          <div className="flex items-center gap-2 text-blue-600 text-sm mb-4 bg-blue-50 rounded-lg px-4 py-2">
+            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <span>جارٍ مزامنة بياناتك على السحاب…</span>
+          </div>
+        )}
+
+        {/* ─── Migration notice ─────────────────────────────────────────────── */}
+        {showMigrationNotice && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="text-amber-500 text-2xl">📦</div>
+            <div className="flex-1">
+              <p className="font-semibold text-amber-800 text-sm">لديك بيانات محفوظة على هذا الجهاز</p>
+              <p className="text-amber-700 text-xs mt-0.5">هل تريد نقلها إلى حسابك حتى تتمكن من الوصول إليها من أي جهاز؟</p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                size="sm"
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs"
+                onClick={async () => {
+                  setIsSyncing(true);
+                  try {
+                    await syncLocalChildrenToSupabase(children);
+                    setShowMigrationNotice(false);
+                    toast.success("تم نقل بياناتك بنجاح ✅");
+                  } catch {
+                    toast.error("حدث خطأ أثناء النقل، حاول مرة أخرى");
+                  } finally {
+                    setIsSyncing(false);
+                  }
+                }}
+              >
+                نعم، انقل البيانات
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => setShowMigrationNotice(false)}
+              >
+                لاحقاً
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Empty State */}
-        {children.length === 0 && (
+        {children.length === 0 && !isSyncing && (
           <div className="text-center py-20">
             <div className="text-7xl mb-4">👶</div>
             <h2 className="text-xl font-semibold text-gray-700 mb-2">لا توجد ملفات أطفال بعد</h2>
