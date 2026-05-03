@@ -637,7 +637,18 @@ export default function ChildrenPage() {
                           variant="outline"
                           size="sm"
                           className="w-full sm:w-auto gap-1 text-sm h-9 px-3"
-                          onClick={() => navigate(`/booking?child=${encodeURIComponent(child.name)}`)}
+                          onClick={() => {
+                            const bookingParams = new URLSearchParams({
+                              child: child.name,
+                            });
+                            if (latestResult?.sessionId) {
+                              bookingParams.set("sessionId", latestResult.sessionId);
+                            }
+                            if (pathType) {
+                              bookingParams.set("pathType", pathType);
+                            }
+                            navigate(`/booking?${bookingParams.toString()}`);
+                          }}
                         >
                           <ArrowRight className="w-3 h-3" />
                           حجز
