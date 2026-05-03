@@ -14,6 +14,7 @@
  */
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useSupabaseAuth } from "@/context/AuthContext";
 import {
   User,
   ArrowLeft,
@@ -30,6 +31,8 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  Lock,
+  LogIn,
 } from "lucide-react";
 
 // ─── ثابت مفتاح localStorage ─────────────────────────────────────────────────
@@ -88,6 +91,7 @@ function formatArabicDate(isoString: string): string {
 
 export default function SelfAssessment() {
   const [, navigate] = useLocation();
+  const { user, loading: authLoading } = useSupabaseAuth();
   const [visible, setVisible] = useState(false);
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
@@ -174,6 +178,13 @@ export default function SelfAssessment() {
   // النتائج الأقدم للمسار الحالي (بعد الأولى)
   const olderResults = currentPathResults.length > 1 ? currentPathResults.slice(1) : [];
 
+  // ─── بناء رابط redirect الآمن ──────────────────────────────────────────────
+  const currentPath = window.location.pathname + window.location.search;
+  const safeRedirect = currentPath.startsWith("/") && !currentPath.startsWith("//")
+    ? currentPath
+    : "/self-assessment";
+  const loginUrl = `/login?redirect=${encodeURIComponent(safeRedirect)}`;
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -229,8 +240,86 @@ export default function SelfAssessment() {
       >
         <div className="w-full max-w-lg">
 
-          {/* ─── النتائج السابقة (تظهر فقط إذا وُجدت) ──────────────────── */}
-          {latestResult && (
+          {/* ─── بطاقة تسجيل الدخول (تظهر فقط إذا لم يكن المستخدم مسجلاً) ─── */}
+          {!authLoading && !user && (
+            <div
+              className="rounded-3xl p-6 sm:p-8 mb-6"
+              style={{
+                background: "white",
+                border: "1.5px solid rgba(30,78,140,0.15)",
+                boxShadow: "0 8px 40px rgba(30,78,140,0.08)",
+              }}
+            >
+              {/* أيقونة القفل */}
+              <div className="flex justify-center mb-5">
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #DFF3F1 0%, #E0E7FF 100%)" }}
+                >
+                  <Lock size={26} style={{ color: "#1E4E8C" }} aria-hidden="true" />
+                </div>
+              </div>
+
+              {/* العنوان */}
+              <h2
+                className="text-xl font-black text-slate-900 text-center mb-3"
+                style={{ fontFamily: "'Cairo', sans-serif" }}
+              >
+                احفظ نتيجتك بأمان
+              </h2>
+
+              {/* النص التوضيحي */}
+              <p
+                className="text-sm text-slate-600 text-center leading-relaxed mb-2"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+              >
+                قبل بدء الفحص، سجّل دخولك بالبريد الإلكتروني حتى تتمكن من الرجوع إلى نتيجتك لاحقًا ومتابعة خطواتك بسهولة.
+              </p>
+
+              {/* طمأنينة */}
+              <p
+                className="text-xs text-slate-400 text-center mb-6"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                لن نطلب كلمة مرور. سنرسل لك رابط دخول آمن إلى بريدك الإلكتروني.
+              </p>
+
+              {/* زر تسجيل الدخول */}
+              <a
+                href={loginUrl}
+                className="w-full flex items-center justify-center gap-2.5 rounded-2xl font-bold text-base transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] mb-3"
+                style={{
+                  background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
+                  color: "white",
+                  fontFamily: "'Cairo', sans-serif",
+                  fontWeight: 700,
+                  padding: "0.9rem 1.5rem",
+                  boxShadow: "0 4px 20px rgba(30,78,140,0.25)",
+                  textDecoration: "none",
+                  display: "flex",
+                }}
+              >
+                <LogIn size={16} aria-hidden="true" />
+                تسجيل الدخول ومتابعة الفحص
+              </a>
+
+              {/* رابط العودة */}
+              <button
+                onClick={() => navigate("/choose-self-path")}
+                className="w-full text-center text-sm text-slate-400 hover:text-slate-600 transition-colors py-2"
+                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+              >
+                العودة لاختيار نوع الفحص
+              </button>
+            </div>
+          )}
+
+          {/* ─── محتوى التقييم (يظهر فقط إذا كان المستخدم مسجلاً) ────────── */}
+          {(authLoading || user) && (
+            <>
+
+            {/* ─── النتائج السابقة (تظهر فقط إذا وُجدت) ──────────────────── */}
+            {latestResult && (
             <div
               className="rounded-3xl p-5 sm:p-6 mb-6"
               style={{
@@ -686,6 +775,8 @@ export default function SelfAssessment() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       </main>
     </div>
