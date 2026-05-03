@@ -27,12 +27,21 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // If already logged in, redirect to /account
+  // ─── قراءة redirect query parameter ──────────────────────────────────────────────────
+  const searchParams = new URLSearchParams(window.location.search);
+  const rawRedirect = searchParams.get("redirect") ?? "";
+  // حماية open redirect: قبول المسارات الداخلية فقط
+  const redirectPath =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/account";
+
+  // If already logged in, redirect to intended path
   useEffect(() => {
     if (!loading && user) {
-      navigate("/account");
+      navigate(redirectPath);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, redirectPath]);
 
   function validateEmail(): boolean {
     if (!email.trim()) {
