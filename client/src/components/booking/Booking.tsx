@@ -1608,6 +1608,65 @@ function FAQSection() {
   );
 }
 
+// ─── Screening result helpers ────────────────────────────────────────────────────────
+
+/**
+ * Safely reads a stored screening result from localStorage.
+ * Returns null if sessionId is missing, localStorage is unavailable,
+ * result is not found, or JSON parsing fails. Never throws.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getStoredScreeningResult(sessionId: string | null): Record<string, any> | null {
+  if (!sessionId) return null;
+  try {
+    const raw = localStorage.getItem(`result_${sessionId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extracts a concise screening result context object for Formspree.
+ * All fields use safe fallbacks — never throws.
+ */
+function getScreeningResultContext(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  result: Record<string, any> | null,
+  sessionId: string | null,
+  pathType: string | null
+): Record<string, string> {
+  // Recommendations: array → join, string → truncate, else ""
+  let recSummary = "";
+  try {
+    const rec = result?.recommendations;
+    if (Array.isArray(rec)) {
+      recSummary = rec.join(" | ").slice(0, 500);
+    } else if (typeof rec === "string") {
+      recSummary = rec.slice(0, 500);
+    }
+  } catch { /* ignore */ }
+
+  return {
+    screening_session_id: String(sessionId || result?.sessionId || ""),
+    screening_result_key: sessionId ? `result_${sessionId}` : "",
+    screening_path_type: String(pathType || result?.pathType || result?.screeningType || ""),
+    screening_type: String(result?.screeningType || result?.type || result?.pathType || pathType || ""),
+    screening_mode: String(result?.mode || result?.assessmentMode || ""),
+    screening_subject_name: String(result?.childName || result?.name || result?.userName || result?.subjectName || ""),
+    screening_subject_age: String(result?.age || result?.childAge || result?.subjectAge || ""),
+    screening_score: String(result?.score || result?.totalScore || result?.resultScore || result?.percentage || ""),
+    screening_level: String(result?.level || result?.category || result?.resultLevel || ""),
+    screening_risk_level: String(result?.riskLevel || result?.risk_level || result?.level || result?.category || ""),
+    screening_completed_at: String(result?.completedAt || result?.completed_at || result?.createdAt || result?.timestamp || ""),
+    screening_summary: String(result?.summary || result?.resultSummary || result?.description || ""),
+    screening_recommendations_summary: recSummary,
+  };
+}
+
 // ─── Main Booking Page ────────────────────────────────────────────────────────
 export default function Booking() {
   const [confirmed, setConfirmed] = useState(false);
@@ -1685,6 +1744,13 @@ export default function Booking() {
     // 3. Build payload
     const params = new URLSearchParams(window.location.search);
     const timeLabel = TIME_SLOTS.find((t) => t.id === booking.time)?.time || "";
+
+    // ─── Screening result context (safe — never crashes if missing) ────────────────
+    const urlSessionId = params.get("sessionId") || null;
+    const urlPathType = params.get("pathType") || null;
+    const storedResult = getStoredScreeningResult(urlSessionId);
+    const screeningContext = getScreeningResultContext(storedResult, urlSessionId, urlPathType);
+
     const payload = {
       // Contact
       full_name: booking.name,
@@ -1709,9 +1775,11 @@ export default function Booking() {
       url_specialist_id: params.get("specialistId") || "",
       url_service_id: params.get("serviceId") || "",
       url_from: params.get("from") || "",
-      url_session_id: params.get("sessionId") || "",
-      url_path_type: params.get("pathType") || "",
+      url_session_id: urlSessionId || "",
+      url_path_type: urlPathType || "",
       url_child: params.get("child") || "",
+      // Screening result context
+      ...screeningContext,
       // Meta
       source_url: window.location.href,
       created_at: new Date().toISOString(),
