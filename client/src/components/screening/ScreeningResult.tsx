@@ -50,6 +50,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
 
 // ─── أنواع البيانات ───────────────────────────────────────────────────────────
 interface CategoryScore {
@@ -356,6 +357,50 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
     }
     setLoading(false);
   }, [sessionId, navigate]);
+
+  // ─── Analytics: upsert completed screening result to Supabase ──────────
+  // Fire-and-forget: never blocks rendering, never shows error to user
+  useEffect(() => {
+    if (!sessionId || !data) return;
+
+    // Determine subjectType
+    let subjectType: "self" | "child" | "unknown" = "unknown";
+    const urlMode = new URLSearchParams(window.location.search).get("mode");
+    if (
+      urlMode === "self" ||
+      sessionId.startsWith("session_self") ||
+      sessionId.startsWith("self_")
+    ) {
+      subjectType = "self";
+    } else if (
+      data.childName ||
+      urlMode === "child" ||
+      sessionId.startsWith("session_child")
+    ) {
+      subjectType = "child";
+    }
+
+    // Determine localChildId from URL or result
+    const urlParams = new URLSearchParams(window.location.search);
+    const localChildId =
+      urlParams.get("childId") ||
+      urlParams.get("localChildId") ||
+      null;
+
+    upsertScreeningResultAnalytics({
+      sessionId,
+      pathType: urlPathType,
+      screeningType: data.screeningType,
+      mode: urlMode ?? undefined,
+      subjectType,
+      subjectName: data.childName || undefined,
+      subjectAge: data.childAge ? String(data.childAge) : undefined,
+      localChildId: localChildId ?? undefined,
+      result: data,
+      completedAt: data.completedAt,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   // ─── تفعيل fade-in-up ────────────────────────────────────────────────────
   useEffect(() => {
