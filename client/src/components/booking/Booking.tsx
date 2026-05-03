@@ -1610,39 +1610,52 @@ function FAQSection() {
 
 // ─── Screening result helpers ────────────────────────────────────────────────────────
 
+type ScreeningResultSource = "localStorage" | "missing_session_id" | "missing_local_result" | "parse_error";
+
+interface StoredResultPayload {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  result: Record<string, any> | null;
+  found: boolean;
+  source: ScreeningResultSource;
+}
+
 /**
  * Safely reads a stored screening result from localStorage.
- * Returns null if sessionId is missing, localStorage is unavailable,
- * result is not found, or JSON parsing fails. Never throws.
+ * Returns a structured payload with diagnostic info. Never throws.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getStoredScreeningResult(sessionId: string | null): Record<string, any> | null {
-  if (!sessionId) return null;
+function getStoredScreeningResult(sessionId: string | null): StoredResultPayload {
+  if (!sessionId) return { result: null, found: false, source: "missing_session_id" };
   try {
     const raw = localStorage.getItem(`result_${sessionId}`);
-    if (!raw) return null;
+    if (!raw) return { result: null, found: false, source: "missing_local_result" };
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return null;
-    return parsed;
+    if (!parsed || typeof parsed !== "object") return { result: null, found: false, source: "parse_error" };
+    return { result: parsed, found: true, source: "localStorage" };
   } catch {
-    return null;
+    return { result: null, found: false, source: "parse_error" };
   }
 }
 
 /**
  * Extracts a concise screening result context object for Formspree.
+ * StoredResult shape: { sessionId, childName, childAge, screeningType, result: { percentage, riskLevel, recommendations }, completedAt }
  * All fields use safe fallbacks — never throws.
  */
 function getScreeningResultContext(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  result: Record<string, any> | null,
+  payload: StoredResultPayload,
   sessionId: string | null,
   pathType: string | null
 ): Record<string, string> {
+  const { result, found, source } = payload;
+
+  // The stored result has a nested `result` object with the actual scores
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const inner: Record<string, any> = (result?.result && typeof result.result === "object") ? result.result : {};
+
   // Recommendations: array → join, string → truncate, else ""
   let recSummary = "";
   try {
-    const rec = result?.recommendations;
+    const rec = inner?.recommendations || result?.recommendations;
     if (Array.isArray(rec)) {
       recSummary = rec.join(" | ").slice(0, 500);
     } else if (typeof rec === "string") {
@@ -1651,18 +1664,25 @@ function getScreeningResultContext(
   } catch { /* ignore */ }
 
   return {
+    // Diagnostic fields
+    screening_context_found: found ? "yes" : "no",
+    screening_context_source: source,
+    // Session & path
     screening_session_id: String(sessionId || result?.sessionId || ""),
     screening_result_key: sessionId ? `result_${sessionId}` : "",
-    screening_path_type: String(pathType || result?.pathType || result?.screeningType || ""),
+    screening_path_type: String(pathType || result?.screeningType || result?.pathType || ""),
     screening_type: String(result?.screeningType || result?.type || result?.pathType || pathType || ""),
     screening_mode: String(result?.mode || result?.assessmentMode || ""),
+    // Subject info (top-level in StoredResult)
     screening_subject_name: String(result?.childName || result?.name || result?.userName || result?.subjectName || ""),
-    screening_subject_age: String(result?.age || result?.childAge || result?.subjectAge || ""),
-    screening_score: String(result?.score || result?.totalScore || result?.resultScore || result?.percentage || ""),
-    screening_level: String(result?.level || result?.category || result?.resultLevel || ""),
-    screening_risk_level: String(result?.riskLevel || result?.risk_level || result?.level || result?.category || ""),
+    screening_subject_age: String(result?.childAge || result?.age || result?.subjectAge || ""),
+    // Scores (nested in result.result)
+    screening_score: String(inner?.percentage || inner?.score || inner?.totalScore || result?.score || result?.percentage || ""),
+    screening_level: String(inner?.riskLabel || inner?.level || inner?.category || result?.level || ""),
+    screening_risk_level: String(inner?.riskLevel || inner?.risk_level || result?.riskLevel || ""),
+    // Timestamps & summary
     screening_completed_at: String(result?.completedAt || result?.completed_at || result?.createdAt || result?.timestamp || ""),
-    screening_summary: String(result?.summary || result?.resultSummary || result?.description || ""),
+    screening_summary: String(inner?.summary || inner?.resultSummary || result?.summary || result?.description || ""),
     screening_recommendations_summary: recSummary,
   };
 }
