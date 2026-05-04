@@ -9,6 +9,7 @@
  */
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
+import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -283,6 +284,22 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
 
     // مسح بيانات الجلسة المؤقتة
     localStorage.removeItem(STORAGE_KEY);
+
+    // ─── Analytics: persist to Supabase (fire-and-forget) ────────────────────
+    // Runs at completion time — does not block navigation or UI.
+    // upsert by session_id prevents duplicates if ScreeningResult also calls it.
+    void upsertScreeningResultAnalytics({
+      sessionId,
+      pathType: urlPathType,
+      screeningType,
+      mode: mode || undefined,
+      subjectType: mode === "self" ? "self" : "child",
+      subjectName: childName,
+      subjectAge: String(childAge),
+      result: resultPayload,
+      completedAt,
+      source: "screening_page_complete",
+    });
 
     setTimeout(() => {
       navigate(`/screening-result/${sessionId}?name=${encodeURIComponent(childName)}&pathType=${urlPathType}`);
