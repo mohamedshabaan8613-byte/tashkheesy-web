@@ -29,6 +29,8 @@ export interface ScreeningAnalyticsParams {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   result?: Record<string, any>;
   completedAt?: string;
+  /** Override the source field (default: 'screening_result_page') */
+  source?: string;
 }
 
 export interface AnalyticsResult {
@@ -139,11 +141,15 @@ export async function upsertScreeningResultAnalytics(
   ) ?? "unknown";
 
   const subjectAge = safeStr(
-    params.subjectAge ?? r.childAge ?? r.age ?? r.subjectAge
+    params.subjectAge ??
+    r.childAge ?? r.age ?? r.subjectAge ??
+    inner.age ?? inner.childAge
   );
 
   const subjectName = safeStr(
-    params.subjectName ?? r.childName ?? r.name ?? r.userName
+    params.subjectName ??
+    r.childName ?? r.name ?? r.userName ??
+    inner.name ?? inner.childName
   );
 
   // ─── Build upsert payload ─────────────────────────────────────────────────
@@ -166,7 +172,7 @@ export async function upsertScreeningResultAnalytics(
     risk_label: riskLabel,
     result_level: resultLevel,
     completed_at: completedAt,
-    source: "screening_result_page",
+    source: params.source ?? "screening_result_page",
     // booked_after_result defaults to false in DB
   };
 
