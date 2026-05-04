@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
+import { markScreeningBookedAfterResult } from "@/lib/screeningAnalytics";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -1825,6 +1826,13 @@ export default function Booking() {
       }
       // Success
       setConfirmed(true);
+      // ─── Analytics: mark booked_after_result = true (fire-and-forget) ────────────────────
+      // Only called after Formspree success. Does not block UX or show errors to user.
+      // urlSessionId is the sessionId from URL params (set above in payload build).
+      // If user is not authenticated or sessionId is missing, returns silently.
+      if (urlSessionId) {
+        void markScreeningBookedAfterResult(urlSessionId);
+      }
     } catch {
       setSubmitError("تعذّر إرسال طلب الحجز حالياً. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.");
     } finally {

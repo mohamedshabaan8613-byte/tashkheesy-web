@@ -56,6 +56,75 @@ function safeStr(value: any): string | null {
 
 // ─── Main helper ─────────────────────────────────────────────────────────────
 
+// ─── Booking update helper ───────────────────────────────────────────────────
+
+/**
+ * Marks a screening_analytics row as booked_after_result = true.
+ *
+ * Called only after Formspree booking submission succeeds.
+ * Uses session_id + user_id guard — never touches other users' rows.
+ * Returns { ok: true } on success or { ok: false, reason } on failure.
+ * Never throws.
+ */
+export async function markScreeningBookedAfterResult(
+  sessionId: string
+): Promise<{ ok: boolean; reason?: string }> {
+  // Guard 1: Supabase must be configured
+  if (!isSupabaseConfigured) {
+    return { ok: false, reason: "supabase_not_configured" };
+  }
+
+  // Guard 2: sessionId is required
+  if (!sessionId || sessionId.trim() === "") {
+    return { ok: false, reason: "missing_session_id" };
+  }
+
+  // Guard 3: user must be authenticated
+  let userId: string | null = null;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    userId = user?.id ?? null;
+  } catch {
+    return { ok: false, reason: "auth_check_failed" };
+  }
+
+  if (!userId) {
+    // Booking is public — unauthenticated booking is valid; analytics update is skipped silently.
+    return { ok: false, reason: "not_authenticated" };
+  }
+
+  // Update the matching row — user_id guard ensures only own rows are updated
+  try {
+    const { error } = await supabase
+      .from("screening_analytics")
+      .update({
+        booked_after_result: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("session_id", sessionId)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error(
+        "[screeningAnalytics] markBooked error:",
+        error.code,
+        error.message
+      );
+      return { ok: false, reason: error.code ?? "update_failed" };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "unknown";
+    console.error("[screeningAnalytics] markBooked unexpected error:", msg);
+    return { ok: false, reason: "unexpected_error" };
+  }
+}
+
+// ─── Upsert helper ───────────────────────────────────────────────────────────
+
 /**
  * Upserts a completed screening result into public.screening_analytics.
  *
