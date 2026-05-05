@@ -1242,7 +1242,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
           {/* ─── CTA الوحيد في الصفحة بالكامل ─── */}
           <button
             onClick={handleBooking}
-            className="fade-in-up group flex items-center justify-center gap-3 rounded-2xl font-black text-base transition-all duration-300 hover:-translate-y-1 mx-auto no-print"
+            className="fade-in-up group flex items-center justify-center gap-3 rounded-2xl font-black text-base transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto mx-auto no-print"
             style={{
               background: "white",
               color: "#1e3a8a",
