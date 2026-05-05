@@ -33,7 +33,6 @@ const supportLinks = [
   { label: "الشروط والأحكام", href: "/terms" },
   { label: "سياسة الإلغاء والاسترداد", href: "/refund-policy" },
   { label: "تواصل معنا", href: "/contact" },
-  { label: "نموذج النتائج", href: "/result-demo" },
 ];
 
 export default function Footer() {
@@ -221,7 +220,7 @@ export default function Footer() {
             © ٢٠٢٦ تشخيصي | Tashkheesy. جميع الحقوق محفوظة.
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <Link href="/privacy">
               <span
                 className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"

@@ -624,20 +624,7 @@ export default function Terms() {
                     7052506925
                   </p>
                 </div>
-                <div>
-                  <p
-                    className="font-semibold text-slate-900 text-sm mb-1"
-                    style={{ fontFamily: "'Cairo', sans-serif" }}
-                  >
-                    الرقم الضريبي
-                  </p>
-                  <p
-                    className="text-slate-600 text-sm"
-                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                  >
-                    [إن وجد]
-                  </p>
-                </div>
+
                 <div>
                   <p
                     className="font-semibold text-slate-900 text-sm mb-1"
@@ -653,34 +640,7 @@ export default function Terms() {
                     info@tashkheesy.com
                   </a>
                 </div>
-                <div>
-                  <p
-                    className="font-semibold text-slate-900 text-sm mb-1"
-                    style={{ fontFamily: "'Cairo', sans-serif" }}
-                  >
-                    واتساب/الهاتف
-                  </p>
-                  <p
-                    className="text-slate-600 text-sm"
-                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                  >
-                    [يضاف لاحقًا]
-                  </p>
-                </div>
-                <div>
-                  <p
-                    className="font-semibold text-slate-900 text-sm mb-1"
-                    style={{ fontFamily: "'Cairo', sans-serif" }}
-                  >
-                    العنوان
-                  </p>
-                  <p
-                    className="text-slate-600 text-sm"
-                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                  >
-                    [يضاف لاحقًا]
-                  </p>
-                </div>
+
                 <div>
                   <p
                     className="font-semibold text-slate-900 text-sm mb-1"
