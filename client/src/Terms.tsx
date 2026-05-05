@@ -607,7 +607,7 @@ export default function Terms() {
                     className="text-slate-600 text-sm"
                     style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                   >
-                    تشخيصي كير
+                    تشخيصي كير — سجل تجاري رقم 7052506925، موثق لدى منصة الأعمال.
                   </p>
                 </div>
                 <div>
@@ -618,7 +618,7 @@ export default function Terms() {
                     رقم السجل التجاري
                   </p>
                   <p
-                    className="text-slate-600 text-sm"
+                    className="text-slate-600 text-sm font-semibold"
                     style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                   >
                     7052506925
@@ -633,11 +633,11 @@ export default function Terms() {
                     البريد الإلكتروني
                   </p>
                   <a
-                    href="mailto:info@tashkheesy.com"
+                    href="mailto:support@tashkheesy.sa"
                     className="text-slate-600 text-sm hover:text-blue-600"
                     style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                   >
-                    info@tashkheesy.com
+                    support@tashkheesy.sa
                   </a>
                 </div>
 
@@ -691,7 +691,7 @@ export default function Terms() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:info@tashkheesy.com"
+                href="mailto:support@tashkheesy.sa"
                 className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all hover:scale-105"
                 style={{
                   background: "linear-gradient(135deg, #1E4E8C, #2BBDB6)",
@@ -701,7 +701,7 @@ export default function Terms() {
                 }}
               >
                 <Mail size={16} />
-                info@tashkheesy.com
+                support@tashkheesy.sa
               </a>
             </div>
           </div>

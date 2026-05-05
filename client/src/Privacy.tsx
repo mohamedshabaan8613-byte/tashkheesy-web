@@ -324,7 +324,7 @@ const sections = [
     items: [
       {
         label: "طرق التواصل",
-        text: "يمكن للمستخدم ممارسة حقوقه أو إرسال استفسار متعلق بالخصوصية عبر البريد الإلكتروني: info@tashkheesy.com",
+        text: "يمكن للمستخدم ممارسة حقوقه أو إرسال استفسار متعلق بالخصوصية عبر البريد الإلكتروني: support@tashkheesy.sa",
       },
       {
         label: "التحقق",
@@ -396,7 +396,7 @@ const sections = [
     items: [
       {
         label: "معلومات التواصل",
-        text: "اسم المنصة: تشخيصي | البريد الإلكتروني: info@tashkheesy.com",
+        text: "اسم المنصة: تشخيصي | البريد الإلكتروني: support@tashkheesy.sa",
       },
     ],
   },
@@ -657,7 +657,7 @@ export default function Privacy() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:info@tashkheesy.com"
+                href="mailto:support@tashkheesy.sa"
                 className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm transition-all hover:scale-105"
                 style={{
                   background: "linear-gradient(135deg, #1E4E8C, #2BBDB6)",
@@ -667,7 +667,7 @@ export default function Privacy() {
                 }}
               >
                 <Mail size={16} />
-                info@tashkheesy.com
+                support@tashkheesy.sa
               </a>
             </div>
           </div>
