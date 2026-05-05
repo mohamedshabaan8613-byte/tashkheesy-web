@@ -2,8 +2,8 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 export const APP_TITLE = import.meta.env.VITE_APP_TITLE || "تشخيصي | Tashkheesy";
 
-// Unified logo source — premium refined version (C+ Human Supportive)
-export const APP_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663154655019/dpHrUPWPiqhorBmU.svg";
+// Unified logo source — local public asset for reliability
+export const APP_LOGO = "/favicon.svg";
 
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {
