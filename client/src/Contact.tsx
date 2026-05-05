@@ -7,43 +7,23 @@ import Navbar from "@/components/Navbar";
 import { useSEO } from "@/hooks/useSEO";
 import Footer from "@/components/Footer";
 import { Link } from "wouter";
-import { useState } from "react";
-import { Mail, Phone, MessageCircle, MapPin, Clock, Send, CheckCircle2, ArrowLeft, Building2 } from "lucide-react";
-import { toast } from "sonner";
+import { Mail, MapPin, Clock, ArrowLeft, Building2 } from "lucide-react";
 
 const contactMethods = [
   {
-    icon: MessageCircle,
-    title: "واتساب",
-    desc: "ردّ فوري خلال دقائق",
-    value: "+966 50 000 0000",
-    action: "https://wa.me/966500000000",
-    color: "teal",
-    badge: "الأسرع"
-  },
-  {
     icon: Mail,
     title: "البريد الإلكتروني",
-    desc: "ردّ خلال 24 ساعة",
-    value: "hello@tashkheesy.com",
-    action: "mailto:hello@tashkheesy.com",
+    desc: "وسيلة التواصل الرسمية — ردّ خلال 24 ساعة في أيام العمل",
+    value: "support@tashkheesy.sa",
+    action: "mailto:support@tashkheesy.sa",
     color: "blue",
-    badge: null
-  },
-  {
-    icon: Phone,
-    title: "الهاتف",
-    desc: "من الأحد إلى الخميس",
-    value: "+966 11 000 0000",
-    action: "tel:+966110000000",
-    color: "blue",
-    badge: null
+    badge: null,
   },
 ];
 
 const officeInfo = [
-  { icon: MapPin, label: "الموقع", value: "الرياض، المملكة العربية السعودية" },
-  { icon: Clock, label: "ساعات العمل", value: "الأحد – الخميس: 9 ص – 6 م" },
+  { icon: MapPin, label: "الموقع", value: "جدة، المملكة العربية السعودية" },
+  { icon: Clock, label: "ساعات العمل", value: "من الساعة ١٠ صباحاً حتى ١٠ مساءً" },
   { icon: Building2, label: "الخدمات عن بُعد", value: "متاح لجميع مناطق المملكة" },
 ];
 
@@ -54,25 +34,6 @@ export default function Contact() {
     keywords: "تواصل تشخيصي, استفسار تشخيص صعوبات تعلم, دعم تشخيصي",
     canonical: "/contact",
   });
-
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    subject: "استفسار عام",
-    message: ""
-  });
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
-      return;
-    }
-    setSubmitted(true);
-    toast.success("تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.");
-  };
 
   return (
     <div className="ts-page">
@@ -98,33 +59,29 @@ export default function Contact() {
         {/* ── Contact Methods ─────────────────────────────────── */}
         <section className="py-16 bg-white">
           <div className="container">
-            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {contactMethods.map((method, i) => (
-                <a
-                  key={i}
-                  href={method.action}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ts-card rounded-2xl p-6 flex flex-col items-center text-center group no-underline"
-                  style={{ textDecoration: "none" }}
-                >
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors ${
-                    method.color === "teal"
-                      ? "bg-[#DFF3F1] text-[#2BBDB6] group-hover:bg-[#CCFBF1]"
-                      : "bg-[#DFF3F1] text-[#1E4E8C] group-hover:bg-[#DBEAFE]"
-                  }`}>
-                    <method.icon className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-[#243B53]">{method.title}</h3>
-                    {method.badge && (
-                      <span className="ts-trust-badge text-xs py-0.5 px-2">{method.badge}</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-[#4A6278] mb-2">{method.desc}</p>
-                  <p className="text-sm font-semibold text-[#1E4E8C]">{method.value}</p>
-                </a>
-              ))}
+            <div className="flex justify-center">
+              <div className="w-full max-w-sm">
+                {contactMethods.map((method, i) => (
+                  <a
+                    key={i}
+                    href={method.action}
+                    className="ts-card rounded-2xl p-6 flex flex-col items-center text-center group no-underline"
+                    style={{ textDecoration: "none" }}
+                  >
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors bg-[#DFF3F1] text-[#1E4E8C] group-hover:bg-[#DBEAFE]">
+                      <method.icon className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-[#243B53]">{method.title}</h3>
+                      {method.badge && (
+                        <span className="ts-trust-badge text-xs py-0.5 px-2">{method.badge}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-[#4A6278] mb-2">{method.desc}</p>
+                    <p className="text-sm font-semibold text-[#1E4E8C]">{method.value}</p>
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -133,97 +90,114 @@ export default function Contact() {
         <section className="py-16 bg-[#F4EFE8]">
           <div className="container">
             <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-              {/* Form */}
+              {/* Form → mailto fallback */}
               <div>
                 <h2 className="text-2xl font-bold text-[#243B53] mb-2">أرسل لنا رسالة</h2>
                 <p className="text-[#4A6278] mb-8">سنردّ عليك خلال 24 ساعة في أيام العمل.</p>
 
-                {submitted ? (
-                  <div className="ts-card rounded-2xl p-8 text-center">
-                    <div className="w-16 h-16 bg-[#DFF3F1] rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle2 className="w-8 h-8 text-[#2BBDB6]" />
-                    </div>
-                    <h3 className="text-xl font-bold text-[#243B53] mb-2">تم إرسال رسالتك!</h3>
-                    <p className="text-[#4A6278] mb-6">سنتواصل معك على البريد الإلكتروني خلال 24 ساعة.</p>
-                    <button
-                      onClick={() => { setSubmitted(false); setFormData({ name: "", email: "", phone: "", subject: "استفسار عام", message: "" }); }}
-                      className="ts-btn-secondary"
-                    >
-                      إرسال رسالة أخرى
-                    </button>
+                {/* Notice: direct email is the current official method */}
+                <div className="ts-card rounded-2xl p-6 mb-6 flex items-start gap-4 border border-[#BFDBFE]">
+                  <div className="w-10 h-10 rounded-xl bg-[#DFF3F1] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Mail className="w-5 h-5 text-[#1E4E8C]" />
                   </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-[#243B53] mb-1.5">الاسم الكامل *</label>
-                        <input
-                          type="text"
-                          className="ts-input"
-                          placeholder="محمد أحمد"
-                          value={formData.name}
-                          onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-[#243B53] mb-1.5">رقم الجوال</label>
-                        <input
-                          type="tel"
-                          className="ts-input"
-                          placeholder="05xxxxxxxx"
-                          value={formData.phone}
-                          onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
-                        />
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#243B53] mb-1">
+                      وسيلة التواصل الرسمية الحالية
+                    </p>
+                    <p className="text-sm text-[#4A6278] mb-3 leading-relaxed">
+                      يمكنك التواصل معنا مباشرةً عبر البريد الإلكتروني الرسمي. سنردّ على استفسارك خلال 24 ساعة في أيام العمل.
+                    </p>
+                    <a
+                      href="mailto:support@tashkheesy.sa"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #1E4E8C, #2BBDB6)" }}
+                    >
+                      <Mail className="w-4 h-4" />
+                      support@tashkheesy.sa
+                    </a>
+                  </div>
+                </div>
 
+                {/* Mailto-based form */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const form = e.currentTarget;
+                    const name = (form.elements.namedItem("name") as HTMLInputElement).value;
+                    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+                    const subject = (form.elements.namedItem("subject") as HTMLSelectElement).value;
+                    const message = (form.elements.namedItem("message") as HTMLTextAreaElement).value;
+                    const body = encodeURIComponent(
+                      `الاسم: ${name}\nالبريد: ${email}\n\n${message}`
+                    );
+                    window.location.href = `mailto:support@tashkheesy.sa?subject=${encodeURIComponent(subject)}&body=${body}`;
+                  }}
+                  className="space-y-5"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-[#243B53] mb-1.5">البريد الإلكتروني *</label>
+                      <label className="block text-sm font-semibold text-[#243B53] mb-1.5">الاسم الكامل *</label>
                       <input
-                        type="email"
+                        name="name"
+                        type="text"
                         className="ts-input"
-                        placeholder="example@email.com"
-                        value={formData.email}
-                        onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
+                        placeholder="محمد أحمد"
                         required
                       />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-semibold text-[#243B53] mb-1.5">موضوع الرسالة</label>
-                      <select
+                      <label className="block text-sm font-semibold text-[#243B53] mb-1.5">رقم الجوال</label>
+                      <input
+                        name="phone"
+                        type="tel"
                         className="ts-input"
-                        value={formData.subject}
-                        onChange={e => setFormData(p => ({ ...p, subject: e.target.value }))}
-                      >
-                        <option value="استفسار عام">استفسار عام</option>
-                        <option value="حجز موعد">حجز موعد</option>
-                        <option value="استفسار عن الأسعار">استفسار عن الأسعار</option>
-                        <option value="باقة مؤسسية">باقة مؤسسية</option>
-                        <option value="دعم فني">دعم فني</option>
-                        <option value="شكوى أو اقتراح">شكوى أو اقتراح</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-[#243B53] mb-1.5">رسالتك *</label>
-                      <textarea
-                        className="ts-input resize-none"
-                        rows={5}
-                        placeholder="اكتب رسالتك هنا..."
-                        value={formData.message}
-                        onChange={e => setFormData(p => ({ ...p, message: e.target.value }))}
-                        required
+                        placeholder="05xxxxxxxx"
                       />
                     </div>
+                  </div>
 
-                    <button type="submit" className="ts-btn-primary w-full justify-center">
-                      <Send className="w-4 h-4" />
-                      إرسال الرسالة
-                    </button>
-                  </form>
-                )}
+                  <div>
+                    <label className="block text-sm font-semibold text-[#243B53] mb-1.5">البريد الإلكتروني *</label>
+                    <input
+                      name="email"
+                      type="email"
+                      className="ts-input"
+                      placeholder="example@email.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#243B53] mb-1.5">موضوع الرسالة</label>
+                    <select name="subject" className="ts-input">
+                      <option value="استفسار عام">استفسار عام</option>
+                      <option value="حجز موعد">حجز موعد</option>
+                      <option value="استفسار عن الأسعار">استفسار عن الأسعار</option>
+                      <option value="باقة مؤسسية">باقة مؤسسية</option>
+                      <option value="دعم فني">دعم فني</option>
+                      <option value="شكوى أو اقتراح">شكوى أو اقتراح</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#243B53] mb-1.5">رسالتك *</label>
+                    <textarea
+                      name="message"
+                      className="ts-input resize-none"
+                      rows={5}
+                      placeholder="اكتب رسالتك هنا..."
+                      required
+                    />
+                  </div>
+
+                  <button type="submit" className="ts-btn-primary w-full justify-center">
+                    <Mail className="w-4 h-4" />
+                    إرسال عبر البريد الإلكتروني
+                  </button>
+                  <p className="text-xs text-[#4A6278] text-center">
+                    سيتم فتح تطبيق البريد الإلكتروني لإرسال رسالتك مباشرةً.
+                  </p>
+                </form>
               </div>
 
               {/* Info */}
@@ -231,7 +205,7 @@ export default function Contact() {
                 <h2 className="text-2xl font-bold text-[#243B53] mb-2">معلومات التواصل</h2>
                 <p className="text-[#4A6278] mb-8">نحن متاحون لمساعدتك في أيام العمل.</p>
 
-                <div className="space-y-4 mb-10">
+                <div className="space-y-4 mb-8">
                   {officeInfo.map((info, i) => (
                     <div key={i} className="ts-card rounded-xl p-4 flex items-center gap-4">
                       <div className="ts-icon-blue">
@@ -243,6 +217,13 @@ export default function Contact() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Commercial Registration Trust Note */}
+                <div className="ts-card rounded-xl p-4 mb-8 border border-[#FDE68A] bg-[#FFFBEB]">
+                  <p className="text-xs text-[#92400E] leading-relaxed" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+                    تشخيصي كير — سجل تجاري رقم 7052506925، موثق لدى منصة الأعمال.
+                  </p>
                 </div>
 
                 {/* Quick Links */}
