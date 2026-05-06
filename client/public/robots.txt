@@ -1,6 +1,20 @@
 User-agent: *
 Allow: /
+
+Disallow: /account
+Disallow: /login
+Disallow: /children
 Disallow: /booking
-Disallow: /assets/
-Disallow: /*.json$
+Disallow: /screening-intro
+Disallow: /screening
+Disallow: /screening-result
+Disallow: /self-assessment
+Disallow: /choose-self-path
+Disallow: /choose-child-path
+Disallow: /specialists
+Disallow: /start
+Disallow: /result-demo
+Disallow: /component-showcase
+Disallow: /ai-insights
+
 Sitemap: https://www.tashkheesy.com/sitemap.xml
