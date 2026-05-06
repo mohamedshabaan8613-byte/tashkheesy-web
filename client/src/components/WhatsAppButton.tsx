@@ -1,21 +1,37 @@
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
+
+// المسارات التي يُخفى فيها الزر لأن المستخدم في منتصف تدفق تقييم نشط
+const HIDDEN_ROUTES = [
+  "/screening",
+  "/screening-intro",
+  "/self-assessment",
+  "/choose-self-path",
+  "/choose-child-path",
+  "/screening-result",
+];
 
 export default function WhatsAppButton() {
   const [isHovered, setIsHovered] = useState(false);
-  
+  const [location] = useLocation();
+
+  // إخفاء الزر إذا كان المسار الحالي ضمن مسارات الفحص النشطة
+  const isHidden = HIDDEN_ROUTES.some((route) => location.startsWith(route));
+  if (isHidden) return null;
+
   // رقم WhatsApp من متغير البيئة أو القيمة الافتراضية
   // صيغة دولية بدون + أو 00 (مثال: 966501234567)
   const whatsappNumber =
     import.meta.env.VITE_WHATSAPP_NUMBER || "966534823022";
-  
+
   // الرسالة الافتراضية
   const defaultMessage = "مرحباً، أرغب في الاستفسار عن خدمات تشخيص صعوبات التعلم";
-  
+
   const handleClick = () => {
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(defaultMessage)}`;
     window.open(url, "_blank", "noopener,noreferrer");
-    
+
     // تتبع النقرة في Google Analytics
     if (typeof window !== "undefined" && (window as any).gtag) {
       (window as any).gtag("event", "whatsapp_click", {
@@ -26,7 +42,7 @@ export default function WhatsAppButton() {
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className="fixed bottom-6 left-4 sm:left-6 z-40">
       {/* Pulse ring animation */}
       <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-30 pointer-events-none" />
       <button
