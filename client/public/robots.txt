@@ -1,24 +1,20 @@
 User-agent: *
 Allow: /
 
-# Private / functional pages — not for indexing
 Disallow: /account
 Disallow: /login
 Disallow: /children
 Disallow: /booking
-Disallow: /screening-intro/
-Disallow: /screening/
-Disallow: /screening-result/
+Disallow: /screening-intro
+Disallow: /screening
+Disallow: /screening-result
 Disallow: /self-assessment
 Disallow: /choose-self-path
-Disallow: /choose-child-path/
+Disallow: /choose-child-path
 Disallow: /specialists
 Disallow: /start
 Disallow: /result-demo
 Disallow: /component-showcase
 Disallow: /ai-insights
-
-# Static assets
-Disallow: /assets/
 
 Sitemap: https://www.tashkheesy.com/sitemap.xml
