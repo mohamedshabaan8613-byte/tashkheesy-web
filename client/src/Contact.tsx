@@ -29,7 +29,7 @@ const officeInfo = [
 
 export default function Contact() {
   useSEO({
-    title: "تواصل معنا | تشخيصي",
+    title: "تواصل معنا",
     description: "تواصل مع فريق تشخيصي للاستفسار عن خدمات تشخيص صعوبات التعلم والديسلكسيا. نحن هنا للمساعدة.",
     keywords: "تواصل تشخيصي, استفسار تشخيص صعوبات تعلم, دعم تشخيصي",
     canonical: "/contact",

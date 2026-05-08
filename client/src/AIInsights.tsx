@@ -34,7 +34,7 @@ const principles = [
 
 export default function AIInsights() {
   useSEO({
-    title: "رؤى الذكاء الاصطناعي | تشخيصي",
+    title: "رؤى الذكاء الاصطناعي",
     description: "تعرّف على كيفية استخدام تشخيصي للذكاء الاصطناعي لتقديم شروحات مخصصة وموثوقة لنتائج فحص صعوبات التعلم.",
     canonical: "/ai-insights",
   });
