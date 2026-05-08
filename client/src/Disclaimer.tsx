@@ -52,7 +52,7 @@ const legalTextParagraphs = [
 
 export default function Disclaimer() {
   useSEO({
-    title: "إخلاء المسؤولية | تشخيصي",
+    title: "إخلاء المسؤولية",
     description: "معلومات مهمة حول طبيعة خدمات تشخيصي ونطاقها وحدود المسؤولية.",
     canonical: "/disclaimer",
     noIndex: true,

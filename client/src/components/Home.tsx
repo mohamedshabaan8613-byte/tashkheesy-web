@@ -44,7 +44,7 @@ const homeSchema = {
   "contactPoint": {
     "@type": "ContactPoint",
     "contactType": "customer service",
-    "email": "support@tashkheesy.com",
+    "email": "support@tashkheesy.sa",
     "availableLanguage": "Arabic"
   },
   "publisher": {
@@ -56,7 +56,7 @@ const homeSchema = {
 
 export default function Home() {
   useSEO({
-    title: "تشخيصي | Tashkheesy — فحص أولي لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه",
+    title: "فحص أولي لصعوبات التعلم وفرط الحركة",
     description:
       "تشخيصي (Tashkheesy) منصة عربية سعودية تقدّم فحصاً أولياً مجانياً لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه، مع تفسير أولي مدعوم بالذكاء الاصطناعي وخطوات أوضح نحو الدعم المتخصص. هذا الفحص لا يُعد تشخيصاً طبياً رسمياً.",
     keywords:
