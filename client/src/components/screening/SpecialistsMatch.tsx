@@ -259,15 +259,15 @@ export default function SpecialistsMatch() {
               style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.3 }}
             >
               {childName
-                ? <>متخصصون يناسبون احتياجات <span style={{ color: "#1E4E8C" }}>{childName}</span></>
-                : <>متخصصون مقترحون بناءً على نتيجة فحصك</>
+                ? <>متخصص مناسب لمناقشة نتيجة <span style={{ color: "#1E4E8C" }}>{childName}</span></>
+                : <>متخصص مناسب لمناقشة نتيجتك</>
               }
             </h1>
             <p
               className="text-sm text-slate-500 leading-relaxed"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
             >
-              هؤلاء المتخصصون لديهم خبرة في مجال {pathLabel}. الجلسة الأولى تساعد على تحديد مسار الدعم المناسب بشكل أدق.
+              اختر موعدًا مناسبًا لمراجعة المؤشرات والحصول على توجيه أوضح — بهدوء وبدون ضغط.
             </p>
           </div>
 
