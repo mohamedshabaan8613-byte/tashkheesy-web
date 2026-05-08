@@ -1218,7 +1218,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
             className="fade-in-up text-3xl sm:text-4xl font-black text-white mb-4"
             style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.25 }}
           >
-            ناقش هذه النتائج
+            تحتاج مساعدة في فهم هذه النتيجة؟
             <br />
             <span
               style={{
@@ -1228,15 +1228,23 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 backgroundClip: "text",
               }}
             >
-              مع متخصص معتمد
+              نحن هنا لمساعدتك
             </span>
           </h2>
 
           <p
-            className="fade-in-up text-blue-100 text-base max-w-lg mx-auto mb-10 leading-relaxed"
+            className="fade-in-up text-blue-100 text-base max-w-lg mx-auto mb-5 leading-relaxed"
             style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9 }}
           >
             {config.reassurance}
+          </p>
+
+          {/* ملاحظة دعم تحت الـ reassurance */}
+          <p
+            className="fade-in-up text-blue-200 text-sm max-w-md mx-auto mb-10 leading-relaxed"
+            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85, opacity: 0.85 }}
+          >
+            يمكنك حجز استشارة أولية لمناقشة المؤشرات والحصول على توجيه أوضح — بهدوء وبدون ضغط.
           </p>
 
           {/* ─── CTA الوحيد في الصفحة بالكامل ─── */}
@@ -1253,7 +1261,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
             }}
           >
             <Calendar size={18} />
-            احجز جلسة مناقشة النتائج مع المتخصص
+            احجز استشارة لفهم النتيجة
             <ArrowLeft
               size={18}
               className="transition-transform group-hover:-translate-x-1"
