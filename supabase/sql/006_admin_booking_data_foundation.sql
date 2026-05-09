@@ -60,24 +60,25 @@ create trigger set_admin_users_updated_at
 -- ─── RLS: admin_users ────────────────────────────────────────────────────────
 alter table public.admin_users enable row level security;
 
--- A user can read their own admin_users row (to check if they are admin)
+-- A user can read their own admin_users row (to check if they are admin).
+-- This is the ONLY SELECT policy on admin_users.
+-- It uses only auth.uid() — a built-in JWT claim — with no sub-query on admin_users.
+-- This avoids any same-table RLS recursion risk.
+--
+-- isCurrentUserAdmin() in admin.ts relies on this policy:
+--   it queries admin_users filtered by user_id = auth.uid() and is_active = true.
+--   This policy allows that query to succeed for the current user's own row.
+--
+-- The booking_requests SELECT/UPDATE policies check admin status via a cross-table
+-- EXISTS query on admin_users — that is safe (cross-table, not same-table).
 create policy "admin_users: own row select"
   on public.admin_users
   for select
   using (auth.uid() = user_id);
 
--- Active admins can see all active admin rows (needed for admin UI later)
-create policy "admin_users: active admins can select active admins"
-  on public.admin_users
-  for select
-  using (
-    exists (
-      select 1 from public.admin_users au
-      where au.user_id = auth.uid()
-        and au.is_active = true
-    )
-    and is_active = true
-  );
+-- NOTE: The "active admins can select active admins" policy has been intentionally
+-- removed to prevent same-table RLS recursion risk. If a future admin list UI is
+-- needed, implement it via a SECURITY DEFINER function in a separate migration.
 
 -- No INSERT/UPDATE/DELETE policies — admin rows are managed via SQL Editor only.
 
