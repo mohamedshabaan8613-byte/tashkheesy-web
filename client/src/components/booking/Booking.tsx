@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { markScreeningBookedAfterResult } from "@/lib/screeningAnalytics";
+import { saveBookingRequest } from "@/lib/bookingRequests";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -1833,6 +1834,57 @@ export default function Booking() {
       if (urlSessionId) {
         void markScreeningBookedAfterResult(urlSessionId);
       }
+      // ─── Sprint 6A: Persist booking request to Supabase (fire-and-forget) ────────────────
+      // Only runs after Formspree success (res.ok). Never blocks UI.
+      // Only persists for authenticated users — anonymous bookings remain in Formspree only.
+      // Reuses the same payload and screeningContext already built for Formspree.
+      void saveBookingRequest({
+        // Contact
+        full_name: payload.full_name,
+        email: payload.email,
+        phone: payload.phone,
+        notes: payload.notes,
+        // Service
+        service_id: payload.service_id,
+        service_title: payload.service_title,
+        service_price: payload.service_price,
+        service_duration: payload.service_duration,
+        // Schedule
+        selected_date: payload.selected_date,
+        selected_time_id: payload.selected_time_id,
+        selected_time_label: payload.selected_time_label,
+        // Specialist
+        specialist_id: payload.specialist_id,
+        specialist_name: payload.specialist_name,
+        specialist_title: payload.specialist_title,
+        specialist_specialty: payload.specialist_specialty,
+        // URL context
+        source_url: payload.source_url,
+        url_session_id: payload.url_session_id,
+        url_path_type: payload.url_path_type,
+        url_child: payload.url_child,
+        url_service_id: payload.url_service_id,
+        url_specialist_id: payload.url_specialist_id,
+        // Screening context (from screeningContext — same as Formspree)
+        screening_session_id: screeningContext.screening_session_id,
+        screening_path_type: screeningContext.screening_path_type,
+        screening_type: screeningContext.screening_type,
+        screening_mode: screeningContext.screening_mode,
+        screening_subject_name: screeningContext.screening_subject_name,
+        screening_subject_age: screeningContext.screening_subject_age,
+        screening_score: screeningContext.screening_score,
+        screening_level: screeningContext.screening_level,
+        screening_risk_level: screeningContext.screening_risk_level,
+        screening_completed_at: screeningContext.screening_completed_at,
+        screening_summary: screeningContext.screening_summary,
+        screening_context_found: screeningContext.screening_context_found,
+        screening_context_source: screeningContext.screening_context_source,
+        // Formspree status
+        formspree_ok: true,
+        formspree_status: "submitted",
+        // Booking flags
+        booked_after_result: !!urlSessionId,
+      });
     } catch {
       setSubmitError("تعذّر إرسال طلب الحجز حالياً. يرجى المحاولة مرة أخرى أو التواصل معنا عبر واتساب.");
     } finally {
