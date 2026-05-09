@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
+import { fetchRemoteScreeningResultBySessionId } from "@/lib/screeningResults";
 
 // ─── أنواع البيانات ───────────────────────────────────────────────────────────
 interface CategoryScore {
@@ -339,8 +340,9 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
   const [aiText, setAiText] = useState<string>("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // ─── تحميل البيانات ───────────────────────────────────────────────────────
+  // ─── تحميل البيانات ──────────────────────────────────────────────────────────
   useEffect(() => {
+    // المصدر الأساسي: localStorage
     const stored = localStorage.getItem(`result_${sessionId}`);
     if (stored) {
       try {
@@ -349,13 +351,47 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
         if (parsed.result.aiExplanation) {
           setAiText(parsed.result.aiExplanation);
         }
+        setLoading(false);
+        return;
       } catch {
+        // إذا فشل parse نجرب Supabase
+      }
+    }
+
+    // ─── Sprint 5: Supabase fallback إذا لم توجد النتيجة في localStorage ──────────
+    // يعرض loading state مؤقت ثم يجلب من Supabase
+    fetchRemoteScreeningResultBySessionId(sessionId).then((res) => {
+      if (res.ok && res.data?.resultJson) {
+        // بناء StoredResult من بيانات Supabase
+        const remote = res.data;
+        const rj = remote.resultJson as Record<string, unknown>;
+        // محاولة استخراج StoredResult من result_json
+        const reconstructed: StoredResult = {
+          sessionId: remote.sessionId,
+          childName: remote.subjectName ?? "",
+          childAge: remote.subjectAge ? parseInt(remote.subjectAge, 10) : 0,
+          screeningType: remote.screeningType ?? "",
+          completedAt: remote.completedAt ?? new Date().toISOString(),
+          answeredCount: (rj.answeredCount as number) ?? 0,
+          totalCount: (rj.totalCount as number) ?? 0,
+          result: (rj.result as StoredResult["result"]) ?? {
+            percentage: (remote.resultSummary?.percentage as number) ?? 0,
+            riskLevel: (remote.resultSummary?.riskLevel as StoredResult["result"]["riskLevel"]) ?? "medium",
+            riskLabel: (remote.resultSummary?.riskLabel as string) ?? "",
+            categoryScores: {},
+            recommendations: [],
+          },
+        };
+        setData(reconstructed);
+        if (reconstructed.result.aiExplanation) {
+          setAiText(reconstructed.result.aiExplanation);
+        }
+      } else {
+        // لم توجد النتيجة في أي مصدر — إعادة التوجيه لصفحة البداية
         navigate("/start");
       }
-    } else {
-      navigate("/start");
-    }
-    setLoading(false);
+      setLoading(false);
+    });
   }, [sessionId, navigate]);
 
   // ─── Analytics: upsert completed screening result to Supabase ──────────

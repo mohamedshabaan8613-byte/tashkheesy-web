@@ -12,9 +12,10 @@
  * الأسلوب: دافئ، شامل، غير حكمي، عربي أولاً
  * الضمانات: ليس تشخيصاً رسمياً | الذكاء الاصطناعي للفهم الأولي | المتخصص الخطوة التالية
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useSupabaseAuth } from "@/context/AuthContext";
+import { fetchRemoteSelfAssessmentResults } from "@/lib/screeningResults";
 import {
   User,
   ArrowLeft,
@@ -99,6 +100,7 @@ export default function SelfAssessment() {
   const [nameError, setNameError] = useState("");
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [history, setHistory] = useState<SelfAssessmentSummary[]>([]);
+  const remoteFetchedRef = useRef(false);
 
   // قراءة pathType وmode من URL
   const searchParams = new URLSearchParams(window.location.search);
@@ -108,12 +110,46 @@ export default function SelfAssessment() {
   useEffect(() => {
     document.title = "التقييم الذاتي — تشخيصي | Tashkheesy";
     setTimeout(() => setVisible(true), 80);
-    // تحميل السجل عند الدخول
-    const h = loadSelfHistory();
-    // ترتيب تنازلي بحسب completedAt
-    h.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-    setHistory(h);
+    // تحميل السجل المحلي أولاً (فوري)
+    const localHistory = loadSelfHistory();
+    localHistory.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+    setHistory(localHistory);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Sprint 5: دمج النتائج البعيدة من Supabase مع المحلية ───────────────────────────────
+  // يعمل فقط عند تسجيل الدخول، لا يُظهر loading state مطوّل
+  // النتائج المحلية تظهر فوراً، البعيدة تُضاف لاحقاً بصمت
+  useEffect(() => {
+    if (!user || remoteFetchedRef.current) return;
+    remoteFetchedRef.current = true;
+
+    fetchRemoteSelfAssessmentResults().then((res) => {
+      if (!res.ok || !res.data || res.data.length === 0) return;
+
+      setHistory((prev) => {
+        const localSessionIds = new Set(prev.map((item) => item.sessionId));
+        const newRemote: SelfAssessmentSummary[] = res.data
+          .filter((r) => !localSessionIds.has(r.sessionId))
+          .map((r) => ({
+            id: r.sessionId,
+            sessionId: r.sessionId,
+            name: r.subjectName ?? "",
+            age: r.subjectAge ?? "",
+            mode: "self",
+            pathType: (r.pathType as "learning" | "adhd") ?? "learning",
+            screeningType: r.screeningType ?? undefined,
+            completedAt: r.completedAt ?? new Date().toISOString(),
+            resultKey: `result_${r.sessionId}`,
+          }));
+
+        if (newRemote.length === 0) return prev;
+
+        const merged = [...prev, ...newRemote];
+        merged.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+        return merged;
+      });
+    });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

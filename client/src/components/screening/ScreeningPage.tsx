@@ -10,6 +10,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
+import {
+  upsertRemoteScreeningResult,
+  syncLocalSelfAssessmentsToSupabase,
+} from "@/lib/screeningResults";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -195,6 +199,11 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const [animating, setAnimating] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
 
+  // ─── Sync localStorage → Supabase عند تحميل الصفحة (fire-and-forget) ────────
+  useEffect(() => {
+    void syncLocalSelfAssessmentsToSupabase();
+  }, []);
+
   // ─── تصفية الأسئلة حسب العمر ─────────────────────────────────────────────
   const ageGroup = getAgeGroup(childAge);
   const questions = ALL_QUESTIONS.filter((q) => q.ageGroups.includes(ageGroup));
@@ -284,6 +293,27 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
 
     // مسح بيانات الجلسة المؤقتة
     localStorage.removeItem(STORAGE_KEY);
+
+    // ─── Sprint 5: Persist self-assessment result to Supabase (fire-and-forget) ──
+    // Only for mode === 'self'. Never blocks UI. localStorage is primary source.
+    if (mode === "self") {
+      void upsertRemoteScreeningResult({
+        sessionId,
+        subjectName: childName,
+        subjectAge: childAge,
+        mode: "self",
+        pathType: urlPathType as "learning" | "adhd",
+        screeningType,
+        resultJson: resultPayload as unknown as Record<string, unknown>,
+        resultSummary: {
+          score: result.percentage,
+          percentage: result.percentage,
+          riskLevel: result.riskLevel,
+          riskLabel: result.riskLabel,
+        },
+        completedAt,
+      });
+    }
 
     // ─── Analytics: persist to Supabase (fire-and-forget) ────────────────────
     // Runs at completion time — does not block navigation or UI.
