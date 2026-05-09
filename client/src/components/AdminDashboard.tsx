@@ -1,5 +1,5 @@
 /**
- * AdminDashboard.tsx — Sprint 6B
+ * AdminDashboard.tsx — Sprint 6B / Polish: admin-dashboard-layout
  *
  * Protected admin-only dashboard page.
  * Route: /admin
@@ -15,6 +15,15 @@
  * - Uses fetchAdminDashboardData() which reads via admin SELECT RLS policies.
  * - No service_role key. No hardcoded admin emails.
  * - RLS enforces access — frontend hiding is secondary only.
+ *
+ * Polish (admin-dashboard-layout branch):
+ * - Added pt-16 sm:pt-20 top padding to main to clear navbar.
+ * - Increased vertical gap between sections: gap-y-10 sm:gap-y-14.
+ * - Header section: border-bottom separator, pb-6, stacked on mobile / row on sm+.
+ * - "تحديث البيانات" button: self-start on mobile, self-auto on sm+.
+ * - KPI grid: 1-col on mobile (< 390px), 2-col on sm, 3-col on md, 4-col on lg.
+ * - Section headings: larger text-lg, bottom border, pb-3.
+ * - Tables: rounded-2xl, slightly more padding on cells.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -70,19 +79,29 @@ interface KpiCardProps {
 function KpiCard({ label, value, accent }: KpiCardProps) {
   return (
     <div
-      className={`rounded-xl border p-5 flex flex-col gap-2 shadow-sm ${
+      className={`rounded-xl border p-5 flex flex-col gap-2 shadow-sm transition-shadow hover:shadow-md ${
         accent
           ? "bg-[#1E4E8C] text-white border-[#1E4E8C]"
           : "bg-white border-[#E8E0D5] text-[#1a1a1a]"
       }`}
     >
-      <p className={`text-sm font-medium ${accent ? "text-blue-100" : "text-[#6B5E4E]"}`}>
+      <p className={`text-xs sm:text-sm font-medium leading-snug ${accent ? "text-blue-100" : "text-[#6B5E4E]"}`}>
         {label}
       </p>
-      <p className={`text-3xl font-bold font-cairo ${accent ? "text-white" : "text-[#1E4E8C]"}`}>
+      <p className={`text-2xl sm:text-3xl font-bold font-cairo ${accent ? "text-white" : "text-[#1E4E8C]"}`}>
         {value}
       </p>
     </div>
+  );
+}
+
+// ─── Section Heading ──────────────────────────────────────────────────────────
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-lg font-bold font-cairo text-[#1a1a1a] pb-3 border-b border-[#E8E0D5]">
+      {children}
+    </h2>
   );
 }
 
@@ -153,7 +172,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[#F4EFE8] flex flex-col" dir="rtl">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center">
+        <main className="flex-1 flex items-center justify-center pt-16 sm:pt-20">
           <div className="flex flex-col items-center gap-4 text-[#6B5E4E]">
             <div className="w-10 h-10 border-4 border-[#1E4E8C] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm font-medium">جاري التحقق من الصلاحيات…</p>
@@ -171,7 +190,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[#F4EFE8] flex flex-col" dir="rtl">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4">
+        <main className="flex-1 flex items-center justify-center px-4 pt-16 sm:pt-20">
           <div className="bg-white rounded-2xl border border-[#E8E0D5] shadow-sm p-10 max-w-md w-full text-center flex flex-col gap-6">
             <div className="w-14 h-14 rounded-full bg-[#EEF3FB] flex items-center justify-center mx-auto">
               <svg className="w-7 h-7 text-[#1E4E8C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -204,7 +223,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[#F4EFE8] flex flex-col" dir="rtl">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4">
+        <main className="flex-1 flex items-center justify-center px-4 pt-16 sm:pt-20">
           <div className="bg-white rounded-2xl border border-[#E8E0D5] shadow-sm p-10 max-w-md w-full text-center flex flex-col gap-6">
             <div className="w-14 h-14 rounded-full bg-[#FEF3F2] flex items-center justify-center mx-auto">
               <svg className="w-7 h-7 text-[#D92D20]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -239,20 +258,32 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#F4EFE8] flex flex-col" dir="rtl">
       <Navbar />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col gap-10">
+      {/*
+        pt-16 sm:pt-20 — clears the fixed navbar height on mobile and desktop.
+        pb-16           — breathing room at the bottom before footer.
+        gap-y-10 sm:gap-y-14 — generous vertical rhythm between sections.
+      */}
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-16 flex flex-col gap-y-10 sm:gap-y-14">
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/*
+          pb-6 + border-b: visually separates the header from the content below.
+          flex-col on mobile (title above button), flex-row on sm+.
+          gap-4 ensures comfortable spacing between title block and button.
+        */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pb-6 border-b border-[#E8E0D5]">
           <div>
-            <h1 className="text-2xl font-bold font-cairo text-[#1a1a1a]">لوحة إدارة تشخيصي</h1>
-            <p className="text-sm text-[#6B5E4E] mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold font-cairo text-[#1a1a1a] leading-tight">
+              لوحة إدارة تشخيصي
+            </h1>
+            <p className="text-sm text-[#6B5E4E] mt-2 leading-relaxed">
               نظرة تشغيلية سريعة على الفحوصات والحجوزات أثناء الإطلاق التجريبي.
             </p>
           </div>
           <button
             onClick={loadData}
             disabled={dataLoading}
-            className="flex items-center gap-2 bg-white border border-[#E8E0D5] text-[#1E4E8C] font-semibold font-cairo rounded-lg px-4 py-2 text-sm hover:bg-[#F4EFE8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto"
+            className="flex items-center gap-2 bg-white border border-[#E8E0D5] text-[#1E4E8C] font-semibold font-cairo rounded-lg px-4 py-2.5 text-sm hover:bg-[#F4EFE8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto shrink-0"
           >
             <svg
               className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`}
@@ -266,7 +297,7 @@ export default function AdminDashboard() {
 
         {/* ── Data loading spinner ────────────────────────────────────────── */}
         {dataLoading && !data && (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-24">
             <div className="flex flex-col items-center gap-4 text-[#6B5E4E]">
               <div className="w-10 h-10 border-4 border-[#1E4E8C] border-t-transparent rounded-full animate-spin" />
               <p className="text-sm">جاري تحميل البيانات…</p>
@@ -284,9 +315,17 @@ export default function AdminDashboard() {
         {/* ── KPI Cards ──────────────────────────────────────────────────── */}
         {data && (
           <>
-            <section className="flex flex-col gap-4">
-              <h2 className="text-base font-bold font-cairo text-[#1a1a1a]">المؤشرات الرئيسية</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <section className="flex flex-col gap-5">
+              <SectionHeading>المؤشرات الرئيسية</SectionHeading>
+              {/*
+                Grid breakpoints:
+                  - < 390px  (xs mobile) : 1 column  — grid-cols-1
+                  - 390px+   (sm)        : 2 columns — sm:grid-cols-2
+                  - 768px+   (md)        : 3 columns — md:grid-cols-3
+                  - 1024px+  (lg)        : 4 columns — lg:grid-cols-4
+                gap-4 on mobile, gap-5 on sm+
+              */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
                 <KpiCard label="إجمالي الفحوصات"                value={t!.totalScreenings} />
                 <KpiCard label="فحوصات الأطفال"                 value={t!.childScreenings} />
                 <KpiCard label="تقييمات أقيّم نفسي"             value={t!.selfAssessments} />
@@ -303,42 +342,42 @@ export default function AdminDashboard() {
             </section>
 
             {/* ── Latest Screenings Table ─────────────────────────────────── */}
-            <section className="flex flex-col gap-4">
-              <h2 className="text-base font-bold font-cairo text-[#1a1a1a]">آخر الفحوصات</h2>
+            <section className="flex flex-col gap-5">
+              <SectionHeading>آخر الفحوصات</SectionHeading>
               {data.latestScreenings.length === 0 ? (
-                <div className="bg-white border border-[#E8E0D5] rounded-xl p-8 text-center text-[#6B5E4E] text-sm">
+                <div className="bg-white border border-[#E8E0D5] rounded-2xl p-10 text-center text-[#6B5E4E] text-sm">
                   لا توجد فحوصات مسجلة بعد.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-[#E8E0D5] bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-2xl border border-[#E8E0D5] bg-white shadow-sm">
                   <table className="w-full text-sm text-right">
                     <thead className="bg-[#F4EFE8] text-[#6B5E4E] text-xs font-semibold">
                       <tr>
-                        <th className="px-4 py-3 font-semibold">التاريخ</th>
-                        <th className="px-4 py-3 font-semibold">النوع</th>
-                        <th className="px-4 py-3 font-semibold">المسار</th>
-                        <th className="px-4 py-3 font-semibold">مستوى المؤشر</th>
-                        <th className="px-4 py-3 font-semibold">حجز بعد النتيجة؟</th>
+                        <th className="px-5 py-3.5 font-semibold">التاريخ</th>
+                        <th className="px-5 py-3.5 font-semibold">النوع</th>
+                        <th className="px-5 py-3.5 font-semibold">المسار</th>
+                        <th className="px-5 py-3.5 font-semibold">مستوى المؤشر</th>
+                        <th className="px-5 py-3.5 font-semibold">حجز بعد النتيجة؟</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F4EFE8]">
                       {data.latestScreenings.map((row) => (
                         <tr key={row.id} className="hover:bg-[#FAFAF8] transition-colors">
-                          <td className="px-4 py-3 text-[#1a1a1a] whitespace-nowrap">
+                          <td className="px-5 py-4 text-[#1a1a1a] whitespace-nowrap">
                             {formatDate(row.completed_at ?? row.created_at)}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a]">
+                          <td className="px-5 py-4 text-[#1a1a1a]">
                             {subjectTypeLabel(row.subject_type)}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a]">
+                          <td className="px-5 py-4 text-[#1a1a1a]">
                             {pathTypeLabel(row.path_type)}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a]">
+                          <td className="px-5 py-4 text-[#1a1a1a]">
                             {row.result_level ?? row.risk_level ?? "—"}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-5 py-4">
                             <span
-                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                              className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
                                 row.booked_after_result
                                   ? "bg-[#D1FAE5] text-[#065F46]"
                                   : "bg-[#F3F4F6] text-[#6B7280]"
@@ -356,50 +395,50 @@ export default function AdminDashboard() {
             </section>
 
             {/* ── Latest Bookings Table ───────────────────────────────────── */}
-            <section className="flex flex-col gap-4">
-              <h2 className="text-base font-bold font-cairo text-[#1a1a1a]">آخر الحجوزات</h2>
+            <section className="flex flex-col gap-5">
+              <SectionHeading>آخر الحجوزات</SectionHeading>
               {data.latestBookings.length === 0 ? (
-                <div className="bg-white border border-[#E8E0D5] rounded-xl p-8 text-center text-[#6B5E4E] text-sm">
+                <div className="bg-white border border-[#E8E0D5] rounded-2xl p-10 text-center text-[#6B5E4E] text-sm">
                   لا توجد حجوزات مسجلة بعد.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-[#E8E0D5] bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-2xl border border-[#E8E0D5] bg-white shadow-sm">
                   <table className="w-full text-sm text-right">
                     <thead className="bg-[#F4EFE8] text-[#6B5E4E] text-xs font-semibold">
                       <tr>
-                        <th className="px-4 py-3 font-semibold">التاريخ</th>
-                        <th className="px-4 py-3 font-semibold">الاسم</th>
-                        <th className="px-4 py-3 font-semibold">البريد</th>
-                        <th className="px-4 py-3 font-semibold">الهاتف</th>
-                        <th className="px-4 py-3 font-semibold">الخدمة</th>
-                        <th className="px-4 py-3 font-semibold">المتخصص</th>
-                        <th className="px-4 py-3 font-semibold">مرتبط بنتيجة؟</th>
+                        <th className="px-5 py-3.5 font-semibold">التاريخ</th>
+                        <th className="px-5 py-3.5 font-semibold">الاسم</th>
+                        <th className="px-5 py-3.5 font-semibold">البريد</th>
+                        <th className="px-5 py-3.5 font-semibold">الهاتف</th>
+                        <th className="px-5 py-3.5 font-semibold">الخدمة</th>
+                        <th className="px-5 py-3.5 font-semibold">المتخصص</th>
+                        <th className="px-5 py-3.5 font-semibold">مرتبط بنتيجة؟</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F4EFE8]">
                       {data.latestBookings.map((row) => (
                         <tr key={row.id} className="hover:bg-[#FAFAF8] transition-colors">
-                          <td className="px-4 py-3 text-[#1a1a1a] whitespace-nowrap">
+                          <td className="px-5 py-4 text-[#1a1a1a] whitespace-nowrap">
                             {formatDate(row.created_at)}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a]">
+                          <td className="px-5 py-4 text-[#1a1a1a]">
                             {row.full_name ?? "—"}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a] text-xs">
+                          <td className="px-5 py-4 text-[#1a1a1a] text-xs">
                             {row.email ?? "—"}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a]">
+                          <td className="px-5 py-4 text-[#1a1a1a]">
                             {row.phone ?? "—"}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a]">
+                          <td className="px-5 py-4 text-[#1a1a1a]">
                             {row.service_title ?? "—"}
                           </td>
-                          <td className="px-4 py-3 text-[#1a1a1a]">
+                          <td className="px-5 py-4 text-[#1a1a1a]">
                             {row.specialist_name ?? "—"}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-5 py-4">
                             <span
-                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                              className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
                                 row.booked_after_result
                                   ? "bg-[#D1FAE5] text-[#065F46]"
                                   : "bg-[#F3F4F6] text-[#6B7280]"
