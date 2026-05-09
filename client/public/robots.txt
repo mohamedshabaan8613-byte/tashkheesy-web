@@ -16,5 +16,6 @@ Disallow: /start
 Disallow: /result-demo
 Disallow: /component-showcase
 Disallow: /ai-insights
+Disallow: /admin
 
 Sitemap: https://www.tashkheesy.com/sitemap.xml
