@@ -40,6 +40,8 @@ const SpecialistsMatch = lazy(() => import("./components/screening/SpecialistsMa
 // ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────────────
 const Login   = lazy(() => import("./components/Login"));
 const Account = lazy(() => import("./components/Account"));
+// ─── لوحة الإدارة (Sprint 6B) ────────────────────────────────────────────
+const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 // ────────────────────────────────────────────────────────────────
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
@@ -229,6 +231,8 @@ function Router() {
         {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────── */}
         <Route path="/login"   component={Login} />
         <Route path="/account" component={Account} />
+        {/* ─── لوحة الإدارة (Sprint 6B) — noindex ───────────────────────── */}
+        <Route path="/admin"   component={() => <SensitiveNoIndex><AdminDashboard /></SensitiveNoIndex>} />
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
