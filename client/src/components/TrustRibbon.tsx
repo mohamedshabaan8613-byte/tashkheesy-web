@@ -16,8 +16,8 @@ import { Shield, Globe, Users, Compass } from "lucide-react";
 const trustBadges = [
   {
     icon: Shield,
-    title: "خصوصية تامة",
-    desc: "بياناتك لن تُشارك مع أي جهة",
+    title: "خصوصية محفوظة",
+    desc: "نحافظ على بياناتك ونستخدمها فقط لتقديم الخدمة",
     color: "#1E4E8C",
     bg: "#DFF3F1",
   },
