@@ -1,32 +1,14 @@
 /*
- * تشخيصي WhyTashkheesy — Value Proposition Section
- * Answers: لماذا أختار تشخيصي كخطوة أولى؟
+ * تشخيصي WhyTashkheesy — Sprint 2 Refinement
  *
- * Role in homepage narrative:
- *   FounderStory → why it was built (emotional origin)
- *   ImpactSection → why the issue matters socially/educationally
- *   WhyTashkheesy → what practical value the platform delivers (THIS section)
- *   HowItWorks → how the process works step by step
- *
- * Content rules:
- *   - No emotional storytelling (FounderStory handles that)
- *   - No impact framing (ImpactSection handles that)
- *   - No process explanation (HowItWorks handles that)
- *   - Focus: concrete product value, specific user-facing benefits
- *
- * Stats block replaced with practical value grid (4 cards):
- *   - فحص أولي مجاني — no cost barrier
- *   - شرح أولي بالعربية — language & culture fit
- *   - فهم أوضح للمؤشرات — specific screening areas
- *   - خطوة أولى منظمة — structured next step
- *
- * Reasons cards rewritten to be product-specific:
- *   1. AI-supported analysis — responsible framing
- *   2. Specific screening areas (القراءة والكتابة والانتباه والتركيز)
- *   3. Arabic-first UX — cultural fit
- *   4. Structured next step — clarity over confusion
- *
- * Design: asymmetric two-column, light #F4EFE8 background, preserved
+ * Changes from previous version:
+ * - Removed "من نحن" trust note block (belongs in Footer/About, not here)
+ * - Simplified main paragraph — shorter, dual-audience (children + adults)
+ * - Simplified value grid labels — shorter, more scannable
+ * - Reduced section vertical padding (py-20 → py-16 lg:py-20)
+ * - Kept: two-column layout, reasons cards, value grid, fade-in animation
+ * - Kept: all 4 reasons cards unchanged (content is accurate and appropriate)
+ * - Kept: id="why-tashkheesy" for anchor navigation
  */
 
 import { useEffect, useRef } from "react";
@@ -66,22 +48,22 @@ const reasons = [
 const valueGrid = [
   {
     value: "مجاني",
-    label: "فحص أولي بدون أي رسوم — بدون حواجز للبدء",
+    label: "فحص أولي بدون أي رسوم",
     color: "#2BBDB6",
   },
   {
     value: "عربي",
-    label: "شرح أولي بالعربية — لغةً وثقافةً وحساسيةً",
+    label: "شرح بالعربية — لغةً وثقافةً",
     color: "#1E4E8C",
   },
   {
     value: "٦ محاور",
-    label: "تغطية مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه",
+    label: "تغطية صعوبات التعلم وفرط الحركة",
     color: "#F4C46A",
   },
   {
     value: "خطوة واضحة",
-    label: "توجيه نحو الخطوة التالية الأنسب — بدل الحيرة",
+    label: "توجيه للخطوة التالية الأنسب",
     color: "#1E4E8C",
   },
 ];
@@ -104,7 +86,6 @@ export default function WhyTashkheesy() {
     );
 
     if (sectionRef.current) observer.observe(sectionRef.current);
-
     return () => observer.disconnect();
   }, []);
 
@@ -112,23 +93,23 @@ export default function WhyTashkheesy() {
     <section
       id="why-tashkheesy"
       ref={sectionRef}
-      className="py-20 lg:py-28"
+      className="py-16 lg:py-20"
       style={{ background: "#F4EFE8" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
-          {/* Right column: Heading + Paragraph + Trust Note + Value Grid */}
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+          {/* Right column: Heading + Paragraph + Value Grid */}
           <div>
-            <div className="fade-in-up mb-4">
+            <div className="fade-in-up mb-3">
               <span className="section-label">لماذا تشخيصي؟</span>
             </div>
 
             <h2
-              className="fade-in-up text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-6"
+              className="fade-in-up text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-5"
               style={{
                 fontFamily: "'Cairo', sans-serif",
                 fontWeight: 900,
-                lineHeight: 1.2,
+                lineHeight: 1.25,
               }}
             >
               خطوتك الأولى{" "}
@@ -145,44 +126,26 @@ export default function WhyTashkheesy() {
             </h2>
 
             <p
-              className="fade-in-up text-lg text-slate-600 leading-relaxed mb-6"
+              className="fade-in-up text-base text-slate-600 mb-8"
               style={{
                 fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                 lineHeight: 1.85,
               }}
             >
               تشخيصي تساعدك على الانتقال من عدم اليقين إلى فهم أولي أوضح
-              لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه — بما فيها
-              تحديات القراءة والكتابة والانتباه والتركيز — وتوجيهك نحو الخطوة
-              التالية الأنسب لحالتك.
+              لمؤشرات صعوبات التعلم وفرط الحركة — سواء كنت والداً يبحث عن إجابات
+              لطفله، أو بالغاً يسعى لفهم تجربته الخاصة.
             </p>
 
-            {/* About / Trust Note */}
-            <div className="fade-in-up mb-10 rounded-2xl bg-white/70 border border-white/70 px-5 py-4 shadow-sm">
-              <p
-                className="text-sm sm:text-base text-slate-600 leading-relaxed"
-                style={{
-                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  lineHeight: 1.8,
-                }}
-              >
-                <strong className="text-slate-900">من نحن : </strong>
-                تشخيصي كير منصة سعودية تساعد الأسر والبالغين على بدء فحص أولي
-                آمن لمؤشرات صعوبات التعلم والانتباه، مع توجيه واضح للخطوة
-                التالية، دون أن يكون ذلك تشخيصًا طبيًا أو نفسيًا 
-                نهائيًا.
-              </p>
-            </div>
-
-            {/* Practical Value Grid — replaces vague stats */}
-            <div className="fade-in-up grid grid-cols-2 gap-4">
+            {/* Practical Value Grid */}
+            <div className="fade-in-up grid grid-cols-2 gap-3">
               {valueGrid.map((item, i) => (
                 <div
                   key={i}
-                  className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+                  className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div
-                    className="text-2xl font-black mb-2"
+                    className="text-xl font-black mb-1.5"
                     style={{
                       fontFamily: "'Cairo', sans-serif",
                       fontWeight: 900,
@@ -203,35 +166,30 @@ export default function WhyTashkheesy() {
           </div>
 
           {/* Left column: Feature/Value cards */}
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {reasons.map((reason, index) => {
               const Icon = reason.icon;
-
               return (
                 <div
                   key={index}
                   className="fade-in-up group flex items-start gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105"
                     style={{ background: reason.bg }}
                   >
-                    <Icon size={22} style={{ color: reason.color }} />
+                    <Icon size={19} style={{ color: reason.color }} />
                   </div>
 
                   <div>
                     <h3
-                      className="text-base font-bold text-slate-900 mb-1.5"
-                      style={{
-                        fontFamily: "'Cairo', sans-serif",
-                        fontWeight: 700,
-                      }}
+                      className="text-sm font-bold text-slate-900 mb-1"
+                      style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
                     >
                       {reason.title}
                     </h3>
-
                     <p
-                      className="text-sm text-slate-600 leading-relaxed"
+                      className="text-xs text-slate-600"
                       style={{
                         fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                         lineHeight: 1.7,

@@ -1,10 +1,17 @@
 /*
- * تشخيصي TrustRibbon — Editorial Healthcare
- * Horizontal trust badges strip — clean white, subtle border
- * 5 trust signals: Privacy, Arabic-first, Specialist, Follow-up, AI
+ * تشخيصي TrustRibbon — Sprint 2 Refinement
+ *
+ * Changes from previous version:
+ * - Removed background image overlay (was 0.30 opacity — visual noise)
+ * - Reduced from 5 to 4 trust points (max per Sprint 2 density rules)
+ * - Removed "مسار متخصص — موجَّه من قِبل متخصصين معتمدين" (unsupported claim)
+ * - Replaced with "للأطفال والبالغين" to reflect dual audience
+ * - Simplified desc copy — shorter, calmer
+ * - Removed minWidth constraint (better mobile wrapping)
+ * - Kept: clean white background, subtle border, hover lift
  */
 
-import { Shield, Globe, UserCheck, RefreshCw, Cpu } from "lucide-react";
+import { Shield, Globe, Users, Compass } from "lucide-react";
 
 const trustBadges = [
   {
@@ -22,45 +29,28 @@ const trustBadges = [
     bg: "#DFF3F1",
   },
   {
-    icon: UserCheck,
-    title: "مسار متخصص",
-    desc: "موجَّه من قِبل متخصصين معتمدين",
+    icon: Users,
+    title: "للأطفال والبالغين",
+    desc: "مسار مخصص لكل حالة — طفل أو بالغ",
     color: "#1E4E8C",
     bg: "#DFF3F1",
   },
   {
-    icon: RefreshCw,
-    title: "متابعة منظمة",
-    desc: "خطة دعم واضحة بعد الفحص",
+    icon: Compass,
+    title: "خطوة أولى منظمة",
+    desc: "نتيجة أولية واضحة وتوجيه للخطوة التالية",
     color: "#2BBDB6",
     bg: "#DFF3F1",
-  },
-  {
-    icon: Cpu,
-    title: "رؤى بالذكاء الاصطناعي",
-    desc: "تحليل مدعوم بتقنية متقدمة",
-    color: "#F4C46A",
-    bg: "#FFFBEB",
   },
 ];
 
 export default function TrustRibbon() {
   return (
     <section
-      className="bg-white py-8 lg:py-10 relative"
+      className="bg-white py-8 lg:py-10"
       style={{ borderTop: "1px solid #DFF3F1", borderBottom: "1px solid #DFF3F1" }}
     >
-      {/* Subtle background pattern */}
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `url(https://d2xsxph8kpxj0f.cloudfront.net/310519663154655019/XUztTXmhcQeCV4Ng5pyz4t/trust-pattern-UZMk4BMbNxTH5SSZhsQJKm.webp)`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap justify-center gap-3 lg:gap-5">
           {trustBadges.map((badge, index) => {
             const Icon = badge.icon;
@@ -72,7 +62,6 @@ export default function TrustRibbon() {
                   background: "white",
                   border: "1px solid #DFF3F1",
                   boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-                  minWidth: "185px",
                 }}
               >
                 <div

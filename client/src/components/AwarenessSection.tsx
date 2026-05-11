@@ -1,61 +1,67 @@
 /*
- * تشخيصي AwarenessSection — Editorial Healthcare
- * Signs & signals: empathetic, informative, not alarming
- * Soft card grid with icons and warm copy
- * Tone: "we understand, we're here to help"
+ * تشخيصي AwarenessSection — Sprint 2 Refinement
+ *
+ * Changes from previous version:
+ * - Section title: "هل تلاحظ شيئاً مختلفاً؟" → "هل تظهر هذه المؤشرات لديك أو لدى طفلك؟"
+ * - Supporting paragraph: updated to reflect both children AND adults
+ * - Card descriptions: rewritten to be dual-audience (child + adult/self)
+ * - Removed "إحباط مدرسي" (child-only) → replaced with "صعوبة التركيز والتنظيم" (applies to both)
+ * - Removed "ملاحظات المعلمين" (child-only) → replaced with "صعوبة تنظيم المهام" (applies to both)
+ * - Reassurance note: updated to mention both children and adults
+ * - Kept: 6 cards max, animation system, card structure, background color
  */
 
 import { useEffect, useRef } from "react";
-import { BookOpen, Brain, GraduationCap, Clock, Heart, MessageCircle } from "lucide-react";
+import { BookOpen, Brain, Focus, Clock, Heart, ListChecks } from "lucide-react";
 
 const signs = [
   {
     icon: BookOpen,
     title: "صعوبة في القراءة",
-    desc: "يقضي وقتاً طويلاً في قراءة نصوص بسيطة، أو يخلط بين الحروف المتشابهة دون أن يُدرك السبب.",
+    desc: "قراءة النصوص تستغرق وقتاً أطول من المعتاد، أو يحدث خلط بين الحروف المتشابهة — لدى الطفل أو البالغ.",
     color: "#1E4E8C",
     bg: "#DFF3F1",
-    borderColor: "rgba(37,99,235,0.15)",
+    borderColor: "rgba(37,99,235,0.12)",
   },
   {
     icon: Brain,
     title: "تشتت الانتباه",
-    desc: "يجد صعوبة في التركيز لفترات طويلة، أو ينتقل من نشاط لآخر بسرعة حتى في الأشياء التي يُحبها.",
+    desc: "صعوبة في التركيز لفترات متواصلة، أو الانتقال السريع بين الأفكار والأنشطة — حتى في المواضيع المحببة.",
     color: "#2BBDB6",
     bg: "#DFF3F1",
-    borderColor: "rgba(20,184,166,0.15)",
+    borderColor: "rgba(20,184,166,0.12)",
   },
   {
-    icon: GraduationCap,
-    title: "إحباط مدرسي",
-    desc: "يشعر بالإحباط من المدرسة رغم بذل الجهد، أو يتجنب الواجبات المنزلية دون سبب واضح.",
+    icon: Focus,
+    title: "صعوبة التركيز",
+    desc: "التركيز يتبدد بسرعة عند أداء المهام، أو يصعب إتمام نشاط واحد دون تشتت متكرر.",
     color: "#F4C46A",
     bg: "#FFFBEB",
-    borderColor: "rgba(245,158,11,0.15)",
+    borderColor: "rgba(245,158,11,0.12)",
   },
   {
     icon: Clock,
-    title: "تأخر في الوصول إلى الدعم المناسب",
-    desc: "مرت سنوات دون فهم واضح، وتراكمت الفجوات الأكاديمية تدريجياً دون أن يعرف أحد السبب.",
+    title: "بطء الفهم أو الاستيعاب",
+    desc: "يحتاج وقتاً أطول لفهم التعليمات أو استيعاب المعلومات الجديدة، دون أن يكون ذلك مرتبطاً بمستوى الذكاء.",
     color: "#1E4E8C",
     bg: "#DFF3F1",
-    borderColor: "rgba(37,99,235,0.15)",
+    borderColor: "rgba(37,99,235,0.12)",
   },
   {
     icon: Heart,
     title: "تراجع الثقة بالنفس",
-    desc: "بدأ يقارن نفسه بزملائه وأصبح يتشكك في قدراته الحقيقية، رغم أنه يملك إمكانات كبيرة.",
+    desc: "المقارنة المستمرة بالآخرين وتساؤلات حول القدرات الحقيقية — رغم وجود إمكانات حقيقية لم تُفهم بعد.",
     color: "#2BBDB6",
     bg: "#DFF3F1",
-    borderColor: "rgba(20,184,166,0.15)",
+    borderColor: "rgba(20,184,166,0.12)",
   },
   {
-    icon: MessageCircle,
-    title: "ملاحظات المعلمين",
-    desc: "تتكرر ملاحظات المعلمين حول الأداء أو السلوك، وأنت تشعر أن هناك شيئًا ما لا تراه بوضوح.",
+    icon: ListChecks,
+    title: "صعوبة تنظيم المهام",
+    desc: "صعوبة في ترتيب الأولويات وإتمام المهام بتسلسل منطقي — في الدراسة أو العمل أو الحياة اليومية.",
     color: "#F4C46A",
     bg: "#FFFBEB",
-    borderColor: "rgba(245,158,11,0.15)",
+    borderColor: "rgba(245,158,11,0.12)",
   },
 ];
 
@@ -83,18 +89,18 @@ export default function AwarenessSection() {
     <section
       id="awareness"
       ref={sectionRef}
-      className="py-20 lg:py-28"
+      className="py-16 lg:py-24"
       style={{ background: "#F4EFE8" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-14 fade-in-up">
+        <div className="max-w-2xl mx-auto text-center mb-12 fade-in-up">
           <span className="section-label block mb-3">مؤشرات تستحق الانتباه</span>
           <h2
-            className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-5"
-            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
+            className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 mb-4"
+            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.25 }}
           >
-            هل تلاحظ شيئاً{" "}
+            هل تظهر هذه المؤشرات{" "}
             <span
               style={{
                 background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
@@ -103,46 +109,46 @@ export default function AwarenessSection() {
                 backgroundClip: "text",
               }}
             >
-              مختلفاً؟
+              لديك أو لدى طفلك؟
             </span>
           </h2>
           <p
-            className="text-lg text-slate-600 leading-relaxed"
-            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+            className="text-base text-slate-600"
+            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
           >
-            هذه المؤشرات لا تعني بالضرورة وجود مشكلة، لكنها تستحق الفهم والاستيضاح.
-            الوضوح المبكر يُحدث فرقاً حقيقياً في مسيرة طفلك.
+            هذه المؤشرات لا تعني بالضرورة وجود مشكلة — لكنها تستحق الفهم.
+            الوضوح المبكر يُحدث فرقاً حقيقياً، سواء للطفل أو للبالغ.
           </p>
         </div>
 
         {/* Signs Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
           {signs.map((sign, index) => {
             const Icon = sign.icon;
             return (
               <div
                 key={index}
-                className="fade-in-up group p-6 rounded-2xl bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                className="fade-in-up group p-5 rounded-2xl bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
                 style={{
                   border: `1px solid ${sign.borderColor}`,
                   boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
                 }}
               >
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-105"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105"
                   style={{ background: sign.bg }}
                 >
-                  <Icon size={22} style={{ color: sign.color }} />
+                  <Icon size={19} style={{ color: sign.color }} />
                 </div>
                 <h3
-                  className="text-base font-bold text-slate-900 mb-2"
+                  className="text-sm font-bold text-slate-900 mb-1.5"
                   style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
                 >
                   {sign.title}
                 </h3>
                 <p
-                  className="text-sm text-slate-600 leading-relaxed"
-                  style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.75 }}
+                  className="text-xs text-slate-600"
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
                 >
                   {sign.desc}
                 </p>
@@ -154,18 +160,18 @@ export default function AwarenessSection() {
         {/* Reassurance note */}
         <div className="fade-in-up text-center">
           <div
-            className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl"
+            className="inline-flex items-center gap-2.5 px-5 py-3.5 rounded-2xl"
             style={{
-              background: "linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(20,184,166,0.06) 100%)",
-              border: "1px solid rgba(37,99,235,0.12)",
+              background: "rgba(37,99,235,0.05)",
+              border: "1px solid rgba(37,99,235,0.10)",
             }}
           >
-            <span className="text-xl">💡</span>
+            <span className="text-base">💡</span>
             <p
-              className="text-sm text-slate-700 font-medium"
+              className="text-sm text-slate-700"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
             >
-              تشخيصي ليس تشخيصاً طبياً — بل هو خطوتك الأولى نحو الفهم والوضوح.
+              تشخيصي ليس تشخيصاً طبياً — بل خطوتك الأولى نحو الفهم، للطفل والبالغ على حدٍّ سواء.
             </p>
           </div>
         </div>
