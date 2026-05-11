@@ -1,41 +1,44 @@
 /*
- * تشخيصي HeroSection — Sprint 1.1: Hero Visual Minimalism & Premium UX Polish
+ * تشخيصي HeroSection — Hero Rebalancing Patch
  *
- * Built on Sprint 1 (4b9941b). Changes in this sprint:
+ * Built on Sprint 1.1 (main). Changes in this patch:
  *
- * REMOVED:
- * - Floating illustration badges (bottom-right "نتائج واضحة", top-left "خصوصية كاملة")
- *   → duplicated trust/reassurance already stated in reassurance line + trust indicators
- * - Scroll indicator ("اكتشف المزيد" + ChevronDown bounce)
- *   → not aligned with premium minimal SaaS; creates visual noise at bottom
- * - Bottom wave SVG
- *   → replaced with a clean section-end padding; transition handled by section below
- * - ChevronDown and Shield imports (no longer used)
- * - Decorative blobs (both radial gradient divs)
- *   → background gradient alone is sufficient; blobs added visual noise
- * - Background image overlay
- *   → at 0.25 opacity it still competed with text; removed for cleaner premium feel
+ * EYEBROW:
+ * - Top badge → refined eyebrow: "تشخيصي | منصة للفحص والتقييم الأولي"
+ *   Pulse dot removed (too startup-y). Replaced with a subtle separator.
+ *   Feels: premium, trustworthy, calm — NOT promotional.
  *
- * SIMPLIFIED:
- * - Subheadline: shortened to one clean sentence per spec
- *   "فحص أولي آمن لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه، مع توجيه أوضح للخطوة التالية."
- * - Illustration card: border and shadow softened further
- * - Section background: kept gradient (F4EFE8 → DFF3F1), removed image overlay
- * - Inline hover handlers: kept as-is (safe, no risk of regression)
- * - Mobile spacing: pb-16 sm:pb-20 (was pb-20 sm:pb-24) — tighter, cleaner
+ * HEADLINE:
+ * - Added "وتشتت الانتباه" to complete the specialization triad
+ *   "افهم مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه"
+ *   Max 2 lines desktop, max 3 lines mobile.
+ *
+ * SUPPORTING TEXT:
+ * - Kept: "للأطفال والبالغين — بسرية وهدوء، مع توجيه واضح للخطوة التالية عند الحاجة."
+ *   Calm, reassuring, emotionally intelligent.
+ *
+ * SECONDARY CTA:
+ * - Changed: "اعرف كيف يعمل" → "شاهد مثالاً للنتيجة" → /result-demo
+ *   Invitation-based, NOT process-oriented.
+ *
+ * VISUAL SIDE:
+ * - Kept: hero-illustration image (human-centered, emotionally warm)
+ * - Added: lightweight "guidance card" below illustration
+ *   → 3 soft outcome chips (not process steps)
+ *   → Feels: supportive, human, calm — NOT workflow/automation
+ *   → Replaces the process step-flow from Sprint 3
+ *   → No duplication with "How It Works" section
+ *
+ * TRUST CHIPS:
+ * - Kept: 4 lightweight checkmarks (مجاني للبدء، خصوصية محفوظة، للأطفال والبالغين، توجيه للخطوة التالية)
  *
  * UNCHANGED:
- * - Headline: "افهم مؤشرات صعوبات التعلم وفرط الحركة مبكرًا"
  * - Primary CTA: "ابدأ الفحص الأولي" → /start
- * - Secondary CTA: "اعرف كيف يعمل" → #how-it-works
  * - Reassurance line: "مجاني • سري • نتيجة أولية فورية • ليس تشخيصًا رسميًا"
- * - Trust indicators: 4 lightweight checkmarks
- * - Top badge
- * - Illustration asset (hero-illustration.webp / .png)
  * - Animation system (staggered fadeInUp)
  * - Grid layout (5 cols: 3 text + 2 illustration)
+ * - Background gradient
  * - RTL layout correctness
- * - CTA destinations (UNCHANGED)
  * - All routing/screening/booking/auth/admin/Supabase logic (UNCHANGED)
  */
 
@@ -45,10 +48,18 @@ import { useEffect, useState } from "react";
 // ─── Trust indicator data ─────────────────────────────────────────────────────
 
 const TRUST_ITEMS = [
-  "فحص أولي",
+  "مجاني للبدء",
   "خصوصية محفوظة",
   "للأطفال والبالغين",
   "توجيه للخطوة التالية",
+] as const;
+
+// ─── Guidance outcome chips (replaces process step-flow) ─────────────────────
+
+const OUTCOME_CHIPS = [
+  { text: "فهم أوضح للمؤشرات", color: "#1E4E8C", bg: "rgba(30,78,140,0.07)" },
+  { text: "نتيجة أولية موثّقة", color: "#2BBDB6", bg: "rgba(43,189,182,0.08)" },
+  { text: "توجيه للخطوة التالية عند الحاجة", color: "#5B7FA6", bg: "rgba(91,127,166,0.07)" },
 ] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -72,6 +83,7 @@ export default function HeroSection() {
     <section
       id="hero"
       className="relative flex flex-col justify-center overflow-hidden"
+      aria-label="تشخيصي — منصة الفحص الأولي"
       style={{
         background:
           "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 55%, #E8F4F3 100%)",
@@ -85,24 +97,44 @@ export default function HeroSection() {
           {/* ── Text column — 3 cols on desktop, first on mobile ── */}
           <div className="lg:col-span-3 order-1 lg:order-1">
 
-            {/* Top badge */}
+            {/* ── Eyebrow — premium, subtle, brand-clear ── */}
             <div
-              className={`mb-5 sm:mb-6 inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full ${animClass(0)}`}
+              className={`mb-5 sm:mb-6 inline-flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 rounded-full ${animClass(0)}`}
               style={{
                 ...animStyle(0),
-                background: "rgba(37,99,235,0.07)",
-                border: "1px solid rgba(37,99,235,0.15)",
+                background: "rgba(30,78,140,0.06)",
+                border: "1px solid rgba(30,78,140,0.13)",
               }}
             >
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               <span
-                className="text-xs font-semibold text-blue-700"
+                className="text-xs font-bold"
                 style={{
-                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  letterSpacing: "0.02em",
+                  color: "#1E4E8C",
+                  fontFamily: "'Cairo', sans-serif",
+                  fontWeight: 700,
+                  letterSpacing: "0.01em",
                 }}
               >
-                فحص أولي لمؤشرات صعوبات التعلم وفرط الحركة
+                تشخيصي
+              </span>
+              <span
+                style={{
+                  width: "1px",
+                  height: "12px",
+                  background: "rgba(30,78,140,0.20)",
+                  flexShrink: 0,
+                }}
+                aria-hidden="true"
+              />
+              <span
+                className="text-xs"
+                style={{
+                  color: "#4A6278",
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                منصة للفحص والتقييم الأولي
               </span>
             </div>
 
@@ -130,21 +162,20 @@ export default function HeroSection() {
                 صعوبات التعلم
               </span>
               <br />
-              وفرط الحركة مبكرًا
+              وفرط الحركة وتشتت الانتباه
             </h1>
 
-            {/* ── Subheadline — shortened per Sprint 1.1 spec ── */}
+            {/* ── Supporting text — calm, reassuring ── */}
             <p
               className={`text-base sm:text-lg text-slate-600 mb-7 sm:mb-8 max-w-lg ${animClass(200)}`}
               style={{
                 ...animStyle(200),
                 fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                 fontWeight: 400,
-                lineHeight: 1.8,
+                lineHeight: 1.85,
               }}
             >
-              فحص أولي آمن لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه،
-              مع توجيه أوضح للخطوة التالية.
+              للأطفال والبالغين — بسرية وهدوء، مع توجيه واضح للخطوة التالية عند الحاجة.
             </p>
 
             {/* ── CTAs ── */}
@@ -153,11 +184,11 @@ export default function HeroSection() {
               style={animStyle(300)}
             >
               {/* Primary + Secondary row */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col xs:flex-row sm:flex-row gap-3">
                 {/* Primary CTA → /start */}
                 <a
                   href="/start"
-                  className="group flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-white font-bold text-base transition-all duration-200"
+                  className="group flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                   style={{
                     background:
                       "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)",
@@ -182,13 +213,14 @@ export default function HeroSection() {
                   <ArrowLeft
                     size={18}
                     className="transition-transform group-hover:-translate-x-1"
+                    aria-hidden="true"
                   />
                 </a>
 
-                {/* Secondary CTA → #how-it-works */}
+                {/* Secondary CTA → /result-demo (invitation-based) */}
                 <a
-                  href="#how-it-works"
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm transition-all duration-200"
+                  href="/result-demo"
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
                   style={{
                     color: "#4A6278",
                     border: "1.5px solid rgba(71,85,105,0.18)",
@@ -197,9 +229,9 @@ export default function HeroSection() {
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.background =
-                      "rgba(37,99,235,0.04)";
+                      "rgba(30,78,140,0.04)";
                     (e.currentTarget as HTMLElement).style.borderColor =
-                      "rgba(37,99,235,0.25)";
+                      "rgba(30,78,140,0.22)";
                     (e.currentTarget as HTMLElement).style.color = "#1E4E8C";
                   }}
                   onMouseLeave={(e) => {
@@ -210,7 +242,7 @@ export default function HeroSection() {
                     (e.currentTarget as HTMLElement).style.color = "#4A6278";
                   }}
                 >
-                  اعرف كيف يعمل
+                  شاهد مثالاً للنتيجة
                 </a>
               </div>
 
@@ -237,6 +269,7 @@ export default function HeroSection() {
                   <span
                     className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                     style={{ background: "rgba(43,189,182,0.15)" }}
+                    aria-hidden="true"
                   >
                     <svg
                       width="9"
@@ -267,11 +300,11 @@ export default function HeroSection() {
 
           {/* ── Illustration column — 2 cols on desktop, second on mobile ── */}
           <div
-            className={`flex lg:col-span-2 order-2 lg:order-2 justify-center ${animClass(150)}`}
+            className={`flex flex-col lg:col-span-2 order-2 lg:order-2 items-center gap-4 ${animClass(150)}`}
             style={animStyle(150)}
           >
             <div className="relative w-full max-w-sm lg:max-w-full">
-              {/* Main illustration card — clean, minimal */}
+              {/* Main illustration card — human-centered, emotionally warm */}
               <div
                 className="rounded-3xl overflow-hidden"
                 style={{
@@ -286,16 +319,75 @@ export default function HeroSection() {
                   <source srcSet="/hero-illustration.webp" type="image/webp" />
                   <img
                     src="/hero-illustration.png"
-                    alt="رسم توضيحي لمنصة تشخيصي"
+                    alt="رسم توضيحي لمنصة تشخيصي — فحص أولي لمؤشرات صعوبات التعلم وفرط الحركة"
                     className="w-full h-auto"
                     style={{
-                      maxHeight: "360px",
+                      maxHeight: "320px",
                       objectFit: "contain",
-                      padding: "2.5rem 2rem",
+                      padding: "2rem 1.75rem",
                     }}
                   />
                 </picture>
               </div>
+            </div>
+
+            {/* ── Guidance card — outcome-focused, human, calm ── */}
+            {/* Replaces process step-flow. No duplication with "How It Works" section. */}
+            <div
+              className="w-full max-w-sm lg:max-w-full rounded-2xl px-5 py-4"
+              style={{
+                background: "rgba(255,255,255,0.75)",
+                border: "1px solid rgba(30,78,140,0.09)",
+                boxShadow: "0 2px 12px rgba(30,78,140,0.06)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <p
+                className="text-xs text-slate-500 mb-3"
+                style={{
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  lineHeight: 1.6,
+                }}
+              >
+                ما ستحصل عليه بعد الفحص
+              </p>
+              <div className="flex flex-col gap-2">
+                {OUTCOME_CHIPS.map((chip) => (
+                  <div
+                    key={chip.text}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                    style={{
+                      background: chip.bg,
+                      border: `1px solid ${chip.color}18`,
+                    }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ background: chip.color }}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className="text-xs font-medium"
+                      style={{
+                        color: chip.color,
+                        fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                      }}
+                    >
+                      {chip.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p
+                className="text-xs text-slate-400 mt-3 pt-3"
+                style={{
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  lineHeight: 1.6,
+                  borderTop: "1px solid rgba(30,78,140,0.07)",
+                }}
+              >
+                ليس تشخيصاً رسمياً — التقييم المتخصص يبقى الخطوة التالية عند الحاجة.
+              </p>
             </div>
           </div>
 
