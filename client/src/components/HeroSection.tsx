@@ -1,55 +1,63 @@
 /*
- * تشخيصي HeroSection — Sprint 1.1: Hero Visual Minimalism & Premium UX Polish
+ * تشخيصي HeroSection — Hero Refinement Patch (Message Compression)
  *
- * Built on Sprint 1 (4b9941b). Changes in this sprint:
+ * Built on: patch/hero-rebalancing-brand-clarity (5d9e6dd)
  *
- * REMOVED:
- * - Floating illustration badges (bottom-right "نتائج واضحة", top-left "خصوصية كاملة")
- *   → duplicated trust/reassurance already stated in reassurance line + trust indicators
- * - Scroll indicator ("اكتشف المزيد" + ChevronDown bounce)
- *   → not aligned with premium minimal SaaS; creates visual noise at bottom
- * - Bottom wave SVG
- *   → replaced with a clean section-end padding; transition handled by section below
- * - ChevronDown and Shield imports (no longer used)
- * - Decorative blobs (both radial gradient divs)
- *   → background gradient alone is sufficient; blobs added visual noise
- * - Background image overlay
- *   → at 0.25 opacity it still competed with text; removed for cleaner premium feel
+ * CHANGES IN THIS PATCH:
  *
- * SIMPLIFIED:
- * - Subheadline: shortened to one clean sentence per spec
- *   "فحص أولي آمن لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه، مع توجيه أوضح للخطوة التالية."
- * - Illustration card: border and shadow softened further
- * - Section background: kept gradient (F4EFE8 → DFF3F1), removed image overlay
- * - Inline hover handlers: kept as-is (safe, no risk of regression)
- * - Mobile spacing: pb-16 sm:pb-20 (was pb-20 sm:pb-24) — tighter, cleaner
+ * PART 1 — REMOVED repetitive supporting sentence:
+ *   "للأطفال والبالغين — بسرية وهدوء، مع توجيه واضح للخطوة التالية عند الحاجة."
+ *   Reason: already communicated through tone, layout, CTA, outcome card, emotional UX.
  *
- * UNCHANGED:
- * - Headline: "افهم مؤشرات صعوبات التعلم وفرط الحركة مبكرًا"
+ * PART 2 — REMOVED disclaimer from guidance card:
+ *   "ليس تشخيصاً رسمياً — التقييم المتخصص يبقى الخطوة التالية عند الحاجة."
+ *   Reason: defensive, repetitive, visually noisy. Hero positioning is already calm/non-clinical.
+ *
+ * PART 3 — REPLACED trust indicators with Micro Trust Row:
+ *   Old: 4 items with circular checkmark icons (visual weight)
+ *   New: 3 items, typography-first, no icons >14px, no pills/cards/chips, low contrast, quiet
+ *   Items: خصوصية محفوظة · للأطفال والبالغين · فهم أوضح للمؤشرات
+ *
+ * PART 4 — OUTCOME CARD: refined one item to be more human, less clinical:
+ *   "نتيجة أولية موثّقة" → "شرح مبسط يساعد على الفهم"
+ *
+ * PART 5 — EYEBROW refined:
+ *   "|" → "—" (em dash, more premium)
+ *   "الفحص والتقييم" → "الفهم والتقييم" (calmer, more human)
+ *   Final: "تشخيصي — منصة للفهم والتقييم الأولي"
+ *
+ * PART 6 — TrustRibbon.tsx deleted + removed from Home.tsx (separate file changes)
+ *
+ * PRESERVED (UNCHANGED):
+ * - Headline: "افهم مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه"
  * - Primary CTA: "ابدأ الفحص الأولي" → /start
- * - Secondary CTA: "اعرف كيف يعمل" → #how-it-works
+ * - Secondary CTA: "شاهد مثالاً للنتيجة" → /result-demo
  * - Reassurance line: "مجاني • سري • نتيجة أولية فورية • ليس تشخيصًا رسميًا"
- * - Trust indicators: 4 lightweight checkmarks
- * - Top badge
- * - Illustration asset (hero-illustration.webp / .png)
  * - Animation system (staggered fadeInUp)
  * - Grid layout (5 cols: 3 text + 2 illustration)
+ * - Background gradient
  * - RTL layout correctness
- * - CTA destinations (UNCHANGED)
+ * - Human illustration + guidance card structure
+ * - CTA hierarchy (primary dominant)
  * - All routing/screening/booking/auth/admin/Supabase logic (UNCHANGED)
  */
 
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 
-// ─── Trust indicator data ─────────────────────────────────────────────────────
+// ─── Outcome chips — outcome-focused, human, calm ────────────────────────────
+// PART 4: "نتيجة أولية موثّقة" → "شرح مبسط يساعد على الفهم" (less clinical)
 
-const TRUST_ITEMS = [
-  "فحص أولي",
-  "خصوصية محفوظة",
-  "للأطفال والبالغين",
-  "توجيه للخطوة التالية",
+const OUTCOME_CHIPS = [
+  { text: "فهم أوضح للمؤشرات", color: "#1E4E8C", bg: "rgba(30,78,140,0.07)" },
+  { text: "شرح مبسط يساعد على الفهم", color: "#2BBDB6", bg: "rgba(43,189,182,0.08)" },
+  { text: "توجيه للخطوة التالية عند الحاجة", color: "#5B7FA6", bg: "rgba(91,127,166,0.07)" },
 ] as const;
+
+// ─── Micro Trust Row — 3 items, typography-first, no visual weight ────────────
+// PART 3: replaces old 4-item checkmark trust indicators
+
+const MICRO_TRUST = ["خصوصية محفوظة", "للأطفال والبالغين", "فهم أوضح للمؤشرات"] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -72,6 +80,7 @@ export default function HeroSection() {
     <section
       id="hero"
       className="relative flex flex-col justify-center overflow-hidden"
+      aria-label="تشخيصي — منصة الفحص الأولي"
       style={{
         background:
           "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 55%, #E8F4F3 100%)",
@@ -85,28 +94,47 @@ export default function HeroSection() {
           {/* ── Text column — 3 cols on desktop, first on mobile ── */}
           <div className="lg:col-span-3 order-1 lg:order-1">
 
-            {/* Top badge */}
+            {/* ── Eyebrow — PART 5: "|" → "—", "الفحص" → "الفهم" ── */}
             <div
-              className={`mb-5 sm:mb-6 inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full ${animClass(0)}`}
+              className={`mb-5 sm:mb-6 inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full ${animClass(0)}`}
               style={{
                 ...animStyle(0),
-                background: "rgba(37,99,235,0.07)",
-                border: "1px solid rgba(37,99,235,0.15)",
+                background: "rgba(30,78,140,0.06)",
+                border: "1px solid rgba(30,78,140,0.13)",
               }}
             >
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               <span
-                className="text-xs font-semibold text-blue-700"
+                className="text-xs font-bold"
                 style={{
-                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  letterSpacing: "0.02em",
+                  color: "#1E4E8C",
+                  fontFamily: "'Cairo', sans-serif",
+                  fontWeight: 700,
+                  letterSpacing: "0.01em",
                 }}
               >
-                فحص أولي لمؤشرات صعوبات التعلم وفرط الحركة
+                تشخيصي
+              </span>
+              {/* Em dash — more premium than vertical bar */}
+              <span
+                className="text-xs"
+                style={{ color: "rgba(30,78,140,0.35)", fontWeight: 300 }}
+                aria-hidden="true"
+              >
+                —
+              </span>
+              <span
+                className="text-xs"
+                style={{
+                  color: "#4A6278",
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                منصة للفهم والتقييم الأولي
               </span>
             </div>
 
-            {/* ── Main Headline ── */}
+            {/* ── Main Headline — UNCHANGED ── */}
             <h1
               className={`text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-4 sm:mb-5 ${animClass(100)}`}
               style={{
@@ -130,34 +158,26 @@ export default function HeroSection() {
                 صعوبات التعلم
               </span>
               <br />
-              وفرط الحركة مبكرًا
+              وفرط الحركة وتشتت الانتباه
             </h1>
 
-            {/* ── Subheadline — shortened per Sprint 1.1 spec ── */}
-            <p
-              className={`text-base sm:text-lg text-slate-600 mb-7 sm:mb-8 max-w-lg ${animClass(200)}`}
-              style={{
-                ...animStyle(200),
-                fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                fontWeight: 400,
-                lineHeight: 1.8,
-              }}
-            >
-              فحص أولي آمن لمؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه،
-              مع توجيه أوضح للخطوة التالية.
-            </p>
+            {/*
+             * PART 1 — REMOVED supporting sentence:
+             * "للأطفال والبالغين — بسرية وهدوء، مع توجيه واضح للخطوة التالية عند الحاجة."
+             * Breathing room improved. Hero hierarchy strengthened.
+             */}
 
-            {/* ── CTAs ── */}
+            {/* ── CTAs — UNCHANGED hierarchy ── */}
             <div
-              className={`flex flex-col gap-3 mb-8 sm:mb-10 ${animClass(300)}`}
-              style={animStyle(300)}
+              className={`flex flex-col gap-3 mb-8 sm:mb-10 ${animClass(200)}`}
+              style={animStyle(200)}
             >
               {/* Primary + Secondary row */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* Primary CTA → /start */}
+              <div className="flex flex-col xs:flex-row sm:flex-row gap-3">
+                {/* Primary CTA → /start — dominant conversion action */}
                 <a
                   href="/start"
-                  className="group flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-white font-bold text-base transition-all duration-200"
+                  className="group flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                   style={{
                     background:
                       "linear-gradient(135deg, #1E4E8C 0%, #1d4ed8 100%)",
@@ -182,13 +202,14 @@ export default function HeroSection() {
                   <ArrowLeft
                     size={18}
                     className="transition-transform group-hover:-translate-x-1"
+                    aria-hidden="true"
                   />
                 </a>
 
-                {/* Secondary CTA → #how-it-works */}
+                {/* Secondary CTA → /result-demo — visually quieter, invitation-based */}
                 <a
-                  href="#how-it-works"
-                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm transition-all duration-200"
+                  href="/result-demo"
+                  className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
                   style={{
                     color: "#4A6278",
                     border: "1.5px solid rgba(71,85,105,0.18)",
@@ -197,9 +218,9 @@ export default function HeroSection() {
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.background =
-                      "rgba(37,99,235,0.04)";
+                      "rgba(30,78,140,0.04)";
                     (e.currentTarget as HTMLElement).style.borderColor =
-                      "rgba(37,99,235,0.25)";
+                      "rgba(30,78,140,0.22)";
                     (e.currentTarget as HTMLElement).style.color = "#1E4E8C";
                   }}
                   onMouseLeave={(e) => {
@@ -210,11 +231,11 @@ export default function HeroSection() {
                     (e.currentTarget as HTMLElement).style.color = "#4A6278";
                   }}
                 >
-                  اعرف كيف يعمل
+                  شاهد مثالاً للنتيجة
                 </a>
               </div>
 
-              {/* ── Reassurance line ── */}
+              {/* ── Reassurance line — UNCHANGED ── */}
               <p
                 className="text-xs"
                 style={{
@@ -227,51 +248,67 @@ export default function HeroSection() {
               </p>
             </div>
 
-            {/* ── Trust indicators — lightweight checkmarks ── */}
+            {/*
+             * PART 3 — MICRO TRUST ROW
+             * Replaces old 4-item checkmark trust indicators.
+             * Typography-first. No icons >14px. No pills/cards/chips.
+             * Low visual contrast. Quiet reassurance, NOT product features.
+             * 3 items only. Single-line.
+             */}
             <div
-              className={`flex flex-wrap gap-x-5 gap-y-2.5 ${animClass(400)}`}
-              style={animStyle(400)}
+              className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 ${animClass(350)}`}
+              style={animStyle(350)}
             >
-              {TRUST_ITEMS.map((item) => (
-                <div key={item} className="flex items-center gap-1.5">
-                  <span
-                    className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(43,189,182,0.15)" }}
-                  >
-                    <svg
-                      width="9"
-                      height="9"
-                      viewBox="0 0 9 9"
-                      fill="none"
+              {MICRO_TRUST.map((item, i) => (
+                <span key={item} className="flex items-center gap-1.5">
+                  {/* Tiny dot separator — no visual weight */}
+                  {i > 0 && (
+                    <span
+                      className="w-1 h-1 rounded-full"
+                      style={{ background: "rgba(100,116,139,0.30)" }}
                       aria-hidden="true"
-                    >
-                      <path
-                        d="M1.5 4.5L3.5 6.5L7.5 2.5"
-                        stroke="#2BBDB6"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
+                    />
+                  )}
+                  {/* Minimal checkmark — 12px, low contrast */}
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                    style={{ flexShrink: 0 }}
+                  >
+                    <path
+                      d="M2 6L5 9L10 3"
+                      stroke="#2BBDB6"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity="0.65"
+                    />
+                  </svg>
                   <span
-                    className="text-xs text-slate-600"
-                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                    className="text-xs"
+                    style={{
+                      color: "#64748B",
+                      fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                      lineHeight: 1.5,
+                    }}
                   >
                     {item}
                   </span>
-                </div>
+                </span>
               ))}
             </div>
           </div>
 
           {/* ── Illustration column — 2 cols on desktop, second on mobile ── */}
           <div
-            className={`flex lg:col-span-2 order-2 lg:order-2 justify-center ${animClass(150)}`}
+            className={`flex flex-col lg:col-span-2 order-2 lg:order-2 items-center gap-4 ${animClass(150)}`}
             style={animStyle(150)}
           >
             <div className="relative w-full max-w-sm lg:max-w-full">
-              {/* Main illustration card — clean, minimal */}
+              {/* Main illustration card — human-centered, emotionally warm */}
               <div
                 className="rounded-3xl overflow-hidden"
                 style={{
@@ -286,16 +323,78 @@ export default function HeroSection() {
                   <source srcSet="/hero-illustration.webp" type="image/webp" />
                   <img
                     src="/hero-illustration.png"
-                    alt="رسم توضيحي لمنصة تشخيصي"
+                    alt="رسم توضيحي لمنصة تشخيصي — فحص أولي لمؤشرات صعوبات التعلم وفرط الحركة"
                     className="w-full h-auto"
                     style={{
-                      maxHeight: "360px",
+                      maxHeight: "320px",
                       objectFit: "contain",
-                      padding: "2.5rem 2rem",
+                      padding: "2rem 1.75rem",
                     }}
                   />
                 </picture>
               </div>
+            </div>
+
+            {/* ── Guidance card — outcome-focused, human, calm ── */}
+            {/*
+             * PART 4: outcome chip refined:
+             *   "نتيجة أولية موثّقة" → "شرح مبسط يساعد على الفهم"
+             *   More human, more supportive, less clinical/legal.
+             *
+             * PART 2: disclaimer removed from card bottom.
+             *   "ليس تشخيصاً رسمياً — التقييم المتخصص يبقى الخطوة التالية عند الحاجة."
+             *   Card is now cleaner and calmer.
+             */}
+            <div
+              className="w-full max-w-sm lg:max-w-full rounded-2xl px-5 py-4"
+              style={{
+                background: "rgba(255,255,255,0.75)",
+                border: "1px solid rgba(30,78,140,0.09)",
+                boxShadow: "0 2px 12px rgba(30,78,140,0.06)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <p
+                className="text-xs text-slate-500 mb-3"
+                style={{
+                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                  lineHeight: 1.6,
+                }}
+              >
+                ما ستحصل عليه بعد الفحص
+              </p>
+              <div className="flex flex-col gap-2">
+                {OUTCOME_CHIPS.map((chip) => (
+                  <div
+                    key={chip.text}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                    style={{
+                      background: chip.bg,
+                      border: `1px solid ${chip.color}18`,
+                    }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ background: chip.color }}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className="text-xs font-medium"
+                      style={{
+                        color: chip.color,
+                        fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                      }}
+                    >
+                      {chip.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {/*
+               * PART 2 — REMOVED disclaimer:
+               * "ليس تشخيصاً رسمياً — التقييم المتخصص يبقى الخطوة التالية عند الحاجة."
+               * Card is now visually cleaner. Positioning communicated through overall tone.
+               */}
             </div>
           </div>
 
