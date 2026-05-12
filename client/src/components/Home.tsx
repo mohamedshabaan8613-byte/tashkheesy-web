@@ -4,7 +4,6 @@
  */
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import TrustRibbon from "@/components/TrustRibbon";
 import AwarenessSection from "@/components/AwarenessSection";
 import HowItWorks from "@/components/HowItWorks";
 import WhyTashkheesy from "@/components/WhyTashkheesy";
@@ -69,7 +68,6 @@ export default function Home() {
     <div className="min-h-screen" dir="rtl" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
       <Navbar />
       <HeroSection />
-      <TrustRibbon />
       <AwarenessSection />
       <HowItWorks />
       <FounderStory />
