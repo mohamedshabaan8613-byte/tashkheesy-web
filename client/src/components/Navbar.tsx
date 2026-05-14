@@ -88,11 +88,25 @@ export default function Navbar() {
             >
               {isLoggedIn ? "حسابي" : "تسجيل الدخول"}
             </a>
-            {/* Primary CTA */}
+            {/* Primary CTA — Ghost/Outline style (quiet safety net, not competing with Hero CTA) */}
             <a
               href="/start"
-              className="tashkhisi-btn-primary text-sm"
-              style={{ padding: "0.6rem 1.5rem" }}
+              className="inline-flex items-center justify-center text-sm font-bold rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4E8C] focus-visible:ring-offset-2"
+              style={{
+                padding: "0.6rem 1.5rem",
+                background: "transparent",
+                border: "1px solid #1E4E8C",
+                color: "#1E4E8C",
+                fontFamily: "'Cairo', sans-serif",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "#1E4E8C";
+                (e.currentTarget as HTMLAnchorElement).style.color = "white";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#1E4E8C";
+              }}
             >
               ابدأ الفحص
             </a>
@@ -141,10 +155,17 @@ export default function Navbar() {
               >
                 {isLoggedIn ? "حسابي" : "تسجيل الدخول"}
               </a>
+              {/* Mobile CTA — Ghost/Outline style matching Desktop */}
               <a
                 href="/start"
-                className="tashkhisi-btn-primary block text-center text-sm w-full"
-                style={{ padding: "0.75rem 1.5rem" }}
+                className="block text-center text-sm font-bold rounded-xl transition-all duration-200 w-full"
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  background: "transparent",
+                  border: "1px solid #1E4E8C",
+                  color: "#1E4E8C",
+                  fontFamily: "'Cairo', sans-serif",
+                }}
                 onClick={() => setMenuOpen(false)}
               >
                 ابدأ الفحص الآن

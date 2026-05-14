@@ -20,7 +20,7 @@ const services = [
     bg: "linear-gradient(160deg, #DFF3F1 0%, #F4EFE8 100%)",
     border: "rgba(37,99,235,0.2)",
     cta: "ابدأ الفحص",
-    href: "#screening",
+    href: "/start",
     featured: true,
     action: null,
   },
