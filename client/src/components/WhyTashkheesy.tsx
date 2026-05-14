@@ -1,13 +1,13 @@
 /*
- * تشخيصي WhyTashkheesy — "Why Tashkheesy" Editorial & UX Overhaul
+ * تشخيصي WhyTashkheesy — Refinement Pass (calming + dual-audience)
  *
- * Design philosophy: "Controlled Premium Calmness"
- * - Typography-first, no pastel, no heavy shadows, no spring animations
- * - Asymmetric grid [1.1fr 0.95fr 0.95fr] for editorial rhythm
- * - Micro-atmosphere: radial glow behind heading only
- * - Quiet Motion: stagger 100ms, fade + y:10→0, duration 0.6s, easeOut
- * - Icons: lucide-react (Focus, Shield, Compass) — muted slate colors
- * - RTL Arabic throughout
+ * Base: commit 8414b9f — Editorial & UX Overhaul
+ * Changes in this pass:
+ * - Label: Arabic-first "لماذا تشخيصي؟" (no English label)
+ * - Supporting paragraph: explicit dual audience (children + adults) + KSA/Gulf context
+ * - Blocks 01/02/03: humanized bodies — anxiety reduction, no judgment language
+ * - Bottom seal: clarifies not a replacement for specialist evaluation
+ * - All visual/motion/palette preserved unchanged
  */
 
 import { motion } from "framer-motion";
@@ -31,19 +31,19 @@ const blocks = [
     num: "01",
     icon: <Focus size={22} className="text-slate-400" />,
     title: "فهم أدق قبل التسرّع",
-    body: "بعض المؤشرات قد تبدو متشابهة، لكن فهمها بشكل أوضح يساعد على اتخاذ خطوة أنسب.",
+    body: "بدل الحيرة أو الانتظار الطويل، تساعدك تشخيصي على تحديد المؤشرات التي تستحق الانتباه — بهدوء وبدون استعجال.",
   },
   {
     num: "02",
     icon: <Shield size={22} className="text-slate-400" />,
     title: "مساحة أكثر هدوءًا وخصوصية",
-    body: "التجربة صُممت لتمنح الأسر والأفراد شعورًا بالوضوح والراحة أثناء التقييم الأولي.",
+    body: "لا أسئلة جارحة ولا لغة طبية مربكة. التجربة صُممت لتشعر بالأمان أثناء الإجابة، سواء كنت والدًا أو تقيّم نفسك كراشد.",
   },
   {
     num: "03",
     icon: <Compass size={22} className="text-slate-400" />,
     title: "التقنية تدعم… والإنسان يوجّه",
-    body: "الهدف ليس إطلاق الأحكام، بل المساعدة على فهم ما قد يحتاج إلى انتباه أو متابعة متخصصة.",
+    body: "الهدف تحديد ما يستحق متابعة مختص — لا إصدار نتائج نهائية. المنصة خطوة أولى، والقرار دائمًا بيدك.",
   },
 ];
 
@@ -69,9 +69,9 @@ export default function WhyTashkheesy() {
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
           variants={fadeUp}
-          className="text-sm font-medium tracking-[0.18em] uppercase text-slate-400 mb-5"
+          className="text-sm font-medium tracking-wide text-slate-400 mb-5"
         >
-          WHY TASHKHEESY
+          لماذا تشخيصي؟
         </motion.p>
 
         {/* Main heading */}
@@ -101,7 +101,9 @@ export default function WhyTashkheesy() {
         >
           تشخيصي ليست اختبارًا سريعًا أو تقريرًا تلقائيًا،{" "}
           <br className="hidden lg:block" />
-          بل تجربة أولية صُممت لتقديم فهم أكثر وضوحًا لما يستحق الانتباه.
+          بل تجربة أولية صُممت لتقديم فهم أكثر وضوحًا لما يستحق الانتباه،{" "}
+          <br className="hidden lg:block" />
+          سواء كان لطفلك أو لنفسك كراشد، مع مراعاة خصوصية الأسرة في السعودية والخليج.
         </motion.p>
 
         {/* Editorial blocks — asymmetric grid */}
@@ -149,7 +151,7 @@ export default function WhyTashkheesy() {
         >
           <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-100/50 border border-slate-200/80 text-sm font-medium text-slate-500">
             <Info size={15} className="shrink-0 text-slate-400" />
-            ليست أداة تشخيص تلقائي، بل خطوة أولى أكثر وضوحًا.
+            ليست بديلاً عن التقييم المتخصص، لكنها خطوة أولى أكثر وضوحًا وهدوءًا لفهم ما يجري لديك أو لدى طفلك.
           </span>
         </motion.div>
 
