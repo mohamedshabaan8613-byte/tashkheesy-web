@@ -31,7 +31,7 @@
  * PRESERVED (UNCHANGED):
  * - Headline: "افهم مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه"
  * - Primary CTA: "ابدأ الفحص الأولي" → /start
- * - Secondary CTA: "شاهد مثالاً للنتيجة" → /result-demo
+ * - Secondary CTA: "كيف نوجهك؟" → #how-it-works
  * - Reassurance line: "مجاني • سري • نتيجة أولية فورية • ليس تشخيصًا رسميًا"
  * - Animation system (staggered fadeInUp)
  * - Grid layout (5 cols: 3 text + 2 illustration)
@@ -206,9 +206,9 @@ export default function HeroSection() {
                   />
                 </a>
 
-                {/* Secondary CTA → /result-demo — visually quieter, invitation-based */}
+                {/* Secondary CTA → #how-it-works — guidance-oriented, human-centered */}
                 <a
-                  href="/result-demo"
+                  href="#how-it-works"
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
                   style={{
                     color: "#4A6278",
@@ -231,7 +231,7 @@ export default function HeroSection() {
                     (e.currentTarget as HTMLElement).style.color = "#4A6278";
                   }}
                 >
-                  شاهد مثالاً للنتيجة
+                  كيف نوجهك؟
                 </a>
               </div>
 
