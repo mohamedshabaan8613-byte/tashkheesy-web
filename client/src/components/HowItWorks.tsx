@@ -242,19 +242,28 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        {/* CTA */}
+        {/* CTA — Soft Secondary (exploratory, not competing with Hero primary CTA) */}
         <div className="fade-in-up text-center">
           <a
             href="/start"
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-white font-bold text-sm transition-all duration-200 hover:-translate-y-1"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E4E8C] focus-visible:ring-offset-2"
             style={{
-              background: "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
+              background: "rgba(30,78,140,0.05)",
+              border: "1px solid rgba(30,78,140,0.15)",
+              color: "#1E4E8C",
               fontFamily: "'Cairo', sans-serif",
               fontWeight: 700,
-              boxShadow: "0 6px 20px rgba(37,99,235,0.25)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(30,78,140,0.10)";
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(30,78,140,0.25)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(30,78,140,0.05)";
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(30,78,140,0.15)";
             }}
           >
-            ابدأ الفحص الأولي — مجاناً
+            استكشف الرحلة
           </a>
         </div>
       </div>
