@@ -1,176 +1,141 @@
 /*
- * تشخيصي TrustSignals — Sprint 1.1 Full Rebuild
+ * تشخيصي — TrustSignals
+ * Sprint 1.1 — مكوّن الثقة والشفافية
  *
- * Changes from previous version:
- * - Removed: Emoji logos (🇸🇦 🌐 🎓 🤝) — هذا يدمر المصداقية
- * - Removed: ادعاءات شراكة غير موثقة (وزارة التعليم، هيئة التخصصات)
- * - Added: 4 أعمدة ثقة حقيقية وقابلة للتحقق
- * - Added: Framer Motion fadeUp — متسق مع WhyTashkheesy / HowItWorks
- * - Added: dir="rtl" صريح
- * - Added: Lucide React icons فقط
- * - Added: Disclaimer seal في الأسفل
- * - Kept: bg-slate-50 / border-y palette (لا ألوان جديدة)
- *
- * الأعمدة الأربعة:
- *   01 — سرية البيانات   (LockKeyhole)
- *   02 — عربي ومحلي     (Globe)
- *   03 — منهجية مقننة  (BookOpen)
- *   04 — يوجّه لا يحكم  (Compass)
+ * التصميم الفلسفي:
+ * - ثلاثة محاور: سرية البيانات، معايير مهنية، وضوح الحدود
+ * - لا توجد كلمات إنجليزية في الواجهة
+ * - نبرة: مهنية + هادئة + صادقة (لا مبالغة)
+ * - ألوان: slate neutral + teal خافت للأيقونات فقط
+ * - حركة: fadeUp بسيطة متناسقة مع باقي الصفحة
+ * - الخط: IBM Plex Sans Arabic من الـ layout
  */
-
 import { motion } from "framer-motion";
-import { LockKeyhole, Globe, BookOpen, Compass, Info } from "lucide-react";
+import { Lock, BadgeCheck, AlertCircle } from "lucide-react";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 12 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: {
-      delay: i * 0.1,
-      duration: 0.6,
-      ease: "easeOut",
-    },
+    transition: { delay: i * 0.1, duration: 0.55, ease: "easeOut" },
   }),
 };
 
 const pillars = [
   {
-    icon: LockKeyhole,
-    title: "سرية تامة للبيانات",
-    body: "بيانات طفلك أو بياناتك لا تُشارك مع أي جهة خارجية دون موافقتك الصريحة.",
-    num: "01",
+    icon: Lock,
+    title: "سرية تامة لبيانات طفلك",
+    body: "معلوماتك وبيانات أسرتك لا تُشارك مع أي جهة خارجية دون موافقتك. البيانات مشفّرة وتُستخدم فقط لإعداد نتيجة الفحص.",
+    color: "#2BBDB6",
   },
   {
-    icon: Globe,
-    title: "مصمم للسياق العربي",
-    body: "المحتوى مكتوب بالعربية ومراعاة الحساسية الثقافية للأسرة السعودية والخليجية.",
-    num: "02",
+    icon: BadgeCheck,
+    title: "معايير مهنية معتمدة",
+    body: "أدوات الفحص مبنية على أطر علمية معترف بها دولياً وتُراجَع بإشراف أخصائيين نفسيين وتربويين متخصصين.",
+    color: "#1E4E8C",
   },
   {
-    icon: BookOpen,
-    title: "منهجية مبنية على أسس علمية",
-    body: "أدوات الفحص مستندة إلى أطر تقييم معتمدة في مجالَي صعوبات التعلم والانتباه.",
-    num: "03",
-  },
-  {
-    icon: Compass,
-    title: "يوجّهك… لا يحكم عليك",
-    body: "النتيجة ليست تشخيصاً رسمياً، بل فهم أولي يساعدك على اتخاذ الخطوة التالية بثقة.",
-    num: "04",
+    icon: AlertCircle,
+    title: "وضوح حدود الخدمة",
+    body: "تشخيصي تُقدّم فحصاً أولياً لرصد المؤشرات، ولا تُصدر تشخيصاً طبياً رسمياً. نتائج الفحص تُوجّهك نحو الخطوة المتخصصة الأنسب.",
+    color: "#64748B",
   },
 ];
 
 export default function TrustSignals() {
   return (
     <section
+      id="trust-signals"
       dir="rtl"
-      className="relative py-20 lg:py-24 bg-slate-50 border-y border-slate-100 overflow-hidden"
+      className="relative py-16 lg:py-20 overflow-hidden"
+      style={{ background: "#F8F7F4" }}
     >
-      {/* Subtle background texture */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(148,163,184,0.06),transparent_60%)]"
-      />
+      {/* خط فاصل علوي ناعم */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
-      <div className="max-w-5xl mx-auto px-6 lg:px-8 relative z-10">
-
-        {/* Label */}
-        <motion.p
+      <div className="max-w-5xl mx-auto px-6 lg:px-8">
+        {/* رأس القسم */}
+        <motion.div
           custom={0}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
           variants={fadeUp}
-          className="text-sm font-medium tracking-[0.18em] uppercase text-slate-400 mb-5 text-center"
+          className="mb-12 lg:mb-14"
         >
-          TRUST & TRANSPARENCY
-        </motion.p>
+          <p className="text-sm font-medium text-slate-400 mb-4 tracking-wide">
+            الثقة والشفافية
+          </p>
+          <h2 className="text-2xl lg:text-3xl font-semibold text-slate-800 leading-snug max-w-xl">
+            التزامنا تجاهك{" "}
+            <span className="font-light text-slate-500">
+              واضح ومكتوب.
+            </span>
+          </h2>
+        </motion.div>
 
-        {/* Heading */}
-        <motion.h2
-          custom={1}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
-          variants={fadeUp}
-          className="text-3xl lg:text-4xl font-semibold text-slate-800 leading-snug mb-4 text-center"
-        >
-          الثقة ليست شعاراً…
-          <br />
-          <span className="font-light text-slate-500">
-            بل مبدأ نبنيه في كل خطوة.
-          </span>
-        </motion.h2>
-
-        {/* Subtext */}
-        <motion.p
-          custom={2}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-60px" }}
-          variants={fadeUp}
-          className="text-base text-slate-500 leading-relaxed text-center max-w-xl mx-auto mb-14"
-        >
-          نؤمن بأن الوضوح أساس الثقة — لذلك نخبرك بالضبط كيف نعمل،
-          وكيف نحمي بياناتك، وما الذي تتوقعه من الفحص.
-        </motion.p>
-
-        {/* Pillars Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+        {/* بطاقات المحاور الثلاثة */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {pillars.map((pillar, i) => {
             const Icon = pillar.icon;
             return (
               <motion.div
-                key={pillar.num}
-                custom={i + 3}
+                key={pillar.title}
+                custom={i + 1}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, margin: "-60px" }}
                 variants={fadeUp}
-                className="bg-white border border-slate-200/60 rounded-3xl p-7 relative overflow-hidden group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                className="group bg-white border border-slate-200/70 rounded-3xl p-7 relative overflow-hidden
+                           hover:border-slate-300 hover:shadow-sm transition-all duration-300"
               >
-                {/* Watermark number */}
-                <span
-                  aria-hidden="true"
-                  className="absolute -top-6 -right-3 text-[7rem] font-thin text-slate-100 leading-none select-none pointer-events-none z-0"
-                >
-                  {pillar.num}
-                </span>
+                {/* خلفية ظل لوني خفيف خلف الأيقونة */}
+                <div
+                  className="absolute top-5 right-5 w-16 h-16 rounded-full opacity-[0.06] blur-xl"
+                  style={{ background: pillar.color }}
+                />
 
-                {/* Content */}
-                <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center mb-4 group-hover:bg-slate-200 transition-colors">
-                    <Icon size={20} className="text-slate-500" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2 leading-snug">
-                    {pillar.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    {pillar.body}
-                  </p>
+                {/* الأيقونة */}
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center mb-5 bg-slate-50 relative z-10"
+                >
+                  <Icon size={19} style={{ color: pillar.color }} strokeWidth={1.8} />
                 </div>
+
+                {/* المحتوى */}
+                <h3 className="text-[15px] font-semibold text-slate-800 mb-3 leading-snug">
+                  {pillar.title}
+                </h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  {pillar.body}
+                </p>
               </motion.div>
             );
           })}
         </div>
 
-        {/* Disclaimer Seal — consistent with WhyTashkheesy bottom seal */}
+        {/* شريط الطمأنة السفلي */}
         <motion.div
-          custom={7}
+          custom={4}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
           variants={fadeUp}
-          className="flex justify-center"
+          className="mt-10 flex justify-center"
         >
-          <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white border border-slate-200/80 text-sm font-medium text-slate-500 shadow-sm">
-            <Info size={15} className="shrink-0 text-slate-400" />
-            الفحص الأولي لا يُعد تشخيصاً طبياً أو نفسياً رسمياً.
+          <span
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full
+                       bg-white border border-slate-200/80 text-sm text-slate-500"
+          >
+            <Lock size={13} className="text-slate-400" strokeWidth={2} />
+            بياناتك محمية — لن تُشارك دون إذنك
           </span>
         </motion.div>
-
       </div>
+
+      {/* خط فاصل سفلي ناعم */}
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
     </section>
   );
 }
