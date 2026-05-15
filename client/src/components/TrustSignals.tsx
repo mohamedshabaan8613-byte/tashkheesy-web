@@ -1,14 +1,18 @@
 /*
  * تشخيصي — TrustSignals
- * Sprint 1.1 — مكوّن الثقة والشفافية
+ * Sprint 1.3 — Refinement (3 targeted fixes)
  *
- * التصميم الفلسفي:
- * - ثلاثة محاور: سرية البيانات، معايير مهنية، وضوح الحدود
- * - لا توجد كلمات إنجليزية في الواجهة
- * - نبرة: مهنية + هادئة + صادقة (لا مبالغة)
- * - ألوان: slate neutral + teal خافت للأيقونات فقط
- * - حركة: fadeUp بسيطة متناسقة مع باقي الصفحة
- * - الخط: IBM Plex Sans Arabic من الـ layout
+ * التغييرات:
+ * 1. خلفية معمّقة قليلاً: #F2F0EC بدل #F8F7F4 — تمييز بصري واضح عن السكشنز المجاورة
+ * 2. تلطيف نص 'وضوح حدود الخدمة' — تجنب تكرار رسالة 'ليست تشخيصاً رسمياً' في أكثر من موضع
+ * 3. إضافة رابط 'تعرّف على الفريق' في بطاقة 'معايير مهنية' — يربط الادعاء بدليل قادم
+ *
+ * ثوابت لم تتغير:
+ * - هيكل البطاقات الثلاث
+ * - animations (fadeUp، stagger، easeOut)
+ * - شريط الطمأنة السفلي
+ * - الخطوط الفاصلة العلوية والسفلية
+ * - RTL + Arabic only
  */
 import { motion } from "framer-motion";
 import { Lock, BadgeCheck, AlertCircle } from "lucide-react";
@@ -28,18 +32,23 @@ const pillars = [
     title: "سرية تامة لبيانات طفلك",
     body: "معلوماتك وبيانات أسرتك لا تُشارك مع أي جهة خارجية دون موافقتك. البيانات مشفّرة وتُستخدم فقط لإعداد نتيجة الفحص.",
     color: "#2BBDB6",
+    link: null,
   },
   {
     icon: BadgeCheck,
     title: "معايير مهنية معتمدة",
-    body: "أدوات الفحص مبنية على أطر علمية معترف بها دولياً وتُراجَع بإشراف أخصائيين نفسيين وتربويين متخصصين.",
+    body: "أدوات الفحص مبنية على أطر علمية معترف بها دولياً، وتُراجَع بإشراف أخصائيين نفسيين وتربويين متخصصين.",
     color: "#1E4E8C",
+    // رابط مؤقت للـ anchor — يُفعَّل عند إنشاء Team section
+    link: { href: "#our-team", label: "تعرّف على الفريق" },
   },
   {
     icon: AlertCircle,
-    title: "وضوح حدود الخدمة",
-    body: "تشخيصي تُقدّم فحصاً أولياً لرصد المؤشرات، ولا تُصدر تشخيصاً طبياً رسمياً. نتائج الفحص تُوجّهك نحو الخطوة المتخصصة الأنسب.",
+    // Sprint 1.3: تلطيف الصياغة — الرسالة ذاتها لكن بأسلوب إيجابي لتجنب التكرار مع WhyTashkheesy
+    title: "خطوة توجيهية، لا حكم نهائي",
+    body: "الفحص يرصد المؤشرات ويُنظّمها بشكل واضح، ثم يوجّهك نحو الخطوة المتخصصة الأنسب لحالتك أو حالة طفلك.",
     color: "#64748B",
+    link: null,
   },
 ];
 
@@ -49,7 +58,8 @@ export default function TrustSignals() {
       id="trust-signals"
       dir="rtl"
       className="relative py-16 lg:py-20 overflow-hidden"
-      style={{ background: "#F8F7F4" }}
+      // Sprint 1.3: #F2F0EC بدل #F8F7F4 — فرق خفيف لكن كافٍ لتمييز القسم بصرياً
+      style={{ background: "#F2F0EC" }}
     >
       {/* خط فاصل علوي ناعم */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
@@ -69,9 +79,7 @@ export default function TrustSignals() {
           </p>
           <h2 className="text-2xl lg:text-3xl font-semibold text-slate-800 leading-snug max-w-xl">
             التزامنا تجاهك{" "}
-            <span className="font-light text-slate-500">
-              واضح ومكتوب.
-            </span>
+            <span className="font-light text-slate-500">واضح ومكتوب.</span>
           </h2>
         </motion.div>
 
@@ -97,9 +105,7 @@ export default function TrustSignals() {
                 />
 
                 {/* الأيقونة */}
-                <div
-                  className="w-10 h-10 rounded-2xl flex items-center justify-center mb-5 bg-slate-50 relative z-10"
-                >
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-5 bg-slate-50 relative z-10">
                   <Icon size={19} style={{ color: pillar.color }} strokeWidth={1.8} />
                 </div>
 
@@ -110,6 +116,33 @@ export default function TrustSignals() {
                 <p className="text-sm text-slate-500 leading-relaxed">
                   {pillar.body}
                 </p>
+
+                {/* Sprint 1.3: رابط 'تعرّف على الفريق' — يظهر فقط في بطاقة المعايير المهنية */}
+                {pillar.link && (
+                  <a
+                    href={pillar.link.href}
+                    className="inline-flex items-center gap-1 mt-4 text-xs font-medium
+                               text-slate-400 hover:text-slate-600 transition-colors duration-200"
+                  >
+                    <span>{pillar.link.label}</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      // RTL: السهم يشير لليسار
+                      className="rotate-180"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                )}
               </motion.div>
             );
           })}
