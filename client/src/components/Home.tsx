@@ -1,11 +1,14 @@
 /*
- * تشخيصي Home Page — Editorial Healthcare Redesign v2
- * Complete homepage redesign preserving existing routing and product engine
+ * تشخيصي Home Page — Sprint 1.1
+ * تغيير: تفعيل مكوّن TrustSignals بعد HowItWorks مباشرة
+ * الترتيب المنطقي: Hero → Awareness → HowItWorks → TrustSignals → FounderStory → WhyTashkheesy → ...
+ * المبرر: ولي الأمر يسأل عن الموثوقية قبل أن يرى قصة المؤسس أو لماذا تشخيصي
  */
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import AwarenessSection from "@/components/AwarenessSection";
 import HowItWorks from "@/components/HowItWorks";
+import TrustSignals from "@/components/TrustSignals";
 import WhyTashkheesy from "@/components/WhyTashkheesy";
 import FounderStory from "@/components/FounderStory";
 import ServicesPreview from "@/components/ServicesPreview";
@@ -15,13 +18,6 @@ import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
 import { useSEO } from "@/hooks/useSEO";
 
-/**
- * homeSchema — بيانات منظمة دقيقة وآمنة
- * النوع: SoftwareApplication (أكثر دقة من MedicalOrganization)
- * تم حذف: priceRange, paymentAccepted, currenciesAccepted (لا يوجد دفع مباشر)
- * تم إصلاح: البريد الإلكتروني → tashkheesy.com
- * تم حذف: logo.png (الملف غير موجود في production)
- */
 const homeSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -65,11 +61,18 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen" dir="rtl" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
+    <div
+      className="min-h-screen"
+      dir="rtl"
+      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+    >
       <Navbar />
       <HeroSection />
       <AwarenessSection />
       <HowItWorks />
+      {/* Sprint 1.1 — مكوّن الثقة والشفافية: يُفعَّل هنا بعد شرح الخطوات مباشرة
+           المبرر النفسي: المستخدم فهم «كيف يعمل» → يسأل «هل يمكنني الوثوق به؟» */}
+      <TrustSignals />
       <FounderStory />
       <WhyTashkheesy />
       <ServicesPreview />
