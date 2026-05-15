@@ -1,12 +1,15 @@
 /*
  * تشخيصي Home Page — Editorial Healthcare Redesign v2
  * Complete homepage redesign preserving existing routing and product engine
+ *
+ * Sprint 1.1 change: Added TrustSignals between WhyTashkheesy and ServicesPreview
  */
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import AwarenessSection from "@/components/AwarenessSection";
 import HowItWorks from "@/components/HowItWorks";
 import WhyTashkheesy from "@/components/WhyTashkheesy";
+import TrustSignals from "@/components/TrustSignals";
 import FounderStory from "@/components/FounderStory";
 import ServicesPreview from "@/components/ServicesPreview";
 import ImpactSection from "@/components/ImpactSection";
@@ -72,6 +75,7 @@ export default function Home() {
       <HowItWorks />
       <FounderStory />
       <WhyTashkheesy />
+      <TrustSignals />
       <ServicesPreview />
       <ImpactSection />
       <Testimonials />
