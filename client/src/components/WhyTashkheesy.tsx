@@ -13,7 +13,6 @@
  *
  * ADOPTED from commit 8414b9f (editorial branch):
  *   - Framer Motion stagger (replaces raw IntersectionObserver)
- *   - Refined heading: "البداية تصبح أوضح…" + light weight sub-line
  *   - Refined body copy — tighter, dual-audience explicit
  *   - Editorial 3-col asymmetric grid [1.1fr 0.95fr 0.95fr] for context blocks
  *   - Radial micro-glow behind heading area
@@ -21,7 +20,8 @@
  *   - Gradient: from-white to-[#FAFAF8] (matches rest of Home)
  *
  * IMPROVED vs both versions:
- *   - Explicit dual-audience mention (أطفال + بالغون) in body paragraph
+ *   - Heading now explicitly mentions: صعوبات التعلم، فرط الحركة، تشتت الانتباه
+ *   - Explicit dual-audience mention (أطفال + بالغون) in heading + body paragraph
  *   - "WHY TASHKHEESY" English label removed → replaced with Arabic section-label
  *   - Value grid placed directly after body copy (emotional → functional flow)
  *   - Reasons cards remain as functional proof, below value grid
@@ -151,10 +151,10 @@ export default function WhyTashkheesy() {
           variants={fadeUp}
           className="text-3xl lg:text-4xl font-semibold text-slate-800 leading-snug mb-5"
         >
-          البداية تصبح أوضح…
+          لكل طفل أو بالغ يعاني من صعوبات التعلم أو فرط الحركة أو تشتت الانتباه…
           <br />
           <span className="font-light text-slate-500">
-            عندما نفهم المؤشرات بهدوء.
+            تشخيصي تساعدك على فهم المؤشرات بهدوء، قبل أي خطوة أخرى.
           </span>
         </motion.h2>
 
