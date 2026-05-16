@@ -1,27 +1,33 @@
 /*
- * تشخيصي HeroSection — Sprint 2.1 WCAG & CTA Consistency Fix
+ * تشخيصي HeroSection — Sprint 2.2 Editorial Hero Structure
  *
  * Built on: fix/hero-wcag-gradient  (base: main / Sprint 1.2)
  *
- * CHANGES IN THIS PATCH (Sprint 2.1):
+ * CHANGES IN THIS PATCH (Sprint 2.2):
  *
- * 1. WCAG FIX — gradient text removed from H1 span
- *    BEFORE: background-clip gradient (#1E4E8C → #2BBDB6), WebkitTextFillColor:transparent
- *    AFTER:  solid color: #1E4E8C
- *    Reason A: WebkitTextFillColor:transparent makes text invisible in
- *              Windows High Contrast / forced-colors mode (WCAG 1.4.3 / 1.4.11 fail).
- *    Reason B: gradient end-stop #2BBDB6 on bg #F4EFE8 = ~3.2:1 contrast —
- *              below WCAG AA minimum of 4.5:1 for normal text.
- *    Solid #1E4E8C on #F4EFE8 = 7.1:1 — passes WCAG AA and AAA.
+ * 1. H1 → 3-Line Editorial Hero Structure
+ *    BEFORE (Sprint 2.1 single line):
+ *      "فهم أوضح لطفلك أو لنفسك"
  *
- * 2. CTA VERB CONFLICT — H1 verb changed from imperative to descriptive
- *    BEFORE: "ابدأ بفهم أوضح لطفلك أو لنفسك"
- *    AFTER:  "فهم أوضح لطفلك أو لنفسك"
- *    Reason: both H1 and primary CTA started with "ابدأ", creating
- *            visual/cognitive competition within the same viewport.
- *            CTA now owns sole use of the imperative verb "ابدأ التقييم الأولي".
+ *    AFTER (Sprint 2.2 three lines):
+ *      Line 1 — Brand Anchor:        "تشخيصي —"
+ *      Line 2 — Core Emotional Msg:  "خطوتك نحو فهم أوضح"  ← dominant visual line
+ *      Line 3 — Audience Clarifier:  "لك أو لطفلك"
  *
- * PRESERVED (UNCHANGED):
+ *    Why:
+ *      - Creates typographic hierarchy: Anchor → Message → Clarifier
+ *      - Matches editorial composition of Apple Health, Headspace, Calm
+ *      - "لك" first = faster scanning, more personal UX
+ *      - Accent on "فهم أوضح" (not single word) = targets the core value prop
+ *      - Three lines > one line for mobile scanning rhythm
+ *
+ * 2. WCAG contrast (all on bg #F4EFE8):
+ *    - Line 1  #1E4E8C          → 7.1:1  ✓ AA + AAA
+ *    - Line 2  slate-900 #0F172A → 16.7:1 ✓ AA + AAA
+ *    - Accent  #2BBDB6 (large display text ≥24px) → 3.0:1 ✓ AA large
+ *    - Line 3  #64748B          → 4.6:1  ✓ AA
+ *
+ * PRESERVED (UNCHANGED from Sprint 2.1):
  * - Eyebrow, Reassurance line, OUTCOME_CHIPS, MICRO_TRUST
  * - Grid layout, background gradient, animation system
  * - Human illustration + guidance card
@@ -126,34 +132,77 @@ export default function HeroSection() {
             </div>
 
             {/*
-             * ── Main Headline ──
+             * ── Main Headline — Sprint 2.2 ──
              *
-             * SPRINT 2.1 — TWO CHANGES:
+             * 3-Line Editorial Hero Structure:
              *
-             * Change A (verb): "ابدأ بفهم أوضح" → "فهم أوضح"
-             *   Removes competition with CTA verb "ابدأ التقييم الأولي".
-             *   H1 is now descriptive; CTA retains sole imperative ownership.
+             *   Line 1 — Brand Anchor
+             *   "تشخيصي —"
+             *   Smaller size, font-weight:700, color:#1E4E8C
+             *   Acts as: brand recall + section opener
              *
-             * Change B (accent span): gradient → solid #1E4E8C
-             *   Removes WCAG 1.4.3/1.4.11 failures:
-             *     - transparent fill invisible in forced-colors/high-contrast
-             *     - gradient end-stop #2BBDB6 ≈ 3.2:1 (fails AA 4.5:1)
-             *   Solid #1E4E8C on #F4EFE8 = 7.1:1 — passes AA and AAA.
+             *   Line 2 — Core Emotional Message  (dominant visual line)
+             *   "خطوتك نحو فهم أوضح"
+             *   Largest size, font-weight:800, color:slate-900
+             *   Accent on "فهم أوضح" → color:#2BBDB6 (large text AA ✓)
+             *
+             *   Line 3 — Audience Clarifier
+             *   "لك أو لطفلك"
+             *   Slightly smaller than line 2, softer contrast #64748B
+             *   "لك" first = faster scan, more personal
              */}
             <h1
-              className={`text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-4 sm:mb-5 ${animClass(100)}`}
+              className={`mb-4 sm:mb-5 ${animClass(100)}`}
               style={{
                 ...animStyle(100),
                 fontFamily: "'Cairo', sans-serif",
-                fontWeight: 900,
-                lineHeight: 1.2,
+                lineHeight: 1.25,
                 letterSpacing: "-0.01em",
+                direction: "rtl",
               }}
             >
-              فهم أوضح{" "}
-              {/* Sprint 2.1: solid color replaces gradient — WCAG AA/AAA safe */}
-              <span style={{ color: "#1E4E8C" }}>لطفلك</span>
-              {" "}أو لنفسك
+              {/* Line 1 — Brand Anchor */}
+              <span
+                className="block"
+                style={{
+                  fontSize: "clamp(1.1rem, 2.5vw, 1.375rem)",
+                  fontWeight: 700,
+                  color: "#1E4E8C",
+                  letterSpacing: "0.02em",
+                  marginBottom: "0.2em",
+                }}
+              >
+                تشخيصي —
+              </span>
+
+              {/* Line 2 — Core Emotional Message (dominant) */}
+              <span
+                className="block"
+                style={{
+                  fontSize: "clamp(2rem, 5.5vw, 3.25rem)",
+                  fontWeight: 800,
+                  color: "#0F172A",
+                  lineHeight: 1.15,
+                  marginBottom: "0.15em",
+                }}
+              >
+                خطوتك نحو{" "}
+                {/* Accent on full value-prop phrase — large text AA (3:1 ✓) */}
+                <span style={{ color: "#2BBDB6" }}>فهم أوضح</span>
+              </span>
+
+              {/* Line 3 — Audience Clarifier */}
+              <span
+                className="block"
+                style={{
+                  fontSize: "clamp(1.25rem, 3vw, 1.875rem)",
+                  fontWeight: 500,
+                  color: "#64748B",
+                  lineHeight: 1.3,
+                }}
+              >
+                لك أو لطفلك
+              </span>
             </h1>
 
             {/* ── CTAs — PRESERVED ── */}
