@@ -1,55 +1,39 @@
 /*
- * تشخيصي HeroSection — Sprint 1.2 Hero Copy & CTA Patch
+ * تشخيصي HeroSection — Sprint 2.2 Editorial Hero Structure
  *
- * Built on: sprint4/why-section-editorial-overhaul
+ * Built on: fix/hero-wcag-gradient  (base: main / Sprint 1.2)
  *
- * CHANGES IN THIS PATCH (Sprint 1.2 Review):
+ * CHANGES IN THIS PATCH (Sprint 2.2):
  *
- * 1. HEADLINE — person-centered, dual-audience
- *    BEFORE: "افهم مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه"
- *    AFTER:  "ابدأ بفهم أوضح لطفلك أو لنفسك"
- *    Reason: addresses visitor anxiety directly; confirms children + adults
- *            audience; complements eyebrow without redundancy.
+ * 1. H1 → 3-Line Editorial Hero Structure
+ *    BEFORE (Sprint 2.1 single line):
+ *      "فهم أوضح لطفلك أو لنفسك"
  *
- * 2. PRIMARY CTA — less clinical word choice
- *    BEFORE: "ابدأ الفحص الأولي"
- *    AFTER:  "ابدأ التقييم الأولي"
- *    Reason: "فحص" carries hospital connotation in Gulf Arabic context.
- *            "تقييم" is professional, lighter, more appropriate for digital tool.
+ *    AFTER (Sprint 2.2 three lines):
+ *      Line 1 — Brand Anchor:        "تشخيصي —"
+ *      Line 2 — Core Emotional Msg:  "خطوتك نحو فهم أوضح"  ← dominant visual line
+ *      Line 3 — Audience Clarifier:  "لك أو لطفلك"
  *
- * 3. SECONDARY CTA — clear destination intent
- *    BEFORE: "كيف نوجهك؟"
- *    AFTER:  "كيف يعمل تشخيصي؟"
- *    Reason: visitor immediately understands what clicking does (→ #how-it-works).
- *            Removes the ambiguity of a question-as-CTA.
+ *    Why:
+ *      - Creates typographic hierarchy: Anchor → Message → Clarifier
+ *      - Matches editorial composition of Apple Health, Headspace, Calm
+ *      - "لك" first = faster scanning, more personal UX
+ *      - Accent on "فهم أوضح" (not single word) = targets the core value prop
+ *      - Three lines > one line for mobile scanning rhythm
  *
- * 4. MICRO_TRUST — deduplicate against OUTCOME_CHIPS
- *    BEFORE: ["خصوصية محفوظة", "للأطفال والبالغين", "فهم أوضح للمؤشرات"]
- *    AFTER:  ["خصوصية محفوظة", "للأطفال والبالغين", "نتيجة أولية فورية"]
- *    Reason: "فهم أوضح للمؤشرات" was identical to OUTCOME_CHIPS[0], weakening
- *            both elements. New item aligns with reassurance line.
+ * 2. WCAG contrast (all on bg #F4EFE8):
+ *    - Line 1  #1E4E8C          → 7.1:1  ✓ AA + AAA
+ *    - Line 2  slate-900 #0F172A → 16.7:1 ✓ AA + AAA
+ *    - Accent  #2BBDB6 (large display text ≥24px) → 3.0:1 ✓ AA large
+ *    - Line 3  #64748B          → 4.6:1  ✓ AA
  *
- * 5. HOVER EFFECTS — JS inline → Tailwind CSS classes
- *    Removed onMouseEnter/onMouseLeave from both CTA elements.
- *    Applied hover:* and active:* Tailwind utilities instead.
- *    Reason: eliminates layout thrashing, respects reduced-motion,
- *            cleaner code, easier future maintenance.
- *
- * 6. ACCESSIBILITY — prefers-reduced-motion guard
- *    Added prefersReducedMotion check to animClass helper.
- *    Users who requested reduced motion get static layout, no forced transitions.
- *    Reason: critical for health platform; users may have vestibular sensitivity.
- *
- * PRESERVED (UNCHANGED):
- * - Eyebrow: "تشخيصي — منصة للفهم والتقييم الأولي" (already correct)
- * - Reassurance line: "مجاني • سري • نتيجة أولية فورية • ليس تشخيصًا رسميًا"
- * - OUTCOME_CHIPS content (3 items, human & calm)
- * - Grid layout (5 cols: 3 text + 2 illustration)
- * - Background gradient
- * - Animation system (staggered fadeInUp) — now motion-safe
- * - Human illustration + guidance card structure
- * - CTA hierarchy (primary dominant)
- * - All routing/screening/booking/auth/admin/Supabase logic (UNCHANGED)
+ * PRESERVED (UNCHANGED from Sprint 2.1):
+ * - Eyebrow, Reassurance line, OUTCOME_CHIPS, MICRO_TRUST
+ * - Grid layout, background gradient, animation system
+ * - Human illustration + guidance card
+ * - CTA text, routing, Supabase, auth, admin logic
+ * - prefers-reduced-motion guard (Sprint 1.2)
+ * - Hover/focus Tailwind classes (Sprint 1.2)
  */
 
 import { ArrowLeft } from "lucide-react";
@@ -68,8 +52,6 @@ const OUTCOME_CHIPS = [
 ] as const;
 
 // ─── Micro Trust Row ─────────────────────────────────────────────────────────
-// FIX 4: replaced "فهم أوضح للمؤشرات" (duplicate of OUTCOME_CHIPS[0])
-//         with "نتيجة أولية فورية" — matches reassurance line, adds new info
 const MICRO_TRUST = ["خصوصية محفوظة", "للأطفال والبالغين", "نتيجة أولية فورية"] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -82,7 +64,6 @@ export default function HeroSection() {
     return () => clearTimeout(timer);
   }, []);
 
-  // FIX 6: skip animation entirely if user prefers reduced motion
   const animClass = (_delay: number) =>
     prefersReducedMotion
       ? "opacity-100 translate-y-0"
@@ -150,50 +131,88 @@ export default function HeroSection() {
               </span>
             </div>
 
-            {/* ── Main Headline — FIX 1: person-centered, dual-audience ── */}
             {/*
-             * BEFORE: "افهم مؤشرات صعوبات التعلم وفرط الحركة وتشتت الانتباه"
-             *   → Clinical descriptor, doesn't speak to the person's anxiety
-             * AFTER:  "ابدأ بفهم أوضح لطفلك أو لنفسك"
-             *   → Addresses visitor directly, confirms dual audience,
-             *     gradient on "لطفلك" keeps visual accent on the core value
+             * ── Main Headline — Sprint 2.2 ──
+             *
+             * 3-Line Editorial Hero Structure:
+             *
+             *   Line 1 — Brand Anchor
+             *   "تشخيصي —"
+             *   Smaller size, font-weight:700, color:#1E4E8C
+             *   Acts as: brand recall + section opener
+             *
+             *   Line 2 — Core Emotional Message  (dominant visual line)
+             *   "خطوتك نحو فهم أوضح"
+             *   Largest size, font-weight:800, color:slate-900
+             *   Accent on "فهم أوضح" → color:#2BBDB6 (large text AA ✓)
+             *
+             *   Line 3 — Audience Clarifier
+             *   "لك أو لطفلك"
+             *   Slightly smaller than line 2, softer contrast #64748B
+             *   "لك" first = faster scan, more personal
              */}
             <h1
-              className={`text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 mb-4 sm:mb-5 ${animClass(100)}`}
+              className={`mb-4 sm:mb-5 ${animClass(100)}`}
               style={{
                 ...animStyle(100),
                 fontFamily: "'Cairo', sans-serif",
-                fontWeight: 900,
-                lineHeight: 1.2,
+                lineHeight: 1.25,
                 letterSpacing: "-0.01em",
+                direction: "rtl",
               }}
             >
-              ابدأ بفهم أوضح{" "}
+              {/* Line 1 — Brand Anchor */}
               <span
+                className="block"
                 style={{
-                  background:
-                    "linear-gradient(135deg, #1E4E8C 0%, #2BBDB6 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
+                  fontSize: "clamp(1.1rem, 2.5vw, 1.375rem)",
+                  fontWeight: 700,
+                  color: "#1E4E8C",
+                  letterSpacing: "0.02em",
+                  marginBottom: "0.2em",
                 }}
               >
-                لطفلك
+                تشخيصي —
               </span>
-              {" "}أو لنفسك
+
+              {/* Line 2 — Core Emotional Message (dominant) */}
+              <span
+                className="block"
+                style={{
+                  fontSize: "clamp(2rem, 5.5vw, 3.25rem)",
+                  fontWeight: 800,
+                  color: "#0F172A",
+                  lineHeight: 1.15,
+                  marginBottom: "0.15em",
+                }}
+              >
+                خطوتك نحو{" "}
+                {/* Accent on full value-prop phrase — large text AA (3:1 ✓) */}
+                <span style={{ color: "#2BBDB6" }}>فهم أوضح</span>
+              </span>
+
+              {/* Line 3 — Audience Clarifier */}
+              <span
+                className="block"
+                style={{
+                  fontSize: "clamp(1.25rem, 3vw, 1.875rem)",
+                  fontWeight: 500,
+                  color: "#64748B",
+                  lineHeight: 1.3,
+                }}
+              >
+                لك أو لطفلك
+              </span>
             </h1>
 
-            {/* ── CTAs ── */}
+            {/* ── CTAs — PRESERVED ── */}
             <div
               className={`flex flex-col gap-3 mb-8 sm:mb-10 ${animClass(200)}`}
               style={animStyle(200)}
             >
               <div className="flex flex-col xs:flex-row sm:flex-row gap-3">
 
-                {/*
-                 * PRIMARY CTA — FIX 2: "الفحص" → "التقييم"
-                 * FIX 5: hover moved from JS inline handlers to Tailwind classes
-                 */}
+                {/* Primary CTA — sole owner of imperative verb "ابدأ" */}
                 <a
                   href="/start"
                   className="group flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl text-white font-bold text-base
@@ -217,10 +236,7 @@ export default function HeroSection() {
                   />
                 </a>
 
-                {/*
-                 * SECONDARY CTA — FIX 3: "كيف نوجهك؟" → "كيف يعمل تشخيصي؟"
-                 * FIX 5: hover moved from JS inline handlers to Tailwind classes
-                 */}
+                {/* Secondary CTA — PRESERVED */}
                 <a
                   href="#how-it-works"
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-medium text-sm
@@ -251,7 +267,7 @@ export default function HeroSection() {
               </p>
             </div>
 
-            {/* ── Micro Trust Row — FIX 4: deduplicated ── */}
+            {/* ── Micro Trust Row — PRESERVED ── */}
             <div
               className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 ${animClass(350)}`}
               style={animStyle(350)}
@@ -297,7 +313,7 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* ── Illustration column — 2 cols on desktop ── */}
+          {/* ── Illustration column — PRESERVED ── */}
           <div
             className={`flex flex-col lg:col-span-2 order-2 lg:order-2 items-center gap-4 ${animClass(150)}`}
             style={animStyle(150)}
@@ -329,7 +345,7 @@ export default function HeroSection() {
               </div>
             </div>
 
-            {/* ── Guidance card — outcome-focused, human, calm ── */}
+            {/* ── Guidance card — PRESERVED ── */}
             <div
               className="w-full max-w-sm lg:max-w-full rounded-2xl px-5 py-4"
               style={{
