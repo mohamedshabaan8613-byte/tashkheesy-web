@@ -1,6 +1,7 @@
 /**
  * AssessmentForm.tsx
  * Sprint 2.2 — Step 5: Form UX Layer
+ * Sprint 2.2 — Step 7a: Funnel Instrumentation Wiring
  *
  * Controlled Component — ZERO internal state.
  * كل values + errors + handlers + submit action
@@ -14,13 +15,19 @@
  *   ✅ SCREENING_AREAS progress/trust grid
  *   ✅ trust copy (reassurance bullets)
  *   ✅ local focus/blur interaction handlers
+ *   ✅ Funnel tracking (Step 7a) — fire-and-forget, optional
  *
  * ما لا يحتويه:
  *   ❌ useState / useEffect
  *   ❌ navigate / routing
  *   ❌ localStorage / Supabase
  *   ❌ orchestration أو business flow
- *   ❌ analytics (deferred — insertion point جاهز في assessmentAnalytics.ts)
+ *
+ * Funnel Wiring Rules (Step 7a):
+ *   • funnelSession prop هو optional — الفورم يعمل بدونه
+ *   • كل tracking calls هي fire-and-forget: void fn()
+ *   • لا await داخل أي handler UI
+ *   • trackFunnelStart تُطلق مرة واحدة فقط per session (ref guard)
  *
  * نقاط UX المُلاحَظة (لا تُصلح الآن — سُجِّلت للـ copy/UX sprint):
  *   - spacing fatigue: padding السخي يجعل الفورم طويلاً على موبايل
@@ -30,6 +37,7 @@
  *   - progress clarity: لا يوجد step indicator داخل الفورم
  */
 
+import { useRef } from "react";
 import {
   Shield,
   Sparkles,
@@ -43,6 +51,11 @@ import {
   Users,
   Hand,
 } from "lucide-react";
+import {
+  FunnelSession,
+  trackFunnelStart,
+  trackFunnelSubmit,
+} from "@/lib/screeningAnalytics";
 
 // ─── محاور الفحص الستة ────────────────────────────────────────────────────────
 const SCREENING_AREAS = [
@@ -70,6 +83,12 @@ export interface AssessmentFormProps {
   onNameChange: (value: string) => void;
   onAgeChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  /**
+   * Step 7a — Funnel Session
+   * اختياري — الفورم يعمل بدونه بشكل طبيعي.
+   * يُمرَّر من SelfAssessment بعد إنشاء FunnelSession.
+   */
+  funnelSession?: FunnelSession;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -82,7 +101,29 @@ export default function AssessmentForm({
   onNameChange,
   onAgeChange,
   onSubmit,
+  funnelSession,
 }: AssessmentFormProps) {
+  // ─── Funnel tracking (Step 7a) ─────────────────────────────────────────────
+  // startTracked: يضمن أن trackFunnelStart تُطلق مرة واحدة فقط per mount
+  const startTracked = useRef(false);
+
+  function handleFunnelFocus() {
+    if (!funnelSession || startTracked.current) return;
+    startTracked.current = true;
+    void trackFunnelStart(funnelSession);
+  }
+
+  function handleFunnelBlur(fieldName: "name" | "age") {
+    if (!funnelSession) return;
+    funnelSession.onFieldBlur(fieldName);
+  }
+
+  // onSubmit wrapper: نُطلق trackFunnelSubmit بعد نجاح الـ parent handleSubmit
+  // المشكلة: handleSubmit يستدعي navigate() فوراً — الـ submit tracker يجب أن يكون
+  // fire-and-forget قبل navigate، لذا نحتاج hook في SelfAssessment.tsx
+  // هنا نُطلق onSubmit أولاً، وفي SelfAssessment نضيف trackFunnelSubmit.
+  // هذا القرار مُسجَّل هنا للوضوح — انظر SelfAssessment.tsx Commit 2/2.
+
   return (
     <>
       {/* ─── نموذج البيانات ─────────────────────────────────────────── */}
@@ -129,10 +170,14 @@ export default function AssessmentForm({
             onFocus={(e) => {
               e.target.style.border = "1.5px solid #2BBDB6";
               e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)";
+              // Step 7a: أول focus = بداية الجلسة
+              handleFunnelFocus();
             }}
             onBlur={(e) => {
               e.target.style.border = nameError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7";
               e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)";
+              // Step 7a: blur = hesitation signal
+              handleFunnelBlur("name");
             }}
             autoComplete="off"
             aria-describedby={nameError ? "name-error" : undefined}
@@ -175,10 +220,14 @@ export default function AssessmentForm({
             onFocus={(e) => {
               e.target.style.border = "1.5px solid #2BBDB6";
               e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)";
+              // Step 7a: أول focus = بداية الجلسة (إن لم تكن بدأت من حقل الاسم)
+              handleFunnelFocus();
             }}
             onBlur={(e) => {
               e.target.style.border = ageError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7";
               e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)";
+              // Step 7a: blur = hesitation signal
+              handleFunnelBlur("age");
             }}
             aria-describedby={ageError ? "age-error" : "age-hint"}
           />
@@ -304,3 +353,7 @@ export default function AssessmentForm({
     </>
   );
 }
+
+// Re-export for parent convenience
+export type { FunnelSession };
+export { trackFunnelSubmit };
