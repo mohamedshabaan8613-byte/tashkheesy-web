@@ -8,7 +8,13 @@
 
 // ─── مسارات الفحص ─────────────────────────────────────────────────────────────
 export type PathType = "learning" | "adhd";
-export type AssessmentMode = "self" | "parent";
+
+/**
+ * AssessmentMode — strict union بدون | string.
+ * "legacy" تُستخدم كـ fallback لقيم قديمة في Supabase/localStorage.
+ * normalizeMode() في assessmentLogic.ts هي نقطة الدخول الوحيدة.
+ */
+export type AssessmentMode = "self" | "parent" | "legacy";
 
 // ─── ملخص تقييم ذاتي (يُخزن في localStorage وSupabase) ──────────────────────
 export interface SelfAssessmentSummary {
@@ -16,7 +22,7 @@ export interface SelfAssessmentSummary {
   sessionId: string;
   name: string;
   age: string | number;
-  mode?: AssessmentMode | string;
+  mode?: AssessmentMode;        // لا | string — استخدم normalizeMode() عند الإدخال
   pathType: PathType;
   screeningType?: string;
   completedAt: string;
@@ -28,19 +34,22 @@ export interface SelfAssessmentProfile {
   id: string;
   name: string;
   age: number;
-  mode: AssessmentMode | string;
+  mode: AssessmentMode;         // لا | string — normalizeMode() قبل الحفظ
   pathType: PathType;
   createdAt: string;
 }
 
 // ─── نتيجة fetch بعيدة من Supabase ──────────────────────────────────────────
+// pathType و mode هنا string | null عمداً — البيانات الخام من DB.
+// normalizePathType() و normalizeMode() في assessmentLogic.ts هما نقطة التطهير.
 export interface RemoteAssessmentResult {
   sessionId: string;
   subjectName?: string | null;
   subjectAge?: string | number | null;
-  pathType?: string | null;
+  pathType?: string | null;     // raw DB value — طبّق normalizePathType() قبل الاستخدام
   screeningType?: string | null;
   completedAt?: string | null;
+  mode?: string | null;         // raw DB value — طبّق normalizeMode() قبل الاستخدام
 }
 
 // ─── حالة الـ form ────────────────────────────────────────────────────────────

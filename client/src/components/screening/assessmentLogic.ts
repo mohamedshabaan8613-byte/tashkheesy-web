@@ -17,6 +17,38 @@ import type {
 } from "./assessmentTypes";
 import { SELF_ASSESSMENTS_KEY, AGE_MIN, AGE_MAX } from "./assessmentContent";
 
+// ─── Normalization Layer — نقطة الدخول الوحيدة لبيانات DB/localStorage ────────
+
+/**
+ * normalizePathType
+ * يحوّل أي قيمة خام من DB إلى PathType آمن.
+ * إذا كانت القيمة غير معروفة يُعيد "learning" كـ safe fallback.
+ */
+export function normalizePathType(raw: string | null | undefined): PathType {
+  if (raw === "adhd" || raw === "learning") return raw;
+  return "learning";
+}
+
+/**
+ * normalizeMode
+ * يحوّل أي قيمة خام من DB إلى AssessmentMode آمن.
+ * قيم قديمة لا تطابق "self" أو "parent" تُصنَّف كـ "legacy".
+ */
+export function normalizeMode(raw: string | null | undefined): AssessmentMode {
+  if (raw === "self" || raw === "parent") return raw;
+  return "legacy";
+}
+
+// ─── توليد session ID جديد (collision-safe) ──────────────────────────────────
+/**
+ * generateSelfId
+ * يستخدم crypto.randomUUID() بدلاً من Date.now()
+ * لمنع التصادم عند فتح tabs متعددة في نفس اللحظة.
+ */
+export function generateSelfId(): string {
+  return `self_${crypto.randomUUID()}`;
+}
+
 // ─── قراءة سجل التقييمات من localStorage ─────────────────────────────────────
 export function loadSelfHistory(): SelfAssessmentSummary[] {
   try {
@@ -35,7 +67,7 @@ export function saveSelfProfile(
   selfId: string,
   name: string,
   age: number,
-  mode: AssessmentMode | string,
+  mode: AssessmentMode,
   pathType: PathType,
 ): void {
   const profile: SelfAssessmentProfile = {
@@ -62,8 +94,8 @@ export function mergeRemoteResults(
       sessionId: r.sessionId,
       name: r.subjectName ?? "",
       age: r.subjectAge ?? "",
-      mode: "self" as AssessmentMode,
-      pathType: (r.pathType as PathType) ?? "learning",
+      mode: normalizeMode(r.mode),           // normalization هنا — لا casting مباشر
+      pathType: normalizePathType(r.pathType), // normalization هنا — لا casting مباشر
       screeningType: r.screeningType ?? undefined,
       completedAt: r.completedAt ?? new Date().toISOString(),
       resultKey: `result_${r.sessionId}`,
@@ -132,11 +164,6 @@ export function validateForm(
   return { valid, nameError, ageError };
 }
 
-// ─── توليد session ID جديد ────────────────────────────────────────────────────
-export function generateSelfId(): string {
-  return `self_${Date.now()}`;
-}
-
 // ─── تنسيق التاريخ بالعربية ────────────────────────────────────────────────────
 export function formatArabicDate(isoString: string): string {
   try {
@@ -161,11 +188,13 @@ export function buildSafeRedirect(pathname: string, search: string): string {
 }
 
 // ─── بناء navigation URL للنتيجة ─────────────────────────────────────────────
+// TODO(privacy): استبدال name في URL بـ sessionStorage lookup — Sprint privacy
 export function buildResultUrl(sessionId: string, name: string, pathType: PathType): string {
   return `/screening-result/${sessionId}?name=${encodeURIComponent(name)}&pathType=${pathType}`;
 }
 
 // ─── بناء navigation URL للـ screening-intro ─────────────────────────────────
+// TODO(privacy): استبدال name في URL بـ sessionStorage lookup — Sprint privacy
 export function buildIntroUrl(
   selfId: string,
   name: string,
