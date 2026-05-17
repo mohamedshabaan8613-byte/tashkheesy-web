@@ -42,24 +42,22 @@ const Login   = lazy(() => import("./components/Login"));
 const Account = lazy(() => import("./components/Account"));
 // ─── لوحة الإدارة (Sprint 6B) ────────────────────────────────────────────
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
+// ─── معاينة النتائج الداخلية — للأدمن فقط (نُقلت من /result-demo) ───────
+const AdminResultPreview = lazy(() => import("./components/screening/ResultDemo"));
 // ────────────────────────────────────────────────────────────────
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
-// الهدف: حماية صفحات الحجز، الفحص، النتائج، ومسارات رحلة المستخدم من الظهور في Google.
-// ملاحظة: هذا لا يغير التصميم أو منطق الحجز أو الفحص، فقط يضيف meta robots للصفحات الحساسة.
 function SensitiveNoIndex({ children }: { children: ReactNode }) {
   useEffect(() => {
     const selector = 'meta[name="robots"]';
 
     const getOrCreateRobotsMeta = () => {
       let el = document.querySelector<HTMLMetaElement>(selector);
-
       if (!el) {
         el = document.createElement("meta");
         el.setAttribute("name", "robots");
         document.head.appendChild(el);
       }
-
       return el;
     };
 
@@ -72,17 +70,13 @@ function SensitiveNoIndex({ children }: { children: ReactNode }) {
       robotsMeta.setAttribute("content", "noindex, nofollow");
     };
 
-    // نطبّقها فورًا، ثم نعيد تطبيقها بعد تحميل الصفحة لتجنب أي override من useSEO داخل الصفحة.
     applyNoIndex();
     const reapplyTimer = window.setTimeout(applyNoIndex, 0);
 
     return () => {
       window.clearTimeout(reapplyTimer);
-
       const robotsMeta = document.querySelector<HTMLMetaElement>(selector);
-
       if (!robotsMeta) return;
-
       if (hadExistingMeta && previousContent) {
         robotsMeta.setAttribute("content", previousContent);
       } else if (hadExistingMeta && !previousContent) {
@@ -99,7 +93,6 @@ function SensitiveNoIndex({ children }: { children: ReactNode }) {
 // ─── Wrapper Components لاستخراج URL Params ──────────────────────────────────
 function ScreeningWrapper() {
   const params = useParams<{ childId: string }>();
-
   return (
     <SensitiveNoIndex>
       <ScreeningPage childId={params.childId ?? ""} />
@@ -109,7 +102,6 @@ function ScreeningWrapper() {
 
 function ScreeningResultWrapper() {
   const params = useParams<{ sessionId: string }>();
-
   return (
     <SensitiveNoIndex>
       <ScreeningResult sessionId={params.sessionId ?? ""} />
@@ -119,7 +111,6 @@ function ScreeningResultWrapper() {
 
 function ScreeningIntroWrapper() {
   const params = useParams<{ childId: string }>();
-
   return (
     <SensitiveNoIndex>
       <ScreeningIntro childId={params.childId ?? ""} />
@@ -129,7 +120,6 @@ function ScreeningIntroWrapper() {
 
 function ChooseChildPathWrapper() {
   const params = useParams<{ childId: string }>();
-
   return (
     <SensitiveNoIndex>
       <ChooseChildPath childId={params.childId ?? ""} />
@@ -139,59 +129,27 @@ function ChooseChildPathWrapper() {
 
 // ─── Wrapper Components للصفحات الحساسة بدون Params ─────────────────────────
 function BookingNoIndex() {
-  return (
-    <SensitiveNoIndex>
-      <Booking />
-    </SensitiveNoIndex>
-  );
+  return <SensitiveNoIndex><Booking /></SensitiveNoIndex>;
 }
 
 function ChildrenNoIndex() {
-  return (
-    <SensitiveNoIndex>
-      <ChildrenPage />
-    </SensitiveNoIndex>
-  );
-}
-
-function ResultDemoNoIndex() {
-  return (
-    <SensitiveNoIndex>
-      <ResultDemo />
-    </SensitiveNoIndex>
-  );
+  return <SensitiveNoIndex><ChildrenPage /></SensitiveNoIndex>;
 }
 
 function AssessmentStartNoIndex() {
-  return (
-    <SensitiveNoIndex>
-      <AssessmentStart />
-    </SensitiveNoIndex>
-  );
+  return <SensitiveNoIndex><AssessmentStart /></SensitiveNoIndex>;
 }
 
 function SelfAssessmentNoIndex() {
-  return (
-    <SensitiveNoIndex>
-      <SelfAssessment />
-    </SensitiveNoIndex>
-  );
+  return <SensitiveNoIndex><SelfAssessment /></SensitiveNoIndex>;
 }
 
 function ChooseSelfPathNoIndex() {
-  return (
-    <SensitiveNoIndex>
-      <ChooseSelfPath />
-    </SensitiveNoIndex>
-  );
+  return <SensitiveNoIndex><ChooseSelfPath /></SensitiveNoIndex>;
 }
 
 function SpecialistsMatchNoIndex() {
-  return (
-    <SensitiveNoIndex>
-      <SpecialistsMatch />
-    </SensitiveNoIndex>
-  );
+  return <SensitiveNoIndex><SpecialistsMatch /></SensitiveNoIndex>;
 }
 
 function Router() {
@@ -219,7 +177,6 @@ function Router() {
         <Route path="/screening-intro/:childId"    component={ScreeningIntroWrapper} />
         <Route path="/screening/:childId"          component={ScreeningWrapper} />
         <Route path="/screening-result/:sessionId" component={ScreeningResultWrapper} />
-        <Route path="/result-demo"                 component={ResultDemoNoIndex} />
 
         {/* ─── مسارات القمع الجديدة الحساسة: noindex, nofollow ───────────── */}
         <Route path="/start"                      component={AssessmentStartNoIndex} />
@@ -231,8 +188,11 @@ function Router() {
         {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────── */}
         <Route path="/login"   component={Login} />
         <Route path="/account" component={Account} />
-        {/* ─── لوحة الإدارة (Sprint 6B) — noindex ───────────────────────── */}
-        <Route path="/admin"   component={() => <SensitiveNoIndex><AdminDashboard /></SensitiveNoIndex>} />
+
+        {/* ─── لوحة الإدارة + معاينة النتائج الداخلية (admin-only) ─────── */}
+        <Route path="/admin"         component={() => <SensitiveNoIndex><AdminDashboard /></SensitiveNoIndex>} />
+        <Route path="/admin/preview" component={() => <SensitiveNoIndex><AdminResultPreview /></SensitiveNoIndex>} />
+
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
