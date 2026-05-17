@@ -119,16 +119,28 @@ export default function HeroSection() {
               >
                 —
               </span>
-              <span
-                className="text-xs"
-                style={{
-                  color: "#4A6278",
-                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  letterSpacing: "0.01em",
-                }}
-              >
-                منصة للفهم والتقييم الأولي
-              </span>
+     <span
+       className="text-xs"
+       style={{
+         color: "#4A6278",
+       fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+      letterSpacing: "0.01em",
+      }}
+      >
+      فهم وتقييم أولي{" "}
+
+     <span
+      style={{
+      color: "#1E4E8C",
+      fontWeight: 700,
+      letterSpacing: "-0.01em",
+          whiteSpace: "nowrap",
+      }}
+     >
+    لصعوبات التعلم وADHD
+    </span>
+
+    </span>
             </div>
 
             {/*
