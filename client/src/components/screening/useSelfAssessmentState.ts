@@ -3,17 +3,15 @@
  * Sprint 2.2 — Step 4: Centralized state hook
  * Sprint 2.2 — Step 7a: Funnel Instrumentation Wiring
  *
- * يجمع كل useState وملحقاتها + Funnel tracking في مكان واحد.
- * SelfAssessment.tsx يستدعي هذا الـ hook ويأخذ كل ما يحتاجه منه.
+ * FIX 1 (sessionId mismatch):
+ *   attachRealSessionId(selfId) قبل trackFunnelSubmit()
+ *   ضمان: session_id في Supabase = selfId دائماً
  *
- * Funnel Wiring (Step 7a):
- *   • FunnelSession يُنشأ بـ useRef — مرة واحدة per mount
- *   • trackFunnelSubmit → في handleSubmit فور نجاح الـ validation
- *   • trackFunnelAbandonment → beforeunload effect
- *   • trackHistoryView → عند فتح سجل التقييمات
- *   • funnelSession يُمرَّر لـ AssessmentForm عبر props
+ * FIX 2 (beforeunload reliability):
+ *   visibilitychange fallback بجانب beforeunload
  *
- * لا lazy loading — الـ assessment هو primary user flow.
+ * FIX 3 (trackFunnelSubmit → upsert):
+ *   موجود في screeningAnalytics.ts — لا تغيير هنا.
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -64,35 +62,24 @@ export function useSelfAssessmentState() {
   const [history, setHistory] = useState<SelfAssessmentSummary[]>([]);
   const remoteFetchedRef = useRef(false);
 
-  // ─── Step 7a: Funnel Session (created once per mount) ───────────────────────
-  //
-  // نستخدم useRef وليس useState لأن FunnelSession لا تحتاج re-render.
-  // الـ sessionId سيتطابق مع generateSelfId() في handleSubmit.
-  // الطريقة: نُنشئ session عند أول render ونحتفظ بالـ sessionId.
-  // في handleSubmit نتحقق من تطابق session.sessionId مع selfId
-  // عبر saveSelfProfile (selfId = session.sessionId).
+  // ─── FunnelSession (created once per mount) ────────────────────────────────────
   const funnelSessionRef = useRef<FunnelSession | null>(null);
   if (!funnelSessionRef.current) {
-    funnelSessionRef.current = new FunnelSession(
-      // سيُحدد selfId لاحقاً في handleSubmit — هنا نسجل pathType و device
-      // ونترك sessionId placeholder لأنه لا يُعرف بعد
-      `pending-${Date.now()}`,
-      pathType
-    );
+    funnelSessionRef.current = new FunnelSession(`pending-${Date.now()}`, pathType);
   }
   const funnelSession = funnelSessionRef.current;
 
-  // ─── historyViewTracked: لمنع إرسال trackHistoryView أكثر من مرة ────────────
+  // ─── historyViewTracked guard ─────────────────────────────────────────────────────
   const historyViewTracked = useRef(false);
 
-  // ─── Mount: page title + local history + enter animation ─────────────────────
+  // ─── Mount ────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     document.title = COPY.pageTitle;
     setTimeout(() => setVisible(true), 80);
     setHistory(sortByDate(loadSelfHistory()));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Remote merge (Supabase) — silent, non-blocking ────────────────────────
+  // ─── Remote merge (Supabase) ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user || remoteFetchedRef.current) return;
     remoteFetchedRef.current = true;
@@ -102,20 +89,41 @@ export function useSelfAssessmentState() {
     });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Step 7a: beforeunload — Abandonment tracking ─────────────────────────
+  // ─── FIX 2: beforeunload + visibilitychange dual fallback ────────────────────────
   //
-  // يُرسل abandoned=true عند مغادرة الصفحة بعد بدء التفاعل.
-  // لملاحظة: sessionId قد يكون "pending-" إذا لم يًكمل المستخدم الفورم.
-  // screeningAnalytics.trackFunnelAbandonment تتحمل ذلك بشفافية.
+  // استراتيجية مزدوجة لضمان abandonment tracking على جميع المتصفحات:
+  //   1. beforeunload: Chrome/Firefox Desktop — يرسل supabase request
+  //   2. visibilitychange (hidden): Safari iOS + Android Chrome
+  //      — يرسل supabase request عند انتقال لتطبيق آخر أو إغلاق التبويب
+  //
+  // حماية مزدوجة: abandonedRef يمنع إرسالين للـ Supabase
   useEffect(() => {
-    function onBeforeUnload() {
-      // لا نُرسل إلا إذا كان المستخدم تفاعل (بدأت startTracked في AssessmentForm)
-      // و لم يُكمل الفورم (لا submittedAt)
+    const abandonedRef = { sent: false };
+
+    async function fireAbandonment() {
+      if (abandonedRef.sent) return;
       if (funnelSession.submittedAt !== null) return;
+      abandonedRef.sent = true;
       void trackFunnelAbandonment(funnelSession, "self_assessment_form");
     }
+
+    function onBeforeUnload() {
+      void fireAbandonment();
+    }
+
+    function onVisibilityChange() {
+      if (document.hidden) {
+        void fireAbandonment();
+      }
+    }
+
     window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [funnelSession]);
 
   // ─── Form submit ─────────────────────────────────────────────────────────────────
@@ -135,19 +143,19 @@ export function useSelfAssessmentState() {
     const ageNum  = parseInt(age, 10);
     saveSelfProfile(selfId, name.trim(), ageNum, mode, pathType);
 
-    // Step 7a: نُطلق trackFunnelSubmit قبل navigate (fire-and-forget)
-    // ملاحظة: نستخدم funnelSession الموجود بالـ ref —
-    // session.sessionId قد يكون "pending-" لكن الصف سيكون موجوداً
-    // بالـ session_id الذي أدخله trackFunnelStart (pending-...)
+    // FIX 1: ربط session بالـ selfId الحقيقي قبل أي tracking
+    // بعد هذا السطر: session.sessionId = selfId دائماً
+    funnelSession.attachRealSessionId(selfId);
+
+    // trackFunnelSubmit يكتب row بـ session_id = selfId (upsert — FIX 3)
     void trackFunnelSubmit(funnelSession);
 
     navigate(buildIntroUrl(selfId, name.trim(), ageNum, mode, pathType));
   }
 
-  // ─── Step 7a: trackHistoryView ───────────────────────────────────────────────
+  // ─── trackHistoryView (once-only) ───────────────────────────────────────────────
   function handleShowAllHistory(value: boolean) {
     setShowAllHistory(value);
-    // نُطلق trackHistoryView فقط عند الفتح (وليس عند الإغلاق)، ومرة واحدة فقط
     if (value && !historyViewTracked.current) {
       historyViewTracked.current = true;
       funnelSession.onHistoryView();
@@ -163,12 +171,11 @@ export function useSelfAssessmentState() {
   const safeRedirect = buildSafeRedirect(window.location.pathname, window.location.search);
   const loginUrl     = `/login?redirect=${encodeURIComponent(safeRedirect)}`;
 
-  // ─── Scroll to form helper ──────────────────────────────────────────────────────
+  // ─── Helpers ────────────────────────────────────────────────────────────────────────
   function scrollToForm() {
     document.getElementById("self-assessment-form")?.scrollIntoView({ behavior: "smooth" });
   }
 
-  // ─── Navigate to result helper ────────────────────────────────────────────────
   function navigateToResult(sessionId: string, itemName: string, itemPathType: PathType) {
     navigate(buildResultUrl(sessionId, itemName, itemPathType));
   }
@@ -183,7 +190,7 @@ export function useSelfAssessmentState() {
     // ui
     visible,
     showAllHistory,
-    setShowAllHistory: handleShowAllHistory,  // مُحدّث: الآن يحتوي trackHistoryView
+    setShowAllHistory: handleShowAllHistory,
     // form
     name, setName,
     age,  setAge,

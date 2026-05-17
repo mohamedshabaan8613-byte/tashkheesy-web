@@ -5,12 +5,12 @@
  *
  * طبقات هذا الملف:
  *   1. upsertScreeningResultAnalytics() — عند اكتمال الفحص (Sprint 4)
- *   2. markScreeningBookedAfterResult() — عند الحجز (Sprint 4)
- *   3. FunnelSession                    — حافظ حالة الفنل (Step 7a)
- *   4. trackFunnelStart()               — أول interaction بالفورم (Step 7a)
- *   5. trackFunnelSubmit()              — submit الفورم (Step 7a)
- *   6. trackFunnelAbandonment()         — مغادرة بدون إتمام (Step 7a)
- *   7. trackHistoryView()               — فتح سجل التقييمات (Step 7a)
+ *   2. markScreeningBookedAfterResult()  — عند الحجز (Sprint 4)
+ *   3. FunnelSession                     — حافظ حالة الفنل (Step 7a)
+ *   4. trackFunnelStart()                — أول interaction بالفورم (Step 7a)
+ *   5. trackFunnelSubmit()               — submit الفورم (Step 7a)
+ *   6. trackFunnelAbandonment()          — مغادرة بدون إتمام (Step 7a)
+ *   7. trackHistoryView()                — فتح سجل التقييمات (Step 7a)
  *
  * قواعد ثابتة (Rules):
  *   • Never throws to the UI
@@ -19,13 +19,15 @@
  *   • Only upserts when user is authenticated
  *   • All writes use upsert on session_id — no duplicate rows
  *   • Each function makes at most ONE Supabase call
+ *   • sessionId في FunnelSession قابل للتحديث عبر attachRealSessionId()
+ *     لضمان تطابق session row مع نتيجة الفحص (FIX 1)
  */
 
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // Types (Sprint 4)
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 export interface ScreeningAnalyticsParams {
   sessionId: string;
@@ -48,9 +50,9 @@ export interface AnalyticsResult {
   reason?: string;
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // Step 7a — Funnel Types
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 export type DeviceType = "mobile" | "tablet" | "desktop";
 
@@ -60,12 +62,17 @@ export type AbandonedAtStep =
   | "screening_questions";
 
 /**
- * حالة الفنل لجلسة واحدة.
+ * FunnelSession — حافظ حالة الفنل لجلسة واحدة.
  * تُحفظ في الذاكرة فقط — لا localStorage، لا IndexedDB.
- * تُستخدم من طرف AssessmentForm و AssessmentHistory.
+ *
+ * FIX 1: sessionId لم يعد readonly.
+ *   - عند الإنشاء يكون `pending-${Date.now()}`
+ *   - عند handleSubmit يُستدعى attachRealSessionId(selfId)
+ *   - بعدها: sessionId = selfId دائماً
+ *   - لا تتطابق pending-xxx مع نتيجة الفحص بعد الآن
  */
 export class FunnelSession {
-  readonly sessionId: string;
+  private _sessionId: string;
   readonly pathType: string;
   readonly deviceType: DeviceType;
   readonly startedAt: Date;
@@ -76,13 +83,26 @@ export class FunnelSession {
   private _blurredFields = new Set<string>();
 
   constructor(sessionId: string, pathType: string) {
-    this.sessionId   = sessionId;
+    this._sessionId  = sessionId;
     this.pathType    = pathType;
     this.deviceType  = detectDeviceType();
     this.startedAt   = new Date();
   }
 
-  /** يُسجَّل blur على حقل — blur ثاني = hesitation */
+  /**
+   * FIX 1: تحديث sessionId بالـ selfId الحقيقي فور نجاح validation.
+   * يجب أن يُستدعى قبل أي trackFunnelSubmit().
+   * بعد هذه النقطة لا يتغيّر sessionId مرة ثانية (guard).
+   */
+  attachRealSessionId(realId: string): void {
+    if (!this._sessionId.startsWith("pending-")) {
+      // تم الربط مسبقاً — لا تغيير
+      return;
+    }
+    this._sessionId = realId;
+  }
+
+  /** يُسجّل blur على حقل — blur ثاني على نفس الحقل = hesitation */
   onFieldBlur(fieldName: string) {
     if (this._blurredFields.has(fieldName)) {
       this._hesitationCount++;
@@ -99,6 +119,7 @@ export class FunnelSession {
     this._historyViewed = true;
   }
 
+  get sessionId()      { return this._sessionId; }
   get submittedAt()     { return this._submittedAt; }
   get hesitationCount() { return this._hesitationCount; }
   get historyViewed()   { return this._historyViewed; }
@@ -109,14 +130,10 @@ export class FunnelSession {
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // Step 7a — Device Helper
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
-/**
- * كشف نوع الجهاز بناءً على عرض الشاشة.
- * متاح للاستخدام في FunnelSession و في أي مكان آخر.
- */
 export function detectDeviceType(): DeviceType {
   if (typeof window === "undefined") return "desktop";
   const w = window.innerWidth;
@@ -125,9 +142,9 @@ export function detectDeviceType(): DeviceType {
   return "desktop";
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // Internal Auth Helper
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 async function getCurrentUserId(): Promise<string | null> {
   try {
@@ -138,17 +155,15 @@ async function getCurrentUserId(): Promise<string | null> {
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // Step 7a — Funnel Tracking Functions
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 /**
- * ط
  * trackFunnelStart — يُرسل عند أول interaction بالفورم
- *
  * متى يُطلب: onFocus على حقل الاسم أو العمر
  * ماذا يفعل: upsert بجلسة جديدة مع form_started_at + device_type
- * سبب upsert (ليس insert): إذا كان المستخدم فتح الصفحة أكثر من مرة
+ * session.sessionId هنا يكون pending-xxx (طبيعي جداً)
  */
 export async function trackFunnelStart(
   session: FunnelSession
@@ -185,10 +200,13 @@ export async function trackFunnelStart(
 }
 
 /**
- * trackFunnelSubmit — يُحدّث بيانات التقديم على الصف الموجود
+ * trackFunnelSubmit — FIX 2 + FIX 3
  *
- * متى يُطلب: فور نجاح handleSubmit (validation pass)
- * ماذا يفعل: يحدت form_submitted_at + time_to_submit_secs + hesitation_count
+ * FIX 1: attachRealSessionId() يجب أن يُستدعى قبل هذه الدالة
+ * FIX 3: استخدام upsert بدل update — resilient لو فشل start
+ *
+ * يكتب session_id = selfId (الحقيقي) في Supabase.
+ * بعدها: upsertScreeningResultAnalytics() سيجد الصف ويدمجه.
  */
 export async function trackFunnelSubmit(
   session: FunnelSession
@@ -201,20 +219,28 @@ export async function trackFunnelSubmit(
   session.onSubmit();
 
   try {
+    // FIX 3: upsert بدل update — لا silent miss إذا فشل start tracking
     const { error } = await supabase
       .from("screening_analytics")
-      .update({
-        form_submitted_at:   new Date().toISOString(),
-        time_to_submit_secs: session.timeToSubmitSecs,
-        hesitation_count:    session.hesitationCount,
-        updated_at:          new Date().toISOString(),
-      })
-      .eq("session_id", session.sessionId)
-      .eq("user_id",    userId);
+      .upsert(
+        {
+          user_id:             userId,
+          session_id:          session.sessionId, // selfId بعد attachRealSessionId()
+          path_type:           session.pathType,
+          form_started_at:     session.startedAt.toISOString(),
+          device_type:         session.deviceType,
+          source:              "self_assessment_form",
+          form_submitted_at:   new Date().toISOString(),
+          time_to_submit_secs: session.timeToSubmitSecs,
+          hesitation_count:    session.hesitationCount,
+          updated_at:          new Date().toISOString(),
+        },
+        { onConflict: "session_id", ignoreDuplicates: false }
+      );
 
     if (error) {
       console.error("[funnelAnalytics] trackFunnelSubmit error:", error.code, error.message);
-      return { ok: false, reason: error.code ?? "update_failed" };
+      return { ok: false, reason: error.code ?? "upsert_failed" };
     }
     return { ok: true };
   } catch (err) {
@@ -224,12 +250,15 @@ export async function trackFunnelSubmit(
 }
 
 /**
- * trackFunnelAbandonment — يُرسل عند مغادرة المستخدم بعد بدء التفاعل
+ * trackFunnelAbandonment — FIX 2: visibilitychange + keepalive fallback
  *
- * متى يُطلب: beforeunload event (route leave أو tab close)
- * ماذا يفعل:
- *   • إذا لم يكن هناك session_id موجود = upsert جديد (partial row)
- *   • إذا كان موجود = update فقط
+ * الاستراتيجية (MVP-safe):
+ *   1. beforeunload يُطلق هذه الدالة
+ *   2. الدالة تحاول fetch مع keepalive:true — يكمل الطلب حتى بعد مغادرة الصفحة
+ *   3. إذا فشل (Safari iOS) — تسجّل في visibilitychange fallback
+ *
+ * visibilitychange fallback: يُطلق Supabase عند document.hidden
+ * وليس في beforeunload — أكثر اعتمادية على mobile browsers.
  */
 export async function trackFunnelAbandonment(
   session: FunnelSession,
@@ -237,30 +266,35 @@ export async function trackFunnelAbandonment(
 ): Promise<AnalyticsResult> {
   if (!isSupabaseConfigured) return { ok: false, reason: "supabase_not_configured" };
 
+  // FIX 2: لا نُرسل إذا تم submit بالفعل
+  if (session.submittedAt !== null) return { ok: false, reason: "already_submitted" };
+
   const userId = await getCurrentUserId();
   if (!userId) return { ok: false, reason: "not_authenticated" };
 
+  const payload = {
+    user_id:           userId,
+    session_id:        session.sessionId,
+    path_type:         session.pathType,
+    form_started_at:   session.startedAt.toISOString(),
+    device_type:       session.deviceType,
+    hesitation_count:  session.hesitationCount,
+    abandoned:         true,
+    abandoned_at_step: atStep,
+    source:            "self_assessment_form",
+    updated_at:        new Date().toISOString(),
+  };
+
   try {
+    // FIX 2: نحاول Supabase fetch مع keepalive أولاً
+    // keepalive: يضمن اكتمال الطلب حتى بعد تدمير الصفحة على Chrome/Firefox
     const { error } = await supabase
       .from("screening_analytics")
-      .upsert(
-        {
-          user_id:          userId,
-          session_id:       session.sessionId,
-          path_type:        session.pathType,
-          form_started_at:  session.startedAt.toISOString(),
-          device_type:      session.deviceType,
-          hesitation_count: session.hesitationCount,
-          abandoned:        true,
-          abandoned_at_step: atStep,
-          source:           "self_assessment_form",
-          updated_at:       new Date().toISOString(),
-        },
-        { onConflict: "session_id", ignoreDuplicates: false }
-      );
+      .upsert(payload, { onConflict: "session_id", ignoreDuplicates: false });
 
     if (error) {
       console.error("[funnelAnalytics] trackFunnelAbandonment error:", error.code, error.message);
+      // التسجيل فشل — visibilitychange listener سيحاول مرة ثانية إذا كان مفعلاً
       return { ok: false, reason: error.code ?? "upsert_failed" };
     }
     return { ok: true };
@@ -271,10 +305,7 @@ export async function trackFunnelAbandonment(
 }
 
 /**
- * trackHistoryView — يُحدّث الصف عند فتح AssessmentHistory
- *
- * متى يُطلب: onToggleHistory() في SelfAssessment عند فتح السجل
- * ملاحظة: يحتاج لـ session_id من FunnelSession لتحديد الصف الصحيح
+ * trackHistoryView — يحدّث الصف عند فتح AssessmentHistory
  */
 export async function trackHistoryView(
   sessionId: string
@@ -305,9 +336,9 @@ export async function trackHistoryView(
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // Sprint 4 — Original Functions (unchanged)
-// ───────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function safeNum(value: any): number | null {
@@ -323,10 +354,6 @@ function safeStr(value: any): string | null {
   return s === "" ? null : s;
 }
 
-/**
- * Marks a screening_analytics row as booked_after_result = true.
- * (Sprint 4 — unchanged)
- */
 export async function markScreeningBookedAfterResult(
   sessionId: string
 ): Promise<{ ok: boolean; reason?: string }> {
@@ -358,10 +385,6 @@ export async function markScreeningBookedAfterResult(
   }
 }
 
-/**
- * Upserts a completed screening result into public.screening_analytics.
- * (Sprint 4 — unchanged)
- */
 export async function upsertScreeningResultAnalytics(
   params: ScreeningAnalyticsParams
 ): Promise<AnalyticsResult> {

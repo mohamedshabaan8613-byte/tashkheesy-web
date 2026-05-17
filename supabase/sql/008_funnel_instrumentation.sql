@@ -1,116 +1,107 @@
--- ─────────────────────────────────────────────────────────────────────────────────
--- Migration 008: Funnel Instrumentation
--- Sprint 2.2 — Step 7a
+-- =============================================================================
+-- Migration: 008_funnel_instrumentation.sql
+-- Sprint 2.2 — Step 7a: Funnel Instrumentation Columns
+-- =============================================================================
+-- متى تُشغّل: قبل أي اختبار فعلي لـ funnel tracking.
+-- تصميم: idempotent — آمن للتشغيل أكثر من مرة.
+-- الجدول: public.screening_analytics (موجود مسبقاً)
+-- =============================================================================
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 1. أعمدة Funnel State (form tracking)
+-- ────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE public.screening_analytics
+  ADD COLUMN IF NOT EXISTS form_started_at    TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS form_submitted_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS time_to_submit_secs INT,
+  ADD COLUMN IF NOT EXISTS hesitation_count   INT     DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS device_type        TEXT,      -- 'mobile' | 'tablet' | 'desktop'
+  ADD COLUMN IF NOT EXISTS abandoned          BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS abandoned_at_step  TEXT,      -- 'self_assessment_form' | ...
+  ADD COLUMN IF NOT EXISTS history_viewed     BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS updated_at         TIMESTAMPTZ;
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 2. ضمان صحة البيانات: CHECK constraints
+-- ────────────────────────────────────────────────────────────────────────────
+
+-- منع قيم device_type غير صالحة (إذا لم يكن الـ constraint موجوداً)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.constraint_column_usage
+    WHERE table_name = 'screening_analytics'
+      AND constraint_name = 'screening_analytics_device_type_check'
+  ) THEN
+    ALTER TABLE public.screening_analytics
+      ADD CONSTRAINT screening_analytics_device_type_check
+      CHECK (device_type IS NULL OR device_type IN ('mobile', 'tablet', 'desktop'));
+  END IF;
+END;
+$$;
+
+-- منع abandoned_at_step غير صالحة
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.constraint_column_usage
+    WHERE table_name = 'screening_analytics'
+      AND constraint_name = 'screening_analytics_abandoned_at_step_check'
+  ) THEN
+    ALTER TABLE public.screening_analytics
+      ADD CONSTRAINT screening_analytics_abandoned_at_step_check
+      CHECK (
+        abandoned_at_step IS NULL OR
+        abandoned_at_step IN (
+          'self_assessment_form',
+          'screening_intro',
+          'screening_questions'
+        )
+      );
+  END IF;
+END;
+$$;
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 3. Indexes (performance)
+-- ────────────────────────────────────────────────────────────────────────────
+
+CREATE INDEX IF NOT EXISTS idx_screening_analytics_abandoned
+  ON public.screening_analytics (user_id, abandoned)
+  WHERE abandoned = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_screening_analytics_form_started_at
+  ON public.screening_analytics (form_started_at)
+  WHERE form_started_at IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_screening_analytics_device_type
+  ON public.screening_analytics (device_type)
+  WHERE device_type IS NOT NULL;
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 4. RLS — التحقق من سماحات UPDATE على الأعمدة الجديدة
+-- ────────────────────────────────────────────────────────────────────────────
+-- ملاحظة: إذا كانت policy الحالية هي:
+--   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id)
+-- فهي تغطي الأعمدة الجديدة تلقائياً — لا تغيير مطلوب.
 --
--- الهدف:
---   إضافة columns لقياس سلوك المستخدم كامل الفنل (ليس فقط عند الإتمام)
+-- إذا كانت policy محددة بأسماء أعمدة محددة، شغّل الاستعلام التالي:
+-- SELECT column_name FROM information_schema.columns
+--   WHERE table_name = 'screening_analytics' ORDER BY ordinal_position;
 --
--- الفنل الكامل بعد هذه الميجراشن:
---   form_started_at
---     ↓ form_submitted_at  [الفرق = time_to_submit_secs]
---     ↓ completed_at      [الفحص انتهى وظهرت النتيجة]
---     ↓ booked_after_result [حجز بعد النتيجة]
---   OR:
---   form_started_at → abandoned = true [غادر مبكراً]
---
--- الأمان:
---   • كل الـ columns جديدة nullable — لا تأثير على الـ rows الحالية
---   • كل تعديل idempotent (يمكن تشغيله أكثر من مرة)
---   • لا تغيير على الـ RLS policies أو الـ unique constraints
--- ─────────────────────────────────────────────────────────────────────────────────
+-- تحقّق: هل هناك policies على الجدول؟
+SELECT schemaname, tablename, policyname, cmd, qual, with_check
+  FROM pg_policies
+  WHERE tablename = 'screening_analytics';
 
--- ─── 1. إضافة Funnel Timing Columns ─────────────────────────────────────────
-
--- وقت أول interaction بالفورم (name focus أو age focus)
-alter table public.screening_analytics
-  add column if not exists form_started_at timestamptz null;
-
-comment on column public.screening_analytics.form_started_at
-  is 'Timestamp of first user interaction with the form (name or age field focus). NULL = form never interacted with.';
-
--- وقت submit الفورم (قبل بدء الفحص)
-alter table public.screening_analytics
-  add column if not exists form_submitted_at timestamptz null;
-
-comment on column public.screening_analytics.form_submitted_at
-  is 'Timestamp of form submission (after validation, before screening questions). NULL = form never submitted.';
-
--- المدة بالثواني من أول interaction حتى submit (مؤشر التردد)
-alter table public.screening_analytics
-  add column if not exists time_to_submit_secs integer null;
-
-comment on column public.screening_analytics.time_to_submit_secs
-  is 'Seconds between form_started_at and form_submitted_at. High values indicate hesitation or confusion.';
-
--- ─── 2. إضافة Behavioral Signal Columns ──────────────────────────────────────
-
--- عدد مرات تعديل الحقل بعد أول blur (مؤشر عدم الثقة)
-alter table public.screening_analytics
-  add column if not exists hesitation_count integer null;
-
-comment on column public.screening_analytics.hesitation_count
-  is 'Number of field re-edits after first blur. Repeated edits of same field = anxiety or confusion.';
-
--- هل غادر بعد بدء التفاعل بدون إتمام
-alter table public.screening_analytics
-  add column if not exists abandoned boolean null;
-
-comment on column public.screening_analytics.abandoned
-  is 'True if user interacted with form but left without submitting. NULL = no interaction at all.';
-
--- من أي خطوة غادر (self_assessment_form | screening_intro | screening_questions)
-alter table public.screening_analytics
-  add column if not exists abandoned_at_step text null;
-
-comment on column public.screening_analytics.abandoned_at_step
-  is 'Step name where user abandoned. Values: self_assessment_form | screening_intro | screening_questions.';
-
--- ─── 3. إضافة UX Engagement Columns ───────────────────────────────────────────
-
--- هل فتح سجل التقييمات السابقة (AssessmentHistory)
-alter table public.screening_analytics
-  add column if not exists history_viewed boolean null;
-
-comment on column public.screening_analytics.history_viewed
-  is 'True if user expanded the history panel before starting a new assessment.';
-
--- نوع الجهاز (mobile / tablet / desktop)
-alter table public.screening_analytics
-  add column if not exists device_type text null;
-
-comment on column public.screening_analytics.device_type
-  is 'Device category at form start. Values: mobile | tablet | desktop. Based on window.innerWidth.';
-
--- ─── 4. Indexes للـ columns الأكثر استخداماً في التحليل ─────────────────────────
-
--- مهم للفلترة على الجلسات التي غادرت فقط
-create index if not exists idx_screening_analytics_abandoned
-  on public.screening_analytics (abandoned)
-  where abandoned = true;
-
--- مهم لتحليل الموبايل drop-off
-create index if not exists idx_screening_analytics_device_type
-  on public.screening_analytics (device_type);
-
--- مهم لفلترة تسلسل الفنل زمنياً
-create index if not exists idx_screening_analytics_form_started_at
-  on public.screening_analytics (form_started_at);
-
--- ─── 5. Admin RLS policies للـ columns الجديدة ─────────────────────────────────
--- ملاحظة: الـ RLS policies الحالية تغطي جميع الـ columns تلقائياً.
--- لا حاجة لتعديلها — القاعدة: auth.uid() = user_id تطبق على كل الـ columns.
--- Admin select متاح عبر migration 007 ولا يحتاج تحديثاً.
-
--- ─── 6. ملخص الفنل بعد هذه الميجراشن ─────────────────────────────────────
-
--- السؤال الذي يجيب عليه كل column:
---
---   form_started_at ──────── كم شخص بدأ التفاعل مع الفورم?
---   form_submitted_at ────── كم أكمل الفورم ونتقل للفحص?
---   completed_at ────────── كم أكمل الفحص كاملاً?
---   booked_after_result ──── كم حجز بعد النتيجة?
---   abandoned = true ────── كم غادر بعد البداية?
---   time_to_submit_secs ──── كم الوقت المتوسط للتقرير (hesitation indicator)?
---   hesitation_count ────── ما متوسط عدد التعديلات قبل الإرسال?
---   device_type = 'mobile' ─ معدل الإتمام على الموبايل مقابل الديسكتوب?
---   history_viewed ──────── هل الذين يفتحون التاريخ يكملون أكثر?
+-- نتيجة الميجريشن: جميع الأعمدة موجودة والايندكس جاهزة.
+SELECT
+  column_name,
+  data_type,
+  column_default,
+  is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name   = 'screening_analytics'
+ORDER BY ordinal_position;
