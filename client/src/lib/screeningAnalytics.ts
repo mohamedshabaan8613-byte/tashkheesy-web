@@ -14,7 +14,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
-import { getCurrentUserId } from "@/lib/auth";
+import { getCurrentUserId } from "./accountData";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
