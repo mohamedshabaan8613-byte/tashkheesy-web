@@ -86,9 +86,6 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
   const ageGroup  = searchParams.get("ageGroup") ?? "school";
 
   // ─── FunnelSession (path_choose entry point) ─────────────────────────────────
-  // هذا هو entry point الأول لمسار الطفل — ننشئ session هنا.
-  // pathType غير معروف بعد (سيختاره المستخدم) → نستخدم "choose" كـ placeholder.
-  // بعد الاختيار: نُحدّث pathType عبر trackFunnelPathSelected.
   const funnelSessionRef = useRef<FunnelSession | null>(null);
   if (!funnelSessionRef.current) {
     funnelSessionRef.current = new FunnelSession(
@@ -127,14 +124,11 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
 
   function handleChoose(pathType: string) {
     setSelected(pathType);
-
-    // Step 7b: سجّل اختيار المسار في Supabase قبل navigate
     void trackFunnelPathSelected(
       funnelSession,
       pathType as "learning" | "adhd",
       childId
     );
-
     setTimeout(() => {
       navigate(
         `/screening-intro/${childId}?pathType=${pathType}&mode=child&name=${encodeURIComponent(childName)}&age=${childAge}&ageGroup=${ageGroup}`
@@ -279,7 +273,7 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
                       style={{ background: path.bg, border: `1.5px solid ${path.border}` }}
                     >
                       <Icon size={22} style={{ color: path.color }} aria-hidden="true" />
-                    >
+                    </div>
                     <span
                       className="text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{
