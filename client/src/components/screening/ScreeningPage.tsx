@@ -6,8 +6,14 @@
  * - الإجابات تُحفظ في localStorage فوراً
  * - النتيجة تُحسب محلياً وتُعرض فوراً بدون انتظار server
  * - تصميم أكثر وضوحاً وسهولة في الاستخدام
+ *
+ * FIX #4 (session_id unification):
+ * - يقرأ &fid= من URL (= childId من funnel path selection)
+ * - يستخدمه كـ sessionId لـ upsertScreeningResultAnalytics
+ * - fallback chain: fid → childId → session_{childId}_{ts}
+ * - sessionId مؤمن في useRef → لا collision عبر re-renders
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
 import {
@@ -38,7 +44,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 
-// ─── بنك الأسئلة المحلي (لا يحتاج API) ──────────────────────────────────────
+// ─── بنك الأسئلة المحلي (لا يحتاج API) ────────────────────────────────────────────
 interface Question {
   id: string;
   text: string;
@@ -80,7 +86,7 @@ const ALL_QUESTIONS: Question[] = [
   { id: "mo2", text: "يُعاني من ضعف في التنسيق الحركي (يتعثر، يسقط الأشياء كثيراً)", category: "motor", categoryLabel: "الحركي", weight: 1.3, ageGroups: ["preschool", "school"] },
 ];
 
-// ─── حساب النتيجة محلياً ─────────────────────────────────────────────────────
+// ─── حساب النتيجة محلياً ───────────────────────────────────────────────────────────────────
 interface ScreeningResult {
   percentage: number;
   riskLevel: "low" | "medium" | "high" | "critical";
@@ -123,21 +129,21 @@ function calculateLocalScore(answers: Record<string, number>, questions: Questio
   if (riskLevel === "low") {
     recommendations.push("استمر في دعم طفلك بالأنشطة التعليمية اليومية والقراءة المشتركة.");
     recommendations.push("راقب تطور طفلك بانتظام وأجرِ فحصاً دورياً كل 6 أشهر.");
-    recommendations.push("شجع طفلك على الأنشطة الإبداعية التي تعزز الذاكرة والتركيز.");
+    recommendations.push("شجّع طفلك على الأنشطة الإبداعية التي تعزز الذاكرة والتركيز.");
   } else if (riskLevel === "medium") {
     recommendations.push("يُنصح بالتواصل مع معلم طفلك لمناقشة أسلوب التعلم المناسب له.");
     recommendations.push("جرّب تمارين القراءة اليومية لمدة 15 دقيقة في بيئة هادئة.");
     recommendations.push("أجرِ فحصاً متابعة بعد 3 أشهر لمراقبة التطور.");
-    recommendations.push("فكّر في الاستشارة مع أخصائي تربية خاصة للحصول على تقييم أعمق.");
+    recommendations.push("فكّر في الاستشارة مع أخصّائي تربية خاصة للحصول على تقييم أعمق.");
   } else if (riskLevel === "high") {
-    recommendations.push("يُوصى بشدة بالتواصل مع أخصائي صعوبات تعلم في أقرب وقت.");
+    recommendations.push("يُوصى بشدة بالتواصل مع أخصّائي صعوبات تعلم في أقرب وقت.");
     recommendations.push("اطلب من المدرسة توفير دعم تعليمي إضافي لطفلك.");
     recommendations.push("ابدأ بتمارين التطوير الخاصة المقترحة في قسم التمارين.");
-    recommendations.push("تجنب الضغط على طفلك وركز على تعزيز ثقته بنفسه.");
+    recommendations.push("تجنّب الضغط على طفلك وركّز على تعزيز ثقته بنفسه.");
   } else {
     recommendations.push("يُنصح بإجراء تقييم متخصص شامل في أقرب وقت ممكن.");
     recommendations.push("تواصل مع طبيب الأطفال لاستبعاد أي أسباب طبية.");
-    recommendations.push("احجز جلسة مع أخصائي صعوبات التعلم لتقييم احترافي دقيق.");
+    recommendations.push("احجز جلسة مع أخصّائي صعوبات التعلم لتقييم احترافي دقيق.");
   }
   if ((categoryScores["attention"]?.percentage ?? 0) > 60) {
     recommendations.push("لاحظنا مؤشرات في مجال الانتباه — يُنصح بتمارين التركيز اليومية.");
@@ -149,7 +155,7 @@ function calculateLocalScore(answers: Record<string, number>, questions: Questio
   return { percentage: pct, riskLevel, riskLabel, categoryScores, recommendations };
 }
 
-// ─── خيارات الإجابة ───────────────────────────────────────────────────────────
+// ─── خيارات الإجابة ───────────────────────────────────────────────────────────────────
 const ANSWER_OPTIONS = [
   { value: 1, label: "أبداً", desc: "لا أُلاحظ هذا السلوك إطلاقاً", color: "border-green-400 bg-green-50 text-green-800" },
   { value: 2, label: "نادراً", desc: "مرة أو مرتين في الشهر", color: "border-lime-400 bg-lime-50 text-lime-800" },
@@ -162,15 +168,14 @@ const CATEGORY_ICONS: Record<string, string> = {
   reading: "📖", writing: "✏️", attention: "🎯", memory: "🧠", social: "🤝", motor: "🖐️",
 };
 
-// ─── الفئة العمرية ────────────────────────────────────────────────────────────
+// ─── الفئة العمرية ─────────────────────────────────────────────────────────────────────────────
 function getAgeGroup(age: number): string {
   if (age <= 5) return "preschool";
   if (age <= 12) return "school";
-  // البالغون (18+) يستخدمون أسئلة teen — وهي الأنسب للتقييم الذاتي
   return "teen";
 }
 
-// ─── المكوّن الرئيسي ──────────────────────────────────────────────────────────
+// ─── المكونَّ الرئيسي ─────────────────────────────────────────────────────────────────────────
 interface ScreeningPageProps {
   childId: string;
 }
@@ -186,12 +191,21 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
 
   // قراءة pathType وmode من URL
   const urlPathType = searchParams.get("pathType") ?? "learning";
-  const mode = searchParams.get("mode") ?? ""; // self | "" (child mode)
-  // تعيين screeningType من pathType مباشرة — learning يُعيَّن كـ dyslexia (صعوبات التعلم)
+  const mode = searchParams.get("mode") ?? "";
+
+  // ─── FIX #4: قراءة fid من URL كـ sessionId موحَّد ───────────────────────────────
+  // fid = funnelSession.sessionId (= childId) من useChildAssessmentState
+  // fallback chain: fid → childId → session_{childId}_{ts}
+  // مؤمن في useRef → لا collision عبر re-renders
+  const sessionIdRef = useRef<string>(
+    searchParams.get("fid") ||
+    (childId && childId !== "" ? childId : `session_${childId}_${Date.now()}`)
+  );
+  const sessionId = sessionIdRef.current;
+
   const initialScreeningType: ScreeningType = urlPathType === "adhd" ? "adhd" : "dyslexia";
 
   const [phase, setPhase] = useState<Phase>("intro");
-  // screeningType مشتق من pathType فقط — لا setter مكشوف للـ UI
   const screeningType: ScreeningType = initialScreeningType;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -199,12 +213,12 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const [animating, setAnimating] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
 
-  // ─── Sync localStorage → Supabase عند تحميل الصفحة (fire-and-forget) ────────
+  // ─── Sync localStorage → Supabase (fire-and-forget) ────────────────────────────────────────
   useEffect(() => {
     void syncLocalSelfAssessmentsToSupabase();
   }, []);
 
-  // ─── تصفية الأسئلة حسب العمر ─────────────────────────────────────────────
+  // ─── تصفية الأسئلة حسب العمر ────────────────────────────────────────────────────────────
   const ageGroup = getAgeGroup(childAge);
   const questions = ALL_QUESTIONS.filter((q) => q.ageGroups.includes(ageGroup));
   const totalQuestions = questions.length;
@@ -214,7 +228,7 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const canComplete = answeredCount >= Math.ceil(totalQuestions * 0.7);
 
-  // ─── حفظ الإجابات في localStorage ────────────────────────────────────────
+  // ─── حفظ الإجابات في localStorage ─────────────────────────────────────────────────────────
   const STORAGE_KEY = `screening_${childId}_${screeningType}`;
 
   useEffect(() => {
@@ -228,31 +242,27 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     }
   }, [STORAGE_KEY]);
 
-  // ─── اختيار إجابة ────────────────────────────────────────────────────────
+  // ─── اختيار إجابة ──────────────────────────────────────────────────────────────────────────
   const handleAnswer = useCallback(
     (value: number) => {
       if (!currentQuestion || animating) return;
 
       const newAnswers = { ...answers, [currentQuestion.id]: value };
       setAnswers(newAnswers);
-
-      // حفظ فوري في localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ answers: newAnswers, currentIndex }));
-
-      // إخفاء رسالة التحقق فور اختيار إجابة
       setShowValidation(false);
     },
     [currentQuestion, answers, currentIndex, totalQuestions, animating, STORAGE_KEY]
   );
 
-  // ─── إنهاء الفحص وحساب النتيجة محلياً ───────────────────────────────────
+  // ─── إنهاء الفحص وحساب النتيجة ───────────────────────────────────────────────────────
+  //
+  // FIX #4: يستخدم sessionId (= fid من URL) بدلاً من توليد session_id جديد
   function handleComplete() {
     setPhase("submitting");
     const result = calculateLocalScore(answers, questions);
-
-    // حفظ النتيجة في localStorage
-    const sessionId = `session_${childId}_${Date.now()}`;
     const completedAt = new Date().toISOString();
+
     const resultPayload = {
       sessionId,
       childName,
@@ -267,13 +277,13 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     };
     localStorage.setItem(`result_${sessionId}`, JSON.stringify(resultPayload));
 
-    // إذا كان التقييم ذاتياً، حدّث سجل tashkheesy_self_assessments
+    // تحديث سجل self assessments إذا كان مسار self
     if (mode === "self") {
       try {
         const SELF_KEY = "tashkheesy_self_assessments";
         const existing = localStorage.getItem(SELF_KEY);
         const list: unknown[] = existing ? JSON.parse(existing) : [];
-        const entry = {
+        list.unshift({
           id: sessionId,
           sessionId,
           name: childName,
@@ -283,19 +293,14 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
           screeningType,
           completedAt,
           resultKey: `result_${sessionId}`,
-        };
-        list.unshift(entry); // أضف في البداية (الأحدث أولاً)
+        });
         localStorage.setItem(SELF_KEY, JSON.stringify(list));
-      } catch {
-        // تجاهل أخطاء localStorage
-      }
+      } catch {}
     }
 
-    // مسح بيانات الجلسة المؤقتة
     localStorage.removeItem(STORAGE_KEY);
 
-    // ─── Sprint 5: Persist self-assessment result to Supabase (fire-and-forget) ──
-    // Only for mode === 'self'. Never blocks UI. localStorage is primary source.
+    // ─── Sprint 5: Persist to Supabase (fire-and-forget, self only) ────────────────────────
     if (mode === "self") {
       void upsertRemoteScreeningResult({
         sessionId,
@@ -315,9 +320,8 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
       });
     }
 
-    // ─── Analytics: persist to Supabase (fire-and-forget) ────────────────────
-    // Runs at completion time — does not block navigation or UI.
-    // upsert by session_id prevents duplicates if ScreeningResult also calls it.
+    // ─── Analytics upsert (fire-and-forget) ────────────────────────────────────────────────────
+    // FIX #4: يستخدم sessionId (= fid) → يُدمج مع row pathSelected عبر onConflict
     void upsertScreeningResultAnalytics({
       sessionId,
       pathType: urlPathType,
@@ -336,9 +340,8 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     }, 800);
   }
 
-  // ─── مرحلة المقدمة (path-aware — بدون اختيار نوع مكرر) ──────────────────────
+  // ─── مرحلة المقدمة (path-aware) ────────────────────────────────────────────────────────
   if (phase === "intro") {
-    // بيانات المسار المُختار مسبقاً من ChooseChildPath / ChooseSelfPath
     const isAdhd = urlPathType === "adhd";
     const pathTitle = isAdhd
       ? "فحص مؤشرات فرط الحركة وتشتت الانتباه"
@@ -356,8 +359,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-4" dir="rtl">
         <Card className="max-w-lg w-full shadow-lg border-0">
           <CardContent className="p-8 space-y-6">
-
-            {/* ─── رأس الصفحة ─────────────────────────────────────────────── */}
             <div className="text-center">
               <div className="text-5xl mb-3">{pathIcon}</div>
               <h1 className="text-2xl font-bold text-gray-900 mb-1">
@@ -366,7 +367,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
               <p className="text-gray-500 text-sm">{pathSubtitle}</p>
             </div>
 
-            {/* ─── بطاقة المسار المُختار (تأكيد، لا اختيار) ───────────────── */}
             <div className={`rounded-xl border p-4 ${pathCardBg}`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${pathBadgeBg}`}>
@@ -377,7 +377,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
               <p className={`text-sm mt-1 opacity-75 ${pathTextColor}`}>{pathSubtitle}</p>
             </div>
 
-            {/* ─── معلومات الفحص ───────────────────────────────────────────── */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-700">
                 <ClipboardList className="w-4 h-4 flex-shrink-0 text-gray-500" />
@@ -397,7 +396,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
               </div>
             </div>
 
-            {/* ─── تنبيه قانوني ────────────────────────────────────────────── */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-800 leading-relaxed">
@@ -406,7 +404,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
               </p>
             </div>
 
-            {/* ─── زر البدء ────────────────────────────────────────────────── */}
             <Button
               className={`w-full h-12 text-base font-semibold gap-2 ${btnColor}`}
               onClick={() => setPhase("questions")}
@@ -427,7 +424,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     );
   }
 
-  // ─── مرحلة الإرسال ───────────────────────────────────────────────────────
   if (phase === "submitting") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center" dir="rtl">
@@ -440,11 +436,9 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     );
   }
 
-  // ─── مرحلة الأسئلة ───────────────────────────────────────────────────────
   if (phase === "questions" && currentQuestion) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50" dir="rtl">
-        {/* ─── Top Bar ─────────────────────────────────────────────────────── */}
         <div className="bg-white border-b shadow-sm sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between mb-2">
@@ -468,11 +462,9 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
           </div>
         </div>
 
-        {/* ─── Question Card ───────────────────────────────────────────────── */}
         <div className="max-w-2xl mx-auto px-4 py-6">
           <Card className={`shadow-md border-0 transition-opacity duration-200 ${animating ? "opacity-50" : "opacity-100"}`}>
             <CardContent className="p-6 md:p-8">
-              {/* فئة السؤال */}
               <div className="flex items-center gap-2 mb-5">
                 <span className="text-3xl">{CATEGORY_ICONS[currentQuestion.category]}</span>
                 <div>
@@ -481,12 +473,10 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
                 </div>
               </div>
 
-              {/* نص السؤال */}
               <h2 className="text-lg md:text-xl font-semibold text-gray-900 leading-relaxed mb-6">
                 {currentQuestion.text}
               </h2>
 
-              {/* خيارات الإجابة */}
               <div className="space-y-2.5">
                 {ANSWER_OPTIONS.map((option) => {
                   const isSelected = answers[currentQuestion.id] === option.value;
@@ -513,7 +503,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
             </CardContent>
           </Card>
 
-          {/* ─── Navigation ──────────────────────────────────────────────── */}
           <div className="flex items-center justify-between mt-5 gap-3">
             <Button
               variant="outline"
@@ -525,7 +514,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
               السابق
             </Button>
 
-            {/* مؤشرات التقدم */}
             <div className="flex gap-1.5 flex-wrap justify-center max-w-[200px]">
               {questions.map((q, idx) => (
                 <button
@@ -569,7 +557,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
             )}
           </div>
 
-          {/* زر إنهاء مبكر */}
           {!isLastQuestion && canComplete && (
             <div className="text-center mt-4">
               <button
@@ -581,7 +568,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
             </div>
           )}
 
-          {/* رسالة التحقق عند الضغط على التالي بدون إجابة */}
           {showValidation && !answers[currentQuestion.id] && (
             <div className="flex items-center justify-center gap-2 mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
               <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
@@ -592,7 +578,6 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
           )}
         </div>
 
-        {/* ─── Exit Dialog ─────────────────────────────────────────────────── */}
         <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
           <AlertDialogContent dir="rtl">
             <AlertDialogHeader>
