@@ -11,6 +11,9 @@
  *   + trackFunnelPathSelected: يسجّل اختيار المسار في ChooseChildPath
  *   + saveChildProfile: helper موثّق هنا للوضوح
  *   + abandoned_at_step يشمل 'choose_child_path'
+ *
+ * Step 7c fix:
+ *   + markScreeningBookedAfterResult: يُعلّم row الـ analytics بعد حجز الجلسة
  */
 
 import { supabase } from "@/lib/supabaseClient";
@@ -221,4 +224,38 @@ export async function trackHistoryView(
     .from("screening_analytics")
     .update({ history_viewed: true })
     .eq("session_id", sessionId);
+}
+
+// ─── markScreeningBookedAfterResult (Step 7c) ────────────────────────────────
+//
+// يُستدعى من Booking.tsx بعد إتمام الحجز بنجاح.
+// يُعلّم row الـ analytics الخاص بالـ session بأن المستخدم
+// قام بالحجز فعلياً — مؤشر تحويل Funnel → Booked.
+//
+// params:
+//   sessionId  — selfId أو childId (نفس session_id المستخدم في التقييم)
+//   serviceId  — نوع الخدمة المحجوزة (initial | parent | specialist | adhd | followup)
+//   specialistId — id المتخصص المختار
+
+export async function markScreeningBookedAfterResult(
+  sessionId: string,
+  serviceId: string,
+  specialistId: string
+): Promise<void> {
+  const userId = await getCurrentUserId();
+  if (!userId) return;
+
+  await supabase
+    .from("screening_analytics")
+    .upsert(
+      {
+        session_id:          sessionId,
+        user_id:             userId,
+        booked_after_result: true,
+        booked_service_id:   serviceId,
+        booked_specialist_id: specialistId,
+        booked_at:           new Date().toISOString(),
+      },
+      { onConflict: "session_id" }
+    );
 }
