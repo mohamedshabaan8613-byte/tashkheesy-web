@@ -13,7 +13,7 @@
  *   + abandoned_at_step يشمل 'choose_child_path'
  */
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabaseClient";
 import { getCurrentUserId } from "@/lib/auth";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
