@@ -2,6 +2,7 @@
  * assessmentLogic.ts
  * Sprint 2.2 — Step 3  : Pure business logic
  * Sprint 2.2 — Step 7b : saveChildProfile + ageGroup in buildIntroUrl
+ * Sprint 2.2 — Step 7b FIX #4: funnelSessionId param in buildIntroUrl
  *
  * دوال خالصة (pure functions) لا تعتمد على React state.
  * قابلة للاختبار بشكل مستقل تماماً.
@@ -210,9 +211,12 @@ export function buildResultUrl(sessionId: string, name: string, pathType: PathTy
 
 // ─── بناء navigation URL للـ screening-intro ─────────────────────────────────
 //
-// ageGroup اختياري — backward compatible.
-// مسار self : buildIntroUrl(id, name, age, mode, path)          → بدون تغيير
-// مسار child: buildIntroUrl(id, name, age, mode, path, ageGroup) → يُضاف &ageGroup=...
+// FIX #4: أُضيف funnelSessionId كـ param اختياري.
+// يُمرَّر كـ &fid=... في URL → يقرأه ScreeningPage ويستخدمه كـ sessionId
+// في upsertScreeningResultAnalytics بدلاً من توليد session_id جديد.
+//
+// مسار self : buildIntroUrl(id, name, age, mode, path)
+// مسار child: buildIntroUrl(id, name, age, mode, path, ageGroup, funnelSessionId)
 export function buildIntroUrl(
   selfId: string,
   name: string,
@@ -220,7 +224,10 @@ export function buildIntroUrl(
   mode: string,
   pathType: PathType,
   ageGroup?: string,
+  funnelSessionId?: string,
 ): string {
-  const base = `/screening-intro/${selfId}?name=${encodeURIComponent(name)}&age=${age}&mode=${mode}&pathType=${pathType}`;
-  return ageGroup ? `${base}&ageGroup=${encodeURIComponent(ageGroup)}` : base;
+  let url = `/screening-intro/${selfId}?name=${encodeURIComponent(name)}&age=${age}&mode=${mode}&pathType=${pathType}`;
+  if (ageGroup)         url += `&ageGroup=${encodeURIComponent(ageGroup)}`;
+  if (funnelSessionId)  url += `&fid=${encodeURIComponent(funnelSessionId)}`;
+  return url;
 }

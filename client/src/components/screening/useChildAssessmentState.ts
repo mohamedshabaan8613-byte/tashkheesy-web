@@ -19,6 +19,10 @@
  *
  * FIX 3 (trackFunnelSubmit → upsert):
  *   موجود في screeningAnalytics.ts — لا تغيير هنا.
+ *
+ * FIX #4 (session_id unification):
+ *   يُمرَّر funnelSession.sessionId (= childId بعد attach) عبر buildIntroUrl
+ *   كـ &fid=... → يقرأه ScreeningPage ويستخدمه كـ sessionId الوحيد.
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -71,11 +75,6 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
   }, [childName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── FIX 2: beforeunload + visibilitychange dual fallback ────────────────────
-  //
-  // نفس استراتيجية self:
-  //   1. beforeunload  → Chrome/Firefox Desktop
-  //   2. visibilitychange (hidden) → Safari iOS + Android Chrome
-  // abandonedRef يمنع إرسال مزدوج.
   useEffect(() => {
     const abandonedRef = { sent: false };
 
@@ -86,15 +85,8 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
       void trackFunnelAbandonment(funnelSession, "child_assessment_form");
     }
 
-    function onBeforeUnload() {
-      void fireAbandonment();
-    }
-
-    function onVisibilityChange() {
-      if (document.hidden) {
-        void fireAbandonment();
-      }
-    }
+    function onBeforeUnload() { void fireAbandonment(); }
+    function onVisibilityChange() { if (document.hidden) void fireAbandonment(); }
 
     window.addEventListener("beforeunload", onBeforeUnload);
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -107,24 +99,23 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
 
   // ─── handleStartAssessment ───────────────────────────────────────────────────
   //
-  // يُستدعى من AssessmentForm (child mode) أو أي trigger مباشر.
-  // childId معروف مسبقاً → لا نحتاج generateChildId هنا.
-  //
-  // FIX 1: attachRealSessionId قبل trackFunnelSubmit
+  // FIX 1: attachRealSessionId(childId) قبل trackFunnelSubmit
+  // FIX #4: تمرير funnelSession.sessionId (= childId) كـ fid في URL
   function handleStartAssessment() {
     const ageNum = parseInt(childAge, 10) || 0;
 
-    // حفظ profile الطفل (idempotent — آمن لو نُودي مرتين)
+    // حفظ profile الطفل (idempotent)
     saveChildProfile(childId, childName, ageNum, pathType, ageGroup);
 
     // FIX 1: ربط session بـ childId الحقيقي قبل أي Supabase write
     funnelSession.attachRealSessionId(childId);
 
-    // upsert إلى screening_analytics (FIX 3 في screeningAnalytics.ts)
+    // upsert إلى screening_analytics
     void trackFunnelSubmit(funnelSession);
 
+    // FIX #4: مرّر sessionId الموحَّد (= childId) عبر URL param &fid
     navigate(
-      buildIntroUrl(childId, childName, ageNum, mode, pathType, ageGroup)
+      buildIntroUrl(childId, childName, ageNum, mode, pathType, ageGroup, funnelSession.sessionId)
     );
   }
 
@@ -137,7 +128,7 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
     navigate(buildResultUrl(sessionId, name, itemPathType));
   }
 
-  // ─── Derived ──────────────────────────────────────────────────────────────────
+  // ─── Derived ─────────────────────────────────────────────────────────────────
   const safeRedirect = buildSafeRedirect(
     window.location.pathname,
     window.location.search
