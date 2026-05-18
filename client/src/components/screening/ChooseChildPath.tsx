@@ -30,6 +30,7 @@ import {
   Shield,
   ChevronLeft,
 } from "lucide-react";
+import type { PathType } from "./assessmentTypes";
 import {
   FunnelSession,
   trackFunnelPathSelected,
@@ -40,7 +41,21 @@ interface ChooseChildPathProps {
   childId: string;
 }
 
-const PATHS = [
+const PATHS: Array<{
+  id: PathType;
+  title: string;
+  subtitle: string;
+  description: string;
+  areas: string[];
+  icon: typeof BookOpen;
+  color: string;
+  bg: string;
+  border: string;
+  badge: string;
+  badgeBg: string;
+  badgeColor: string;
+  duration: string;
+}> = [
   {
     id: "learning",
     title: "كشف أولي لمؤشرات صعوبات التعلم",
@@ -78,7 +93,7 @@ const PATHS = [
 export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
   const [, navigate] = useLocation();
   const [visible, setVisible] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<PathType | null>(null);
 
   const searchParams = new URLSearchParams(window.location.search);
   const childName = searchParams.get("name") ?? "طفلك";
@@ -90,7 +105,7 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
   if (!funnelSessionRef.current) {
     funnelSessionRef.current = new FunnelSession(
       `pending-${Date.now()}`,
-      "choose" as "learning" | "adhd" | "choose"
+      "choose"
     );
   }
   const funnelSession = funnelSessionRef.current;
@@ -122,13 +137,16 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
     setTimeout(() => setVisible(true), 80);
   }, [childName]);
 
-  function handleChoose(pathType: string) {
+  function handleChoose(pathType: PathType) {
     setSelected(pathType);
+
+    // Step 7b: سجّل اختيار المسار في Supabase قبل navigate
     void trackFunnelPathSelected(
       funnelSession,
-      pathType as "learning" | "adhd",
+      pathType,
       childId
     );
+
     setTimeout(() => {
       navigate(
         `/screening-intro/${childId}?pathType=${pathType}&mode=child&name=${encodeURIComponent(childName)}&age=${childAge}&ageGroup=${ageGroup}`
