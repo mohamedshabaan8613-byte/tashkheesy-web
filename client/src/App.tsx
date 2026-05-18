@@ -45,6 +45,9 @@ const Account = lazy(() => import("./components/Account"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
 // ─── معاينة النتائج الداخلية — للأدمن فقط (نُقلت من /result-demo) ───────
 const AdminResultPreview = lazy(() => import("./components/screening/ResultDemo"));
+
+// ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────────────────
+const ConsultationIntroPage = lazy(() => import("./components/consultation/ConsultationIntroPage"));
 // ────────────────────────────────────────────────────────────────
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
@@ -192,7 +195,9 @@ function Router() {
 
         {/* ─── لوحة الإدارة + معاينة النتائج الداخلية (admin-only) ─────── */}
         <Route path="/admin"         component={() => <SensitiveNoIndex><AdminDashboard /></SensitiveNoIndex>} />
-        <Route path="/admin/preview" component={() => <SensitiveNoIndex><AdminResultPreview /></SensitiveNoIndex>} />
+        <Route path="/admin/preview" component={() => <SensitiveNoIndex><
+          {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ────────────────────── */}
+          <Route path="/consultation/start" component={ConsultationIntroPage} /> /></SensitiveNoIndex>} />
 
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />
