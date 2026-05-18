@@ -4,28 +4,21 @@
  * Sprint 3.0a | Issue #56 — useConsultationFlow hook
  *
  * هذا الـ hook هو الواجهة الوحيدة للتنقل داخل consultation journey.
- * يجمع ConsultationContext + react-router-dom navigate في مكان واحد.
+ * يجمع ConsultationContext + wouter navigate في مكان واحد.
  *
  * الاستخدام:
- *   // من صفحة نتيجة التقييم
- *   const flow = useConsultationFlow();
- *   flow.navigateToConsultation({
- *     entryPoint: "assessment_result",
- *     assessmentResult: { ... }
- *   });
+ * // من صفحة نتيجة التقييم
+ * const flow = useConsultationFlow();
+ * flow.navigateToConsultation({
+ *   entryPoint: "assessment_result",
+ *   assessmentResult: { ... }
+ * });
  *
- *   // من زر الحجز المباشر
- *   flow.navigateToConsultation({ entryPoint: "direct_booking" });
- *
- *   // من صفحة المتابعة
- *   flow.navigateToConsultation({
- *     entryPoint: "follow_up",
- *     previousConsultationId: "abc-123"
- *   });
+ * // من زر الحجز المباشر
+ * flow.navigateToConsultation({ entryPoint: "direct_booking" });
  */
-
 import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { useConsultationContext } from "../contexts/ConsultationContext";
 import type {
   AssessmentResultPayload,
@@ -127,13 +120,12 @@ export interface UseConsultationFlowReturn {
 }
 
 export function useConsultationFlow(): UseConsultationFlowReturn {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { intent, setIntent, clearIntent } = useConsultationContext();
 
   // -------------------------------------------------------------------------
   // Derive flowState from intent
   // -------------------------------------------------------------------------
-
   let flowState: ConsultationFlowState = "idle";
   if (intent) {
     flowState = intent.confirmed ? "booking" : "intro";
@@ -142,7 +134,6 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
   // -------------------------------------------------------------------------
   // navigateToConsultation
   // -------------------------------------------------------------------------
-
   const navigateToConsultation = useCallback(
     (options: Omit<ConsultationIntent, "initiatedAt" | "confirmed">) => {
       const newIntent: ConsultationIntent = {
@@ -158,39 +149,40 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
         case "assessment_result": {
           const payload = options.assessmentResult;
           if (payload) {
-            void navigate(
+            setLocation(
               buildAssessmentResultUrl({
                 pathType: payload.pathType,
                 assessmentMode: payload.assessmentMode,
               })
             );
           } else {
-            void navigate(buildDirectBookingUrl());
+            setLocation(buildDirectBookingUrl());
           }
           break;
         }
+
         case "follow_up": {
           if (options.previousConsultationId) {
-            void navigate(buildFollowUpUrl(options.previousConsultationId));
+            setLocation(buildFollowUpUrl(options.previousConsultationId));
           } else {
-            void navigate(buildDirectBookingUrl());
+            setLocation(buildDirectBookingUrl());
           }
           break;
         }
+
         case "direct_booking":
         case "returning_user":
         default:
-          void navigate(buildDirectBookingUrl());
+          setLocation(buildDirectBookingUrl());
           break;
       }
     },
-    [navigate, setIntent]
+    [setLocation, setIntent]
   );
 
   // -------------------------------------------------------------------------
   // confirmAndBook — يُستدعى من زر التأكيد في ConsultationIntroPage
   // -------------------------------------------------------------------------
-
   const confirmAndBook = useCallback(() => {
     if (!intent) return;
     setIntent({ ...intent, confirmed: true });
@@ -201,7 +193,6 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
   // -------------------------------------------------------------------------
   // exitFlow
   // -------------------------------------------------------------------------
-
   const exitFlow = useCallback(() => {
     clearIntent();
   }, [clearIntent]);
