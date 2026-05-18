@@ -1,6 +1,7 @@
 /**
  * assessmentTypes.ts
  * Sprint 2.2 — Step 1: Static type definitions
+ * Sprint 2.2 — Step 7b: Add 'child' to AssessmentMode + ChildAssessmentProfile
  *
  * يحتوي على كل الأنواع المشتركة بين طبقات الـ assessment.
  * لا يحتوي على أي منطق أو JSX.
@@ -12,9 +13,10 @@ export type PathType = "learning" | "adhd";
 /**
  * AssessmentMode — strict union بدون | string.
  * "legacy" تُستخدم كـ fallback لقيم قديمة في Supabase/localStorage.
+ * "child"  تُستخدم لمسار فحص الطفل (Sprint 2.2 — Step 7b).
  * normalizeMode() في assessmentLogic.ts هي نقطة الدخول الوحيدة.
  */
-export type AssessmentMode = "self" | "parent" | "legacy";
+export type AssessmentMode = "self" | "parent" | "child" | "legacy";
 
 // ─── ملخص تقييم ذاتي (يُخزن في localStorage وSupabase) ──────────────────────
 export interface SelfAssessmentSummary {
@@ -29,13 +31,25 @@ export interface SelfAssessmentSummary {
   resultKey: string;
 }
 
-// ─── ملف بروفايل الجلسة (يُخزن في localStorage) ─────────────────────────────
+// ─── ملف بروفايل جلسة self/parent (يُخزن في localStorage) ───────────────────
 export interface SelfAssessmentProfile {
   id: string;
   name: string;
   age: number;
   mode: AssessmentMode;         // لا | string — normalizeMode() قبل الحفظ
   pathType: PathType;
+  createdAt: string;
+}
+
+// ─── ملف بروفايل جلسة child (يُخزن في localStorage) ─────────────────────────
+// يمتد عن SelfAssessmentProfile بإضافة ageGroup الخاص بمسار الطفل.
+export interface ChildAssessmentProfile {
+  id: string;
+  name: string;
+  age: number;
+  mode: "child";                 // ثابت دائماً للمسار هذا
+  pathType: PathType;
+  ageGroup: string;
   createdAt: string;
 }
 

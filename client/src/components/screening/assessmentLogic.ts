@@ -1,6 +1,8 @@
 /**
  * assessmentLogic.ts
- * Sprint 2.2 — Step 3: Pure business logic
+ * Sprint 2.2 — Step 3  : Pure business logic
+ * Sprint 2.2 — Step 7b : saveChildProfile + ageGroup in buildIntroUrl
+ * Sprint 2.2 — Step 7b FIX #4: funnelSessionId param in buildIntroUrl
  *
  * دوال خالصة (pure functions) لا تعتمد على React state.
  * قابلة للاختبار بشكل مستقل تماماً.
@@ -11,19 +13,15 @@
 import type {
   SelfAssessmentSummary,
   SelfAssessmentProfile,
+  ChildAssessmentProfile,
   PathType,
   AssessmentMode,
   RemoteAssessmentResult,
 } from "./assessmentTypes";
 import { SELF_ASSESSMENTS_KEY, AGE_MIN, AGE_MAX } from "./assessmentContent";
 
-// ─── Normalization Layer — نقطة الدخول الوحيدة لبيانات DB/localStorage ────────
+// ─── Normalization Layer ───────────────────────────────────────────────────────
 
-/**
- * normalizePathType
- * يحوّل أي قيمة خام من DB إلى PathType آمن.
- * إذا كانت القيمة غير معروفة يُعيد "learning" كـ safe fallback.
- */
 export function normalizePathType(raw: string | null | undefined): PathType {
   if (raw === "adhd" || raw === "learning") return raw;
   return "learning";
@@ -32,19 +30,15 @@ export function normalizePathType(raw: string | null | undefined): PathType {
 /**
  * normalizeMode
  * يحوّل أي قيمة خام من DB إلى AssessmentMode آمن.
- * قيم قديمة لا تطابق "self" أو "parent" تُصنَّف كـ "legacy".
+ * 'child' أُضيف في Step 7b — يُحفظ كما هو.
+ * قيم قديمة لا تطابق أيًا من القيم المعروفة تُصنَّف كـ 'legacy'.
  */
 export function normalizeMode(raw: string | null | undefined): AssessmentMode {
-  if (raw === "self" || raw === "parent") return raw;
+  if (raw === "self" || raw === "parent" || raw === "child") return raw;
   return "legacy";
 }
 
 // ─── توليد session ID جديد (collision-safe) ──────────────────────────────────
-/**
- * generateSelfId
- * يستخدم crypto.randomUUID() بدلاً من Date.now()
- * لمنع التصادم عند فتح tabs متعددة في نفس اللحظة.
- */
 export function generateSelfId(): string {
   return `self_${crypto.randomUUID()}`;
 }
@@ -62,7 +56,7 @@ export function loadSelfHistory(): SelfAssessmentSummary[] {
   }
 }
 
-// ─── حفظ بروفايل الجلسة في localStorage ──────────────────────────────────────
+// ─── حفظ بروفايل جلسة self/parent في localStorage ───────────────────────────
 export function saveSelfProfile(
   selfId: string,
   name: string,
@@ -81,6 +75,29 @@ export function saveSelfProfile(
   localStorage.setItem(`self_profile_${selfId}`, JSON.stringify(profile));
 }
 
+// ─── حفظ بروفايل جلسة child في localStorage (Step 7b) ───────────────────────
+//
+// childId يأتي من ChildrenPage — ليس مُولَّداً هنا.
+// idempotent: آمن لو نُودي مرتين لنفس childId.
+export function saveChildProfile(
+  childId: string,
+  childName: string,
+  childAge: number,
+  pathType: PathType,
+  ageGroup: string,
+): void {
+  const profile: ChildAssessmentProfile = {
+    id: childId,
+    name: childName,
+    age: childAge,
+    mode: "child",
+    pathType,
+    ageGroup,
+    createdAt: new Date().toISOString(),
+  };
+  localStorage.setItem(`child_profile_${childId}`, JSON.stringify(profile));
+}
+
 // ─── دمج النتائج البعيدة مع المحلية (dedup by sessionId) ─────────────────────
 export function mergeRemoteResults(
   local: SelfAssessmentSummary[],
@@ -94,8 +111,8 @@ export function mergeRemoteResults(
       sessionId: r.sessionId,
       name: r.subjectName ?? "",
       age: r.subjectAge ?? "",
-      mode: normalizeMode(r.mode),           // normalization هنا — لا casting مباشر
-      pathType: normalizePathType(r.pathType), // normalization هنا — لا casting مباشر
+      mode: normalizeMode(r.mode),
+      pathType: normalizePathType(r.pathType),
       screeningType: r.screeningType ?? undefined,
       completedAt: r.completedAt ?? new Date().toISOString(),
       resultKey: `result_${r.sessionId}`,
@@ -164,7 +181,7 @@ export function validateForm(
   return { valid, nameError, ageError };
 }
 
-// ─── تنسيق التاريخ بالعربية ────────────────────────────────────────────────────
+// ─── تنسيق التاريخ بالعربية ──────────────────────────────────────────────────
 export function formatArabicDate(isoString: string): string {
   try {
     const d = new Date(isoString);
@@ -188,19 +205,29 @@ export function buildSafeRedirect(pathname: string, search: string): string {
 }
 
 // ─── بناء navigation URL للنتيجة ─────────────────────────────────────────────
-// TODO(privacy): استبدال name في URL بـ sessionStorage lookup — Sprint privacy
 export function buildResultUrl(sessionId: string, name: string, pathType: PathType): string {
   return `/screening-result/${sessionId}?name=${encodeURIComponent(name)}&pathType=${pathType}`;
 }
 
 // ─── بناء navigation URL للـ screening-intro ─────────────────────────────────
-// TODO(privacy): استبدال name في URL بـ sessionStorage lookup — Sprint privacy
+//
+// FIX #4: أُضيف funnelSessionId كـ param اختياري.
+// يُمرَّر كـ &fid=... في URL → يقرأه ScreeningPage ويستخدمه كـ sessionId
+// في upsertScreeningResultAnalytics بدلاً من توليد session_id جديد.
+//
+// مسار self : buildIntroUrl(id, name, age, mode, path)
+// مسار child: buildIntroUrl(id, name, age, mode, path, ageGroup, funnelSessionId)
 export function buildIntroUrl(
   selfId: string,
   name: string,
   age: number,
   mode: string,
   pathType: PathType,
+  ageGroup?: string,
+  funnelSessionId?: string,
 ): string {
-  return `/screening-intro/${selfId}?name=${encodeURIComponent(name)}&age=${age}&mode=${mode}&pathType=${pathType}`;
+  let url = `/screening-intro/${selfId}?name=${encodeURIComponent(name)}&age=${age}&mode=${mode}&pathType=${pathType}`;
+  if (ageGroup)         url += `&ageGroup=${encodeURIComponent(ageGroup)}`;
+  if (funnelSessionId)  url += `&fid=${encodeURIComponent(funnelSessionId)}`;
+  return url;
 }

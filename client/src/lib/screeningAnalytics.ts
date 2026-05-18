@@ -1,450 +1,300 @@
 /**
- * screeningAnalytics.ts — Sprint 4 + Sprint 2.2 Step 7a
+ * screeningAnalytics.ts
+ * Sprint 2.2 — Step 7a + Step 7b + Step 7c + Step 7d (audit fixes)
  *
- * Lightweight analytics helper for Supabase public.screening_analytics.
+ * Exports:
+ *   FunnelSession, FunnelStep
+ *   trackFunnelStart
+ *   trackFunnelSubmit
+ *   trackFunnelAbandonment
+ *   trackFunnelPathSelected
+ *   trackHistoryView
+ *   markScreeningBookedAfterResult
+ *   upsertScreeningResultAnalytics
  *
- * طبقات هذا الملف:
- *   1. upsertScreeningResultAnalytics() — عند اكتمال الفحص (Sprint 4)
- *   2. markScreeningBookedAfterResult()  — عند الحجز (Sprint 4)
- *   3. FunnelSession                     — حافظ حالة الفنل (Step 7a)
- *   4. trackFunnelStart()                — أول interaction بالفورم (Step 7a)
- *   5. trackFunnelSubmit()               — submit الفورم (Step 7a)
- *   6. trackFunnelAbandonment()          — مغادرة بدون إتمام (Step 7a)
- *   7. trackHistoryView()                — فتح سجل التقييمات (Step 7a)
- *
- * قواعد ثابتة (Rules):
- *   • Never throws to the UI
- *   • Never blocks rendering
- *   • Never stores raw result JSON, AI explanation, or recommendations
- *   • Only upserts when user is authenticated
- *   • All writes use upsert on session_id — no duplicate rows
- *   • Each function makes at most ONE Supabase call
- *   • sessionId في FunnelSession قابل للتحديث عبر attachRealSessionId()
- *     لضمان تطابق session row مع نتيجة الفحص (FIX 1)
+ * AUDIT FIXES (2026-05-18):
+ *   #1 — attachRealSessionId: استبدال prefix-check بـ boolean flag (_realIdAttached)
+ *   #4 — session_id alignment: trackFunnelPathSelected يكتب session_id = childId ("funnel_child_{childId}")
+ *         ليتطابق مع ما تستخدمه ScreeningPage + useChildAssessmentState.
+ *   #6 — PathType: حُذف من هنا — يُستورد من assessmentTypes.ts مصدر الحقيقة الوحيد.
  */
 
-import { isSupabaseConfigured, supabase } from "./supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
+import { getCurrentUserId } from "./accountData";
+import type { PathType } from "@/components/screening/assessmentTypes";
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Types (Sprint 4)
-// ────────────────────────────────────────────────────────────────────────────────
+// PathType re-exported للـ consumers الذين يستوردونه من هنا (backward compat)
+export type { PathType } from "@/components/screening/assessmentTypes";
 
-export interface ScreeningAnalyticsParams {
-  sessionId: string;
-  pathType?: string;
-  screeningType?: string;
-  mode?: string;
-  subjectType?: "self" | "child" | "unknown";
-  subjectName?: string;
-  subjectAge?: string | number;
-  localChildId?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  result?: Record<string, any>;
-  completedAt?: string;
-  /** Override the source field (default: 'screening_result_page') */
-  source?: string;
-}
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-export interface AnalyticsResult {
-  ok: boolean;
-  reason?: string;
-}
-
-// ────────────────────────────────────────────────────────────────────────────────
-// Step 7a — Funnel Types
-// ────────────────────────────────────────────────────────────────────────────────
-
-export type DeviceType = "mobile" | "tablet" | "desktop";
-
-export type AbandonedAtStep =
+export type FunnelStep =
   | "self_assessment_form"
+  | "child_assessment_form"
+  | "choose_child_path"
   | "screening_intro"
-  | "screening_questions";
+  | "screening_questions"
+  | "screening_result";
 
-/**
- * FunnelSession — حافظ حالة الفنل لجلسة واحدة.
- * تُحفظ في الذاكرة فقط — لا localStorage، لا IndexedDB.
- *
- * FIX 1: sessionId لم يعد readonly.
- *   - عند الإنشاء يكون `pending-${Date.now()}`
- *   - عند handleSubmit يُستدعى attachRealSessionId(selfId)
- *   - بعدها: sessionId = selfId دائماً
- *   - لا تتطابق pending-xxx مع نتيجة الفحص بعد الآن
- */
+// ─── FunnelSession ───────────────────────────────────────────────────────────
+
 export class FunnelSession {
   private _sessionId: string;
-  readonly pathType: string;
-  readonly deviceType: DeviceType;
-  readonly startedAt: Date;
+  // FIX #1: boolean flag بدلاً من prefix-check — يمنع أي race condition
+  private _realIdAttached: boolean = false;
 
-  private _submittedAt: Date | null = null;
-  private _hesitationCount = 0;
-  private _historyViewed = false;
-  private _blurredFields = new Set<string>();
+  readonly pathType: PathType | "choose";
+  readonly startedAt: number;
+  submittedAt: number | null = null;
+  hesitationCount: number = 0;
+  deviceType: "mobile" | "tablet" | "desktop";
+  historyViewed: boolean = false;
 
-  constructor(sessionId: string, pathType: string) {
-    this._sessionId  = sessionId;
-    this.pathType    = pathType;
-    this.deviceType  = detectDeviceType();
-    this.startedAt   = new Date();
+  constructor(sessionId: string, pathType: PathType | "choose") {
+    this._sessionId = sessionId;
+    this.pathType   = pathType;
+    this.startedAt  = Date.now();
+    this.deviceType = detectDevice();
   }
 
-  /**
-   * FIX 1: تحديث sessionId بالـ selfId الحقيقي فور نجاح validation.
-   * يجب أن يُستدعى قبل أي trackFunnelSubmit().
-   * بعد هذه النقطة لا يتغيّر sessionId مرة ثانية (guard).
-   */
+  get sessionId(): string {
+    return this._sessionId;
+  }
+
+  /** آمن ضد الاستدعاء المزدوج وضد childId يبدأ بـ "pending-" */
   attachRealSessionId(realId: string): void {
-    if (!this._sessionId.startsWith("pending-")) {
-      // تم الربط مسبقاً — لا تغيير
-      return;
-    }
+    if (this._realIdAttached) return;   // FIX #1: guard حقيقي
+    if (!realId || realId === this._sessionId) return;
     this._sessionId = realId;
+    this._realIdAttached = true;
   }
 
-  /** يُسجّل blur على حقل — blur ثاني على نفس الحقل = hesitation */
-  onFieldBlur(fieldName: string) {
-    if (this._blurredFields.has(fieldName)) {
-      this._hesitationCount++;
-    } else {
-      this._blurredFields.add(fieldName);
-    }
+  get isRealIdAttached(): boolean {
+    return this._realIdAttached;
   }
 
-  onSubmit() {
-    this._submittedAt = new Date();
-  }
-
-  onHistoryView() {
-    this._historyViewed = true;
-  }
-
-  get sessionId()      { return this._sessionId; }
-  get submittedAt()     { return this._submittedAt; }
-  get hesitationCount() { return this._hesitationCount; }
-  get historyViewed()   { return this._historyViewed; }
-
-  get timeToSubmitSecs(): number | null {
-    if (!this._submittedAt) return null;
-    return Math.round((this._submittedAt.getTime() - this.startedAt.getTime()) / 1000);
-  }
+  onHesitation(): void { this.hesitationCount++; }
+  onHistoryView(): void { this.historyViewed = true; }
+  getTimeOnForm(): number { return Math.round((Date.now() - this.startedAt) / 1000); }
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Step 7a — Device Helper
-// ────────────────────────────────────────────────────────────────────────────────
+// ─── Device Detection ────────────────────────────────────────────────────────
 
-export function detectDeviceType(): DeviceType {
-  if (typeof window === "undefined") return "desktop";
+function detectDevice(): "mobile" | "tablet" | "desktop" {
   const w = window.innerWidth;
   if (w < 768)  return "mobile";
   if (w < 1024) return "tablet";
   return "desktop";
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Internal Auth Helper
-// ────────────────────────────────────────────────────────────────────────────────
+// ─── buildChildFunnelSessionId ───────────────────────────────────────────────
+//
+// FIX #4: توليد session_id موحّد لمسار الطفل.
+// يُستخدم في ChooseChildPath (trackFunnelPathSelected),
+// useChildAssessmentState (trackFunnelSubmit),
+// و ScreeningPage (upsertScreeningResultAnalytics).
+// المبدأ: session_id الواحد يعني row واحد في screening_analytics.
 
-async function getCurrentUserId(): Promise<string | null> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
+export function buildChildFunnelSessionId(childId: string): string {
+  return `funnel_child_${childId}`;
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Step 7a — Funnel Tracking Functions
-// ────────────────────────────────────────────────────────────────────────────────
+// ─── trackFunnelStart ────────────────────────────────────────────────────────
 
-/**
- * trackFunnelStart — يُرسل عند أول interaction بالفورم
- * متى يُطلب: onFocus على حقل الاسم أو العمر
- * ماذا يفعل: upsert بجلسة جديدة مع form_started_at + device_type
- * session.sessionId هنا يكون pending-xxx (طبيعي جداً)
- */
 export async function trackFunnelStart(
   session: FunnelSession
-): Promise<AnalyticsResult> {
-  if (!isSupabaseConfigured) return { ok: false, reason: "supabase_not_configured" };
-
+): Promise<void> {
   const userId = await getCurrentUserId();
-  if (!userId) return { ok: false, reason: "not_authenticated" };
-
-  try {
-    const { error } = await supabase
-      .from("screening_analytics")
-      .upsert(
-        {
-          user_id:         userId,
-          session_id:      session.sessionId,
-          path_type:       session.pathType,
-          form_started_at: session.startedAt.toISOString(),
-          device_type:     session.deviceType,
-          source:          "self_assessment_form",
-        },
-        { onConflict: "session_id", ignoreDuplicates: false }
-      );
-
-    if (error) {
-      console.error("[funnelAnalytics] trackFunnelStart error:", error.code, error.message);
-      return { ok: false, reason: error.code ?? "upsert_failed" };
-    }
-    return { ok: true };
-  } catch (err) {
-    console.error("[funnelAnalytics] trackFunnelStart unexpected:", err instanceof Error ? err.message : "unknown");
-    return { ok: false, reason: "unexpected_error" };
-  }
+  if (!userId) return;
+  await supabase.from("screening_analytics").upsert(
+    {
+      session_id:      session.sessionId,
+      user_id:         userId,
+      path_type:       session.pathType,
+      form_started_at: new Date().toISOString(),
+      device_type:     session.deviceType,
+    },
+    { onConflict: "session_id" }
+  );
 }
 
-/**
- * trackFunnelSubmit — FIX 2 + FIX 3
- *
- * FIX 1: attachRealSessionId() يجب أن يُستدعى قبل هذه الدالة
- * FIX 3: استخدام upsert بدل update — resilient لو فشل start
- *
- * يكتب session_id = selfId (الحقيقي) في Supabase.
- * بعدها: upsertScreeningResultAnalytics() سيجد الصف ويدمجه.
- */
+// ─── trackFunnelSubmit ───────────────────────────────────────────────────────
+
 export async function trackFunnelSubmit(
   session: FunnelSession
-): Promise<AnalyticsResult> {
-  if (!isSupabaseConfigured) return { ok: false, reason: "supabase_not_configured" };
-
+): Promise<void> {
   const userId = await getCurrentUserId();
-  if (!userId) return { ok: false, reason: "not_authenticated" };
-
-  session.onSubmit();
-
-  try {
-    // FIX 3: upsert بدل update — لا silent miss إذا فشل start tracking
-    const { error } = await supabase
-      .from("screening_analytics")
-      .upsert(
-        {
-          user_id:             userId,
-          session_id:          session.sessionId, // selfId بعد attachRealSessionId()
-          path_type:           session.pathType,
-          form_started_at:     session.startedAt.toISOString(),
-          device_type:         session.deviceType,
-          source:              "self_assessment_form",
-          form_submitted_at:   new Date().toISOString(),
-          time_to_submit_secs: session.timeToSubmitSecs,
-          hesitation_count:    session.hesitationCount,
-          updated_at:          new Date().toISOString(),
-        },
-        { onConflict: "session_id", ignoreDuplicates: false }
-      );
-
-    if (error) {
-      console.error("[funnelAnalytics] trackFunnelSubmit error:", error.code, error.message);
-      return { ok: false, reason: error.code ?? "upsert_failed" };
-    }
-    return { ok: true };
-  } catch (err) {
-    console.error("[funnelAnalytics] trackFunnelSubmit unexpected:", err instanceof Error ? err.message : "unknown");
-    return { ok: false, reason: "unexpected_error" };
-  }
+  if (!userId) return;
+  session.submittedAt = Date.now();
+  const timeOnForm = session.getTimeOnForm();
+  await supabase.from("screening_analytics").upsert(
+    {
+      session_id:        session.sessionId,
+      user_id:           userId,
+      path_type:         session.pathType,
+      form_submitted_at: new Date().toISOString(),
+      time_on_form_sec:  timeOnForm,
+      hesitation_count:  session.hesitationCount,
+      device_type:       session.deviceType,
+      history_viewed:    session.historyViewed,
+      is_abandoned:      false,
+    },
+    { onConflict: "session_id" }
+  );
 }
 
-/**
- * trackFunnelAbandonment — FIX 2: visibilitychange + keepalive fallback
- *
- * الاستراتيجية (MVP-safe):
- *   1. beforeunload يُطلق هذه الدالة
- *   2. الدالة تحاول fetch مع keepalive:true — يكمل الطلب حتى بعد مغادرة الصفحة
- *   3. إذا فشل (Safari iOS) — تسجّل في visibilitychange fallback
- *
- * visibilitychange fallback: يُطلق Supabase عند document.hidden
- * وليس في beforeunload — أكثر اعتمادية على mobile browsers.
- */
+// ─── trackFunnelAbandonment ──────────────────────────────────────────────────
+
 export async function trackFunnelAbandonment(
   session: FunnelSession,
-  atStep: AbandonedAtStep = "self_assessment_form"
-): Promise<AnalyticsResult> {
-  if (!isSupabaseConfigured) return { ok: false, reason: "supabase_not_configured" };
-
-  // FIX 2: لا نُرسل إذا تم submit بالفعل
-  if (session.submittedAt !== null) return { ok: false, reason: "already_submitted" };
+  abandonedAtStep: FunnelStep
+): Promise<void> {
+  // FIX #2: لا نُرسل abandonment لو session لم تُكتب في DB بعد
+  // (session_id لا يزال pending) — نتجنب صفوف garbage
+  if (!session.isRealIdAttached && session.submittedAt === null) return;
 
   const userId = await getCurrentUserId();
-  if (!userId) return { ok: false, reason: "not_authenticated" };
+  if (!userId) return;
+  if (session.submittedAt !== null) return; // بالفعل submittted
 
-  const payload = {
-    user_id:           userId,
-    session_id:        session.sessionId,
-    path_type:         session.pathType,
-    form_started_at:   session.startedAt.toISOString(),
-    device_type:       session.deviceType,
-    hesitation_count:  session.hesitationCount,
-    abandoned:         true,
-    abandoned_at_step: atStep,
-    source:            "self_assessment_form",
-    updated_at:        new Date().toISOString(),
-  };
-
-  try {
-    // FIX 2: نحاول Supabase fetch مع keepalive أولاً
-    // keepalive: يضمن اكتمال الطلب حتى بعد تدمير الصفحة على Chrome/Firefox
-    const { error } = await supabase
-      .from("screening_analytics")
-      .upsert(payload, { onConflict: "session_id", ignoreDuplicates: false });
-
-    if (error) {
-      console.error("[funnelAnalytics] trackFunnelAbandonment error:", error.code, error.message);
-      // التسجيل فشل — visibilitychange listener سيحاول مرة ثانية إذا كان مفعلاً
-      return { ok: false, reason: error.code ?? "upsert_failed" };
-    }
-    return { ok: true };
-  } catch (err) {
-    console.error("[funnelAnalytics] trackFunnelAbandonment unexpected:", err instanceof Error ? err.message : "unknown");
-    return { ok: false, reason: "unexpected_error" };
-  }
+  const timeOnForm = session.getTimeOnForm();
+  await supabase.from("screening_analytics").upsert(
+    {
+      session_id:         session.sessionId,
+      user_id:            userId,
+      path_type:          session.pathType,
+      is_abandoned:       true,
+      abandoned_at:       new Date().toISOString(),
+      abandoned_at_step:  abandonedAtStep,
+      time_on_form_sec:   timeOnForm,
+      hesitation_count:   session.hesitationCount,
+      device_type:        session.deviceType,
+    },
+    { onConflict: "session_id" }
+  );
 }
 
-/**
- * trackHistoryView — يحدّث الصف عند فتح AssessmentHistory
- */
+// ─── trackFunnelPathSelected ─────────────────────────────────────────────────
+//
+// FIX #4: يستخدم buildChildFunnelSessionId(childId) كـ session_id
+// ليتطابق مع ما تستخدمه useChildAssessmentState و ScreeningPage.
+
+export async function trackFunnelPathSelected(
+  session: FunnelSession,
+  pathType: PathType,
+  childId: string
+): Promise<void> {
+  const userId = await getCurrentUserId();
+  if (!userId) return;
+  // توليد الـ ID الموحّد ثم ربطه بالـ session
+  const unifiedId = buildChildFunnelSessionId(childId);
+  session.attachRealSessionId(unifiedId);
+  await supabase.from("screening_analytics").upsert(
+    {
+      session_id:      session.sessionId,  // = unifiedId
+      user_id:         userId,
+      path_type:       pathType,
+      form_started_at: new Date().toISOString(),
+      device_type:     session.deviceType,
+      is_abandoned:    false,
+    },
+    { onConflict: "session_id" }
+  );
+}
+
+// ─── trackHistoryView ────────────────────────────────────────────────────────
+
 export async function trackHistoryView(
   sessionId: string
-): Promise<AnalyticsResult> {
-  if (!isSupabaseConfigured) return { ok: false, reason: "supabase_not_configured" };
-
+): Promise<void> {
   const userId = await getCurrentUserId();
-  if (!userId) return { ok: false, reason: "not_authenticated" };
-
-  try {
-    const { error } = await supabase
-      .from("screening_analytics")
-      .update({
-        history_viewed: true,
-        updated_at:     new Date().toISOString(),
-      })
-      .eq("session_id", sessionId)
-      .eq("user_id",    userId);
-
-    if (error) {
-      console.error("[funnelAnalytics] trackHistoryView error:", error.code, error.message);
-      return { ok: false, reason: error.code ?? "update_failed" };
-    }
-    return { ok: true };
-  } catch (err) {
-    console.error("[funnelAnalytics] trackHistoryView unexpected:", err instanceof Error ? err.message : "unknown");
-    return { ok: false, reason: "unexpected_error" };
-  }
+  if (!userId) return;
+  await supabase
+    .from("screening_analytics")
+    .update({ history_viewed: true })
+    .eq("session_id", sessionId);
 }
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Sprint 4 — Original Functions (unchanged)
-// ────────────────────────────────────────────────────────────────────────────────
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function safeNum(value: any): number | null {
-  if (value === null || value === undefined || value === "") return null;
-  const n = Number(value);
-  return isNaN(n) ? null : n;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function safeStr(value: any): string | null {
-  if (value === null || value === undefined) return null;
-  const s = String(value).trim();
-  return s === "" ? null : s;
-}
+// ─── markScreeningBookedAfterResult ───────────────────────────────────────────
 
 export async function markScreeningBookedAfterResult(
-  sessionId: string
-): Promise<{ ok: boolean; reason?: string }> {
-  if (!isSupabaseConfigured) return { ok: false, reason: "supabase_not_configured" };
-  if (!sessionId || sessionId.trim() === "") return { ok: false, reason: "missing_session_id" };
-
+  sessionId: string,
+  serviceId: string,
+  specialistId: string
+): Promise<void> {
   const userId = await getCurrentUserId();
-  if (!userId) return { ok: false, reason: "not_authenticated" };
+  if (!userId) return;
+  await supabase.from("screening_analytics").upsert(
+    {
+      session_id:           sessionId,
+      user_id:              userId,
+      booked_after_result:  true,
+      booked_service_id:    serviceId,
+      booked_specialist_id: specialistId,
+      booked_at:            new Date().toISOString(),
+    },
+    { onConflict: "session_id" }
+  );
+}
 
-  try {
-    const { error } = await supabase
-      .from("screening_analytics")
-      .update({
-        booked_after_result: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("session_id", sessionId)
-      .eq("user_id", userId);
+// ─── upsertScreeningResultAnalytics ──────────────────────────────────────────
 
-    if (error) {
-      console.error("[screeningAnalytics] markBooked error:", error.code, error.message);
-      return { ok: false, reason: error.code ?? "update_failed" };
-    }
-    return { ok: true };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "unknown";
-    console.error("[screeningAnalytics] markBooked unexpected error:", msg);
-    return { ok: false, reason: "unexpected_error" };
-  }
+export interface ScreeningResultAnalyticsPayload {
+  sessionId:     string;
+  pathType:      string;
+  screeningType: string;
+  mode?:         string;
+  subjectType:   "self" | "child";
+  subjectName:   string;
+  subjectAge:    string;
+  result:        Record<string, unknown>;
+  completedAt:   string;
+  source:        string;
 }
 
 export async function upsertScreeningResultAnalytics(
-  params: ScreeningAnalyticsParams
-): Promise<AnalyticsResult> {
-  if (!isSupabaseConfigured) return { ok: false, reason: "supabase_not_configured" };
-  if (!params.sessionId)       return { ok: false, reason: "missing_session_id" };
-
+  payload: ScreeningResultAnalyticsPayload
+): Promise<void> {
   const userId = await getCurrentUserId();
-  if (!userId) return { ok: false, reason: "not_authenticated" };
+  if (!userId) return;
 
-  const r = params.result ?? {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const inner: Record<string, any> =
-    r.result && typeof r.result === "object" ? r.result : {};
+  const {
+    sessionId,
+    pathType,
+    screeningType,
+    mode,
+    subjectType,
+    subjectName,
+    subjectAge,
+    result,
+    completedAt,
+    source,
+  } = payload;
 
-  const score      = safeNum(r.score ?? r.totalScore ?? r.resultScore ?? inner.score ?? inner.totalScore);
-  const percentage = safeNum(r.percentage ?? inner.percentage ?? r.result?.percentage);
-  const riskLevel  = safeStr(r.riskLevel  ?? inner.riskLevel  ?? r.result?.riskLevel);
-  const riskLabel  = safeStr(r.riskLabel  ?? inner.riskLabel  ?? r.result?.riskLabel);
-  const resultLevel = safeStr(
-    r.level ?? r.category ?? inner.riskLabel ?? inner.riskLevel ?? r.result?.riskLabel ?? r.result?.riskLevel
+  const r = (result?.result ?? result) as Record<string, unknown> | null;
+  const percentage = typeof r?.percentage === "number" ? r.percentage : null;
+  const riskLevel  = typeof r?.riskLevel  === "string"  ? r.riskLevel  : null;
+  const riskLabel  = typeof r?.riskLabel  === "string"  ? r.riskLabel  : null;
+
+  await supabase.from("screening_analytics").upsert(
+    {
+      session_id:        sessionId,
+      user_id:           userId,
+      path_type:         pathType,
+      screening_type:    screeningType,
+      subject_type:      subjectType,
+      subject_name:      subjectName,
+      subject_age:       subjectAge,
+      mode:              mode ?? null,
+      result_percentage: percentage,
+      result_risk_level: riskLevel,
+      result_risk_label: riskLabel,
+      result_json:       result,
+      form_submitted_at: completedAt,
+      completed_at:      completedAt,
+      is_abandoned:      false,
+      analytics_source:  source,
+    },
+    { onConflict: "session_id" }
   );
-  const completedAt = params.completedAt ?? safeStr(
-    r.completedAt ?? r.completed_at ?? r.createdAt ?? r.timestamp
-  ) ?? new Date().toISOString();
-  const pathType    = safeStr(params.pathType ?? r.pathType ?? r.screeningType) ?? "unknown";
-  const subjectAge  = safeStr(params.subjectAge  ?? r.childAge ?? r.age ?? r.subjectAge ?? inner.age ?? inner.childAge);
-  const subjectName = safeStr(params.subjectName ?? r.childName ?? r.name ?? r.userName  ?? inner.name ?? inner.childName);
-
-  const payload = {
-    user_id:        userId,
-    session_id:     params.sessionId,
-    local_child_id: safeStr(params.localChildId) ?? null,
-    subject_type:   params.subjectType ?? "unknown",
-    subject_name:   subjectName,
-    subject_age:    subjectAge,
-    mode:           safeStr(params.mode ?? r.mode ?? r.assessmentMode) ?? null,
-    path_type:      pathType,
-    screening_type: safeStr(params.screeningType ?? r.screeningType ?? r.type ?? r.pathType) ?? null,
-    score,
-    percentage,
-    risk_level:   riskLevel,
-    risk_label:   riskLabel,
-    result_level: resultLevel,
-    completed_at: completedAt,
-    source:       params.source ?? "screening_result_page",
-  };
-
-  try {
-    const { error } = await supabase
-      .from("screening_analytics")
-      .upsert(payload, { onConflict: "session_id", ignoreDuplicates: false });
-
-    if (error) {
-      console.error("[screeningAnalytics] upsert error:", error.code, error.message);
-      return { ok: false, reason: error.code ?? "upsert_failed" };
-    }
-    return { ok: true };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "unknown";
-    console.error("[screeningAnalytics] unexpected error:", msg);
-    return { ok: false, reason: "unexpected_error" };
-  }
 }
