@@ -1,6 +1,12 @@
 /*
  * ChooseChildPath — اختيار مسار الفحص للطفل
  *
+ * Sprint 2.2 — Step 7b: Funnel instrumentation
+ *   · FunnelSession يُنشأ عند mount هذا الكومبوننت
+ *     (entry point الحقيقي لمسار الطفل)
+ *   · trackFunnelPathSelected قبل navigate
+ *   · abandonment dual fallback: beforeunload + visibilitychange
+ *
  * يظهر بعد اختيار الطفل من ChildrenPage
  * يسمح للوالد باختيار:
  *   A. كشف أولي لمؤشرات صعوبات التعلم (learning)
@@ -13,7 +19,7 @@
  * اللوحة اللونية: #F4EFE8 | #1E4E8C | #2BBDB6 | #F4C46A
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ArrowLeft,
@@ -24,6 +30,11 @@ import {
   Shield,
   ChevronLeft,
 } from "lucide-react";
+import {
+  FunnelSession,
+  trackFunnelPathSelected,
+  trackFunnelAbandonment,
+} from "@/lib/screeningAnalytics";
 
 interface ChooseChildPathProps {
   childId: string;
@@ -71,8 +82,43 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
 
   const searchParams = new URLSearchParams(window.location.search);
   const childName = searchParams.get("name") ?? "طفلك";
-  const childAge = searchParams.get("age") ?? "";
-  const ageGroup = searchParams.get("ageGroup") ?? "school";
+  const childAge  = searchParams.get("age")  ?? "";
+  const ageGroup  = searchParams.get("ageGroup") ?? "school";
+
+  // ─── FunnelSession (path_choose entry point) ─────────────────────────────────
+  // هذا هو entry point الأول لمسار الطفل — ننشئ session هنا.
+  // pathType غير معروف بعد (سيختاره المستخدم) → نستخدم "choose" كـ placeholder.
+  // بعد الاختيار: نُحدّث pathType عبر trackFunnelPathSelected.
+  const funnelSessionRef = useRef<FunnelSession | null>(null);
+  if (!funnelSessionRef.current) {
+    funnelSessionRef.current = new FunnelSession(
+      `pending-${Date.now()}`,
+      "choose" as "learning" | "adhd" | "choose"
+    );
+  }
+  const funnelSession = funnelSessionRef.current;
+
+  // ─── abandonment dual fallback ───────────────────────────────────────────────
+  useEffect(() => {
+    const abandonedRef = { sent: false };
+
+    async function fireAbandonment() {
+      if (abandonedRef.sent) return;
+      if (funnelSession.submittedAt !== null) return;
+      abandonedRef.sent = true;
+      void trackFunnelAbandonment(funnelSession, "choose_child_path");
+    }
+
+    function onBeforeUnload() { void fireAbandonment(); }
+    function onVisibilityChange() { if (document.hidden) void fireAbandonment(); }
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [funnelSession]);
 
   useEffect(() => {
     document.title = `اختر مسار الفحص — ${childName} — تشخيصي`;
@@ -81,6 +127,14 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
 
   function handleChoose(pathType: string) {
     setSelected(pathType);
+
+    // Step 7b: سجّل اختيار المسار في Supabase قبل navigate
+    void trackFunnelPathSelected(
+      funnelSession,
+      pathType as "learning" | "adhd",
+      childId
+    );
+
     setTimeout(() => {
       navigate(
         `/screening-intro/${childId}?pathType=${pathType}&mode=child&name=${encodeURIComponent(childName)}&age=${childAge}&ageGroup=${ageGroup}`
@@ -225,7 +279,7 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
                       style={{ background: path.bg, border: `1.5px solid ${path.border}` }}
                     >
                       <Icon size={22} style={{ color: path.color }} aria-hidden="true" />
-                    </div>
+                    >
                     <span
                       className="text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{
