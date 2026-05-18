@@ -38,14 +38,14 @@ export type PathType = "learning" | "adhd";
 
 export class FunnelSession {
   private _sessionId: string;
-  readonly pathType: string;
+  readonly pathType: PathType | "choose";
   readonly startedAt: number;
   submittedAt: number | null = null;
   hesitationCount: number = 0;
   deviceType: "mobile" | "tablet" | "desktop";
   historyViewed: boolean = false;
 
-  constructor(sessionId: string, pathType: string) {
+  constructor(sessionId: string, pathType: PathType | "choose") {
     this._sessionId = sessionId;
     this.pathType   = pathType;
     this.startedAt  = Date.now();
@@ -180,19 +180,20 @@ export async function trackFunnelAbandonment(
 // يُستدعى من ChooseChildPath.handleChoose قبل navigate.
 // يسجّل:
 //   · اختيار المسار (learning | adhd)
-//   · childId كـ context_id (ليس session_id — الطفل ليس له session هنا بعد)
+//   · session_id = childId (بعد attachRealSessionId)
 //   · form_started_at = now (entry point الفعلي لمسار الطفل)
 
 export async function trackFunnelPathSelected(
   session: FunnelSession,
-  pathType: "learning" | "adhd",
+  pathType: PathType,
   childId: string
 ): Promise<void> {
   const userId = await getCurrentUserId();
   if (!userId) return;
 
-  // حدّث pathType على الـ session (كان "choose" عند الإنشاء)
-  // cast لأن pathType readonly — نصطنع غير مباشر عبر upsert فقط
+  // ربط session بالـ childId الحقيقي قبل الكتابة إلى Supabase
+  session.attachRealSessionId(childId);
+
   await supabase
     .from("screening_analytics")
     .upsert(
@@ -200,7 +201,6 @@ export async function trackFunnelPathSelected(
         session_id:      session.sessionId,
         user_id:         userId,
         path_type:       pathType,
-        child_id:        childId,
         form_started_at: new Date().toISOString(),
         device_type:     session.deviceType,
         is_abandoned:    false,
