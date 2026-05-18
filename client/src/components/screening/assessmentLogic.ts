@@ -1,7 +1,7 @@
 /**
  * assessmentLogic.ts
- * Sprint 2.2 — Step 3: Pure business logic
- * Sprint 2.2 — Step 7b: Added saveChildProfile + ageGroup to buildIntroUrl
+ * Sprint 2.2 — Step 3  : Pure business logic
+ * Sprint 2.2 — Step 7b : saveChildProfile + ageGroup in buildIntroUrl
  *
  * دوال خالصة (pure functions) لا تعتمد على React state.
  * قابلة للاختبار بشكل مستقل تماماً.
@@ -12,30 +12,37 @@
 import type {
   SelfAssessmentSummary,
   SelfAssessmentProfile,
+  ChildAssessmentProfile,
   PathType,
   AssessmentMode,
   RemoteAssessmentResult,
 } from "./assessmentTypes";
 import { SELF_ASSESSMENTS_KEY, AGE_MIN, AGE_MAX } from "./assessmentContent";
 
-// ─── Normalization Layer — نقطة الدخول الوحيدة لبيانات DB/localStorage ────────────
+// ─── Normalization Layer ───────────────────────────────────────────────────────
 
 export function normalizePathType(raw: string | null | undefined): PathType {
   if (raw === "adhd" || raw === "learning") return raw;
   return "learning";
 }
 
+/**
+ * normalizeMode
+ * يحوّل أي قيمة خام من DB إلى AssessmentMode آمن.
+ * 'child' أُضيف في Step 7b — يُحفظ كما هو.
+ * قيم قديمة لا تطابق أيًا من القيم المعروفة تُصنَّف كـ 'legacy'.
+ */
 export function normalizeMode(raw: string | null | undefined): AssessmentMode {
-  if (raw === "self" || raw === "parent") return raw;
+  if (raw === "self" || raw === "parent" || raw === "child") return raw;
   return "legacy";
 }
 
-// ─── توليد session ID جديد (collision-safe) ────────────────────────────────────
+// ─── توليد session ID جديد (collision-safe) ──────────────────────────────────
 export function generateSelfId(): string {
   return `self_${crypto.randomUUID()}`;
 }
 
-// ─── قراءة سجل التقييمات من localStorage ─────────────────────────────────
+// ─── قراءة سجل التقييمات من localStorage ─────────────────────────────────────
 export function loadSelfHistory(): SelfAssessmentSummary[] {
   try {
     const raw = localStorage.getItem(SELF_ASSESSMENTS_KEY);
@@ -48,7 +55,7 @@ export function loadSelfHistory(): SelfAssessmentSummary[] {
   }
 }
 
-// ─── حفظ بروفايل جلسة self في localStorage ──────────────────────────────────
+// ─── حفظ بروفايل جلسة self/parent في localStorage ───────────────────────────
 export function saveSelfProfile(
   selfId: string,
   name: string,
@@ -67,10 +74,10 @@ export function saveSelfProfile(
   localStorage.setItem(`self_profile_${selfId}`, JSON.stringify(profile));
 }
 
-// ─── حفظ بروفايل جلسة child في localStorage (Step 7b) ────────────────────────
+// ─── حفظ بروفايل جلسة child في localStorage (Step 7b) ───────────────────────
 //
 // childId يأتي من ChildrenPage — ليس مُولَّداً هنا.
-// idempotent: آمن إذا نُودي مرتين لنفس childId.
+// idempotent: آمن لو نُودي مرتين لنفس childId.
 export function saveChildProfile(
   childId: string,
   childName: string,
@@ -78,11 +85,11 @@ export function saveChildProfile(
   pathType: PathType,
   ageGroup: string,
 ): void {
-  const profile = {
+  const profile: ChildAssessmentProfile = {
     id: childId,
     name: childName,
     age: childAge,
-    mode: "child" as AssessmentMode,
+    mode: "child",
     pathType,
     ageGroup,
     createdAt: new Date().toISOString(),
@@ -90,7 +97,7 @@ export function saveChildProfile(
   localStorage.setItem(`child_profile_${childId}`, JSON.stringify(profile));
 }
 
-// ─── دمج النتائج البعيدة مع المحلية (dedup by sessionId) ─────────────────
+// ─── دمج النتائج البعيدة مع المحلية (dedup by sessionId) ─────────────────────
 export function mergeRemoteResults(
   local: SelfAssessmentSummary[],
   remote: RemoteAssessmentResult[],
@@ -114,14 +121,14 @@ export function mergeRemoteResults(
   return sortByDate([...local, ...newRemote]);
 }
 
-// ─── ترتيب النتائج تنازلياً بالتاريخ ───────────────────────────────────────
+// ─── ترتيب النتائج تنازلياً بالتاريخ ────────────────────────────────────────
 export function sortByDate(items: SelfAssessmentSummary[]): SelfAssessmentSummary[] {
   return [...items].sort(
     (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime(),
   );
 }
 
-// ─── تصفية النتائج حسب المسار ──────────────────────────────────────────
+// ─── تصفية النتائج حسب المسار ────────────────────────────────────────────────
 export function filterByPath(
   items: SelfAssessmentSummary[],
   pathType: PathType,
@@ -132,7 +139,7 @@ export function filterByPath(
   };
 }
 
-// ─── التحقق من صحة مدخلات الـ form ────────────────────────────────────
+// ─── التحقق من صحة مدخلات الـ form ──────────────────────────────────────────
 export interface FormValidationResult {
   valid: boolean;
   nameError: string;
@@ -173,7 +180,7 @@ export function validateForm(
   return { valid, nameError, ageError };
 }
 
-// ─── تنسيق التاريخ بالعربية ─────────────────────────────────────────────────
+// ─── تنسيق التاريخ بالعربية ──────────────────────────────────────────────────
 export function formatArabicDate(isoString: string): string {
   try {
     const d = new Date(isoString);
@@ -188,7 +195,7 @@ export function formatArabicDate(isoString: string): string {
   }
 }
 
-// ─── بناء redirect URL آمن ─────────────────────────────────────────────────────
+// ─── بناء redirect URL آمن ───────────────────────────────────────────────────
 export function buildSafeRedirect(pathname: string, search: string): string {
   const currentPath = pathname + search;
   return currentPath.startsWith("/") && !currentPath.startsWith("//")
@@ -201,11 +208,11 @@ export function buildResultUrl(sessionId: string, name: string, pathType: PathTy
   return `/screening-result/${sessionId}?name=${encodeURIComponent(name)}&pathType=${pathType}`;
 }
 
-// ─── بناء navigation URL للـ screening-intro ──────────────────────────────────────
+// ─── بناء navigation URL للـ screening-intro ─────────────────────────────────
 //
 // ageGroup اختياري — backward compatible.
-// مسار self: لا يمرر ageGroup → لا تغيير.
-// مسار child: يمرر ageGroup → يُضاف &ageGroup=... للـ URL.
+// مسار self : buildIntroUrl(id, name, age, mode, path)          → بدون تغيير
+// مسار child: buildIntroUrl(id, name, age, mode, path, ageGroup) → يُضاف &ageGroup=...
 export function buildIntroUrl(
   selfId: string,
   name: string,
