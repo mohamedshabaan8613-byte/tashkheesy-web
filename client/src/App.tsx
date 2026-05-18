@@ -3,6 +3,7 @@ import { Route, Switch, useParams } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ConsultationProvider } from "./contexts/ConsultationContext";
 import WhatsAppButton from "./components/WhatsAppButton";
 import PageSkeleton from "./components/PageSkeleton";
 import { Toaster } from "@/components/ui/sonner";
@@ -206,9 +207,19 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
-          <Router />
-          <WhatsAppButton />
-          <Toaster richColors position="top-center" />
+          {/*
+           * ConsultationProvider — Sprint 3.0a | Issue #57
+           *
+           * يجب أن يكون داخل AuthProvider لأن بعض صفحات consultation
+           * ستتحقق من حالة المصادقة قبل تنفيذ الحجز.
+           * يجب أن يحيط Router بالكامل حتى يتاح useConsultationFlow
+           * في كل Route بما فيها ScreeningResult وBooking.
+           */}
+          <ConsultationProvider>
+            <Router />
+            <WhatsAppButton />
+            <Toaster richColors position="top-center" />
+          </ConsultationProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
