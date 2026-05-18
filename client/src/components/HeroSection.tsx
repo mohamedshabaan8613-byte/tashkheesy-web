@@ -7,12 +7,12 @@
  *
  * 1. H1 → 3-Line Editorial Hero Structure
  *    BEFORE (Sprint 2.1 single line):
- *      "فهم أوضح لطفلك أو لنفسك"
+ *      "فهم أوضح لطفلك و لنفسك"
  *
  *    AFTER (Sprint 2.2 three lines):
  *      Line 1 — Brand Anchor:        "تشخيصي —"
  *      Line 2 — Core Emotional Msg:  "خطوتك نحو فهم أوضح"  ← dominant visual line
- *      Line 3 — Audience Clarifier:  "لك أو لطفلك"
+ *      Line 3 — Audience Clarifier:  "لك و لطفلك"
  *
  *    Why:
  *      - Creates typographic hierarchy: Anchor → Message → Clarifier
@@ -159,7 +159,7 @@ export default function HeroSection() {
              *   Accent on "فهم أوضح" → color:#2BBDB6 (large text AA ✓)
              *
              *   Line 3 — Audience Clarifier
-             *   "لك أو لطفلك"
+             *   "لك و لطفلك"
              *   Slightly smaller than line 2, softer contrast #64748B
              *   "لك" first = faster scan, more personal
              */}
@@ -213,7 +213,7 @@ export default function HeroSection() {
                   lineHeight: 1.3,
                 }}
               >
-                لك أو لطفلك
+                لك و لطفلك
               </span>
             </h1>
 
