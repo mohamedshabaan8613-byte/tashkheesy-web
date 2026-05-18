@@ -193,6 +193,9 @@ function Router() {
         <Route path="/login"   component={Login} />
         <Route path="/account" component={Account} />
 
+        
+          {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ──────────────────────── */}
+          <Route path="/consultation/start" component={ConsultationIntroPage} />
         {/* ─── لوحة الإدارة + معاينة النتائج الداخلية (admin-only) ─────── */}
         <Route path="/admin"         component={() => <SensitiveNoIndex><AdminDashboard /></SensitiveNoIndex>} />
         <Route path="/admin/preview" component={() => <SensitiveNoIndex><
