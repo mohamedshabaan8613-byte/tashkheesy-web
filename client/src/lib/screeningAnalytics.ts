@@ -1,20 +1,30 @@
 /**
  * screeningAnalytics.ts
- * Sprint 2.2 — Step 7a + Step 7b + Step 7c: Funnel Instrumentation Library
+ * Sprint 2.2 — Step 7a + Step 7b + Step 7c + Step 7d (audit fixes)
  *
  * Exports:
- *   FunnelSession, FunnelStep, PathType
+ *   FunnelSession, FunnelStep
  *   trackFunnelStart
  *   trackFunnelSubmit
  *   trackFunnelAbandonment
  *   trackFunnelPathSelected
  *   trackHistoryView
  *   markScreeningBookedAfterResult
- *   upsertScreeningResultAnalytics   ← NEW (fixes ScreeningPage.tsx build error)
+ *   upsertScreeningResultAnalytics
+ *
+ * AUDIT FIXES (2026-05-18):
+ *   #1 — attachRealSessionId: استبدال prefix-check بـ boolean flag (_realIdAttached)
+ *   #4 — session_id alignment: trackFunnelPathSelected يكتب session_id = childId ("funnel_child_{childId}")
+ *         ليتطابق مع ما تستخدمه ScreeningPage + useChildAssessmentState.
+ *   #6 — PathType: حُذف من هنا — يُستورد من assessmentTypes.ts مصدر الحقيقة الوحيد.
  */
 
 import { supabase } from "@/lib/supabaseClient";
 import { getCurrentUserId } from "./accountData";
+import type { PathType } from "@/components/screening/assessmentTypes";
+
+// PathType re-exported للـ consumers الذين يستوردونه من هنا (backward compat)
+export type { PathType } from "@/components/screening/assessmentTypes";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -26,12 +36,13 @@ export type FunnelStep =
   | "screening_questions"
   | "screening_result";
 
-export type PathType = "learning" | "adhd";
-
 // ─── FunnelSession ───────────────────────────────────────────────────────────
 
 export class FunnelSession {
   private _sessionId: string;
+  // FIX #1: boolean flag بدلاً من prefix-check — يمنع أي race condition
+  private _realIdAttached: boolean = false;
+
   readonly pathType: PathType | "choose";
   readonly startedAt: number;
   submittedAt: number | null = null;
@@ -50,9 +61,16 @@ export class FunnelSession {
     return this._sessionId;
   }
 
+  /** آمن ضد الاستدعاء المزدوج وضد childId يبدأ بـ "pending-" */
   attachRealSessionId(realId: string): void {
-    if (!this._sessionId.startsWith("pending-")) return;
+    if (this._realIdAttached) return;   // FIX #1: guard حقيقي
+    if (!realId || realId === this._sessionId) return;
     this._sessionId = realId;
+    this._realIdAttached = true;
+  }
+
+  get isRealIdAttached(): boolean {
+    return this._realIdAttached;
   }
 
   onHesitation(): void { this.hesitationCount++; }
@@ -67,6 +85,18 @@ function detectDevice(): "mobile" | "tablet" | "desktop" {
   if (w < 768)  return "mobile";
   if (w < 1024) return "tablet";
   return "desktop";
+}
+
+// ─── buildChildFunnelSessionId ───────────────────────────────────────────────
+//
+// FIX #4: توليد session_id موحّد لمسار الطفل.
+// يُستخدم في ChooseChildPath (trackFunnelPathSelected),
+// useChildAssessmentState (trackFunnelSubmit),
+// و ScreeningPage (upsertScreeningResultAnalytics).
+// المبدأ: session_id الواحد يعني row واحد في screening_analytics.
+
+export function buildChildFunnelSessionId(childId: string): string {
+  return `funnel_child_${childId}`;
 }
 
 // ─── trackFunnelStart ────────────────────────────────────────────────────────
@@ -119,8 +149,14 @@ export async function trackFunnelAbandonment(
   session: FunnelSession,
   abandonedAtStep: FunnelStep
 ): Promise<void> {
+  // FIX #2: لا نُرسل abandonment لو session لم تُكتب في DB بعد
+  // (session_id لا يزال pending) — نتجنب صفوف garbage
+  if (!session.isRealIdAttached && session.submittedAt === null) return;
+
   const userId = await getCurrentUserId();
   if (!userId) return;
+  if (session.submittedAt !== null) return; // بالفعل submittted
+
   const timeOnForm = session.getTimeOnForm();
   await supabase.from("screening_analytics").upsert(
     {
@@ -139,6 +175,9 @@ export async function trackFunnelAbandonment(
 }
 
 // ─── trackFunnelPathSelected ─────────────────────────────────────────────────
+//
+// FIX #4: يستخدم buildChildFunnelSessionId(childId) كـ session_id
+// ليتطابق مع ما تستخدمه useChildAssessmentState و ScreeningPage.
 
 export async function trackFunnelPathSelected(
   session: FunnelSession,
@@ -147,10 +186,12 @@ export async function trackFunnelPathSelected(
 ): Promise<void> {
   const userId = await getCurrentUserId();
   if (!userId) return;
-  session.attachRealSessionId(childId);
+  // توليد الـ ID الموحّد ثم ربطه بالـ session
+  const unifiedId = buildChildFunnelSessionId(childId);
+  session.attachRealSessionId(unifiedId);
   await supabase.from("screening_analytics").upsert(
     {
-      session_id:      session.sessionId,
+      session_id:      session.sessionId,  // = unifiedId
       user_id:         userId,
       path_type:       pathType,
       form_started_at: new Date().toISOString(),
@@ -175,9 +216,6 @@ export async function trackHistoryView(
 }
 
 // ─── markScreeningBookedAfterResult ───────────────────────────────────────────
-//
-// يُستدعى من Booking.tsx بعد إتمام الحجز بنجاح.
-// مؤشر Funnel → Booked في الـ analytics.
 
 export async function markScreeningBookedAfterResult(
   sessionId: string,
@@ -200,22 +238,18 @@ export async function markScreeningBookedAfterResult(
 }
 
 // ─── upsertScreeningResultAnalytics ──────────────────────────────────────────
-//
-// يُستدعى من ScreeningPage.tsx عند اكتمال الفحص (handleComplete).
-// يحفظ ملخص النتيجة + معلومات الجلسة في جدول screening_analytics.
-// fire-and-forget — لا يحجب التنقل أو UI.
 
 export interface ScreeningResultAnalyticsPayload {
-  sessionId:    string;
-  pathType:     string;      // "learning" | "adhd"
-  screeningType: string;     // "dyslexia" | "adhd" | "general" | "autism"
-  mode?:        string;      // "self" | undefined (child mode)
-  subjectType:  "self" | "child";
-  subjectName:  string;
-  subjectAge:   string;      // string لأن URL searchParam
-  result:       Record<string, unknown>;
-  completedAt:  string;
-  source:       string;      // e.g. "screening_page_complete"
+  sessionId:     string;
+  pathType:      string;
+  screeningType: string;
+  mode?:         string;
+  subjectType:   "self" | "child";
+  subjectName:   string;
+  subjectAge:    string;
+  result:        Record<string, unknown>;
+  completedAt:   string;
+  source:        string;
 }
 
 export async function upsertScreeningResultAnalytics(
@@ -237,11 +271,10 @@ export async function upsertScreeningResultAnalytics(
     source,
   } = payload;
 
-  // استخراج ملخص النتيجة بشكل آمن (resultقد يكون nested)
   const r = (result?.result ?? result) as Record<string, unknown> | null;
-  const percentage  = typeof r?.percentage  === "number" ? r.percentage  : null;
-  const riskLevel   = typeof r?.riskLevel   === "string"  ? r.riskLevel   : null;
-  const riskLabel   = typeof r?.riskLabel   === "string"  ? r.riskLabel   : null;
+  const percentage = typeof r?.percentage === "number" ? r.percentage : null;
+  const riskLevel  = typeof r?.riskLevel  === "string"  ? r.riskLevel  : null;
+  const riskLabel  = typeof r?.riskLabel  === "string"  ? r.riskLabel  : null;
 
   await supabase.from("screening_analytics").upsert(
     {

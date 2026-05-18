@@ -1,22 +1,12 @@
 /*
  * ChooseChildPath — اختيار مسار الفحص للطفل
  *
- * Sprint 2.2 — Step 7b: Funnel instrumentation
- *   · FunnelSession يُنشأ عند mount هذا الكومبوننت
- *     (entry point الحقيقي لمسار الطفل)
- *   · trackFunnelPathSelected قبل navigate
- *   · abandonment dual fallback: beforeunload + visibilitychange
- *
- * يظهر بعد اختيار الطفل من ChildrenPage
- * يسمح للوالد باختيار:
- *   A. كشف أولي لمؤشرات صعوبات التعلم (learning)
- *   B. كشف أولي لمؤشرات فرط الحركة وتشتت الانتباه (adhd)
- *
- * يمرر: mode=child, childId, pathType, childName, childAge, ageGroup
- * إلى: /screening-intro/:childId?pathType=...&name=...&age=...&mode=child
- *
- * التصميم: Editorial Healthcare Calm
- * اللوحة اللونية: #F4EFE8 | #1E4E8C | #2BBDB6 | #F4C46A
+ * AUDIT FIXES (2026-05-18):
+ *   #2 — Abandonment guard: لا إرسال abandonment إذا لم يتم اختيار مسار بعد
+ *         (session لم تُكتب في DB — isRealIdAttached = false)
+ *         هذا مُعالَج الآن في trackFunnelAbandonment نفسها (FunnelSession.isRealIdAttached)
+ *   #4 — session_id: trackFunnelPathSelected يستخدم buildChildFunnelSessionId(childId)
+ *         لذا يتطابق مع session_id في useChildAssessmentState و ScreeningPage.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -101,6 +91,8 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
   const ageGroup  = searchParams.get("ageGroup") ?? "school";
 
   // ─── FunnelSession (path_choose entry point) ─────────────────────────────────
+  // FIX #2: session تبدأ بـ pending حتى يختار المستخدم مساراً.
+  // trackFunnelAbandonment تتحقق من isRealIdAttached قبل الإرسال.
   const funnelSessionRef = useRef<FunnelSession | null>(null);
   if (!funnelSessionRef.current) {
     funnelSessionRef.current = new FunnelSession(
@@ -111,6 +103,8 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
   const funnelSession = funnelSessionRef.current;
 
   // ─── abandonment dual fallback ───────────────────────────────────────────────
+  // FIX #2: trackFunnelAbandonment ترفض الإرسال إذا !isRealIdAttached
+  // → لا garbage rows لو غادر المستخدم قبل اختيار مسار
   useEffect(() => {
     const abandonedRef = { sent: false };
 
@@ -139,13 +133,8 @@ export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
 
   function handleChoose(pathType: PathType) {
     setSelected(pathType);
-
-    // Step 7b: سجّل اختيار المسار في Supabase قبل navigate
-    void trackFunnelPathSelected(
-      funnelSession,
-      pathType,
-      childId
-    );
+    // trackFunnelPathSelected يستدعي attachRealSessionId(buildChildFunnelSessionId(childId))
+    void trackFunnelPathSelected(funnelSession, pathType, childId);
 
     setTimeout(() => {
       navigate(

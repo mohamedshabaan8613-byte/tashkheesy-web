@@ -1,21 +1,21 @@
 /**
  * ScreeningPage — صفحة الفحص التفاعلي المُحسَّنة
  *
- * التحسينات:
- * - الأسئلة تُحسب محلياً بدون انتظار API (لا تأخير)
- * - الإجابات تُحفظ في localStorage فوراً
- * - النتيجة تُحسب محلياً وتُعرض فوراً بدون انتظار server
- * - تصميم أكثر وضوحاً وسهولة في الاستخدام
- *
- * FIX #4 (session_id unification):
- * - يقرأ &fid= من URL (= childId من funnel path selection)
- * - يستخدمه كـ sessionId لـ upsertScreeningResultAnalytics
- * - fallback chain: fid → childId → session_{childId}_{ts}
- * - sessionId مؤمن في useRef → لا collision عبر re-renders
+ * AUDIT FIXES (2026-05-18):
+ *   #3 — session_id collision: sessionIdRef (useRef) بدلاً من توليد في handleComplete
+ *   #4 — session_id alignment: مسار child يستخدم buildChildFunnelSessionId(childId)
+ *         مسار self يستخدم sessionIdRef المُولَّد مرة واحدة عند mount
+ *   #5 — trackFunnelStart: يُستدعى عند mount (مرة واحدة)
+ *   #7 — useCallback deps: حُذف totalQuestions غير المستخدم
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
+import {
+  upsertScreeningResultAnalytics,
+  buildChildFunnelSessionId,
+  trackFunnelStart,
+  FunnelSession,
+} from "@/lib/screeningAnalytics";
 import {
   upsertRemoteScreeningResult,
   syncLocalSelfAssessmentsToSupabase,
@@ -44,7 +44,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 
-// ─── بنك الأسئلة المحلي (لا يحتاج API) ────────────────────────────────────────────
+// ─── بنك الأسئلة المحلي (لا يحتاج API) ──────────────────────────────────────
 interface Question {
   id: string;
   text: string;
@@ -86,7 +86,7 @@ const ALL_QUESTIONS: Question[] = [
   { id: "mo2", text: "يُعاني من ضعف في التنسيق الحركي (يتعثر، يسقط الأشياء كثيراً)", category: "motor", categoryLabel: "الحركي", weight: 1.3, ageGroups: ["preschool", "school"] },
 ];
 
-// ─── حساب النتيجة محلياً ───────────────────────────────────────────────────────────────────
+// ─── حساب النتيجة محلياً ─────────────────────────────────────────────────────
 interface ScreeningResult {
   percentage: number;
   riskLevel: "low" | "medium" | "high" | "critical";
@@ -129,21 +129,21 @@ function calculateLocalScore(answers: Record<string, number>, questions: Questio
   if (riskLevel === "low") {
     recommendations.push("استمر في دعم طفلك بالأنشطة التعليمية اليومية والقراءة المشتركة.");
     recommendations.push("راقب تطور طفلك بانتظام وأجرِ فحصاً دورياً كل 6 أشهر.");
-    recommendations.push("شجّع طفلك على الأنشطة الإبداعية التي تعزز الذاكرة والتركيز.");
+    recommendations.push("شجع طفلك على الأنشطة الإبداعية التي تعزز الذاكرة والتركيز.");
   } else if (riskLevel === "medium") {
     recommendations.push("يُنصح بالتواصل مع معلم طفلك لمناقشة أسلوب التعلم المناسب له.");
     recommendations.push("جرّب تمارين القراءة اليومية لمدة 15 دقيقة في بيئة هادئة.");
     recommendations.push("أجرِ فحصاً متابعة بعد 3 أشهر لمراقبة التطور.");
-    recommendations.push("فكّر في الاستشارة مع أخصّائي تربية خاصة للحصول على تقييم أعمق.");
+    recommendations.push("فكّر في الاستشارة مع أخصائي تربية خاصة للحصول على تقييم أعمق.");
   } else if (riskLevel === "high") {
-    recommendations.push("يُوصى بشدة بالتواصل مع أخصّائي صعوبات تعلم في أقرب وقت.");
+    recommendations.push("يُوصى بشدة بالتواصل مع أخصائي صعوبات تعلم في أقرب وقت.");
     recommendations.push("اطلب من المدرسة توفير دعم تعليمي إضافي لطفلك.");
     recommendations.push("ابدأ بتمارين التطوير الخاصة المقترحة في قسم التمارين.");
-    recommendations.push("تجنّب الضغط على طفلك وركّز على تعزيز ثقته بنفسه.");
+    recommendations.push("تجنب الضغط على طفلك وركز على تعزيز ثقته بنفسه.");
   } else {
     recommendations.push("يُنصح بإجراء تقييم متخصص شامل في أقرب وقت ممكن.");
     recommendations.push("تواصل مع طبيب الأطفال لاستبعاد أي أسباب طبية.");
-    recommendations.push("احجز جلسة مع أخصّائي صعوبات التعلم لتقييم احترافي دقيق.");
+    recommendations.push("احجز جلسة مع أخصائي صعوبات التعلم لتقييم احترافي دقيق.");
   }
   if ((categoryScores["attention"]?.percentage ?? 0) > 60) {
     recommendations.push("لاحظنا مؤشرات في مجال الانتباه — يُنصح بتمارين التركيز اليومية.");
@@ -155,7 +155,7 @@ function calculateLocalScore(answers: Record<string, number>, questions: Questio
   return { percentage: pct, riskLevel, riskLabel, categoryScores, recommendations };
 }
 
-// ─── خيارات الإجابة ───────────────────────────────────────────────────────────────────
+// ─── خيارات الإجابة ───────────────────────────────────────────────────────────
 const ANSWER_OPTIONS = [
   { value: 1, label: "أبداً", desc: "لا أُلاحظ هذا السلوك إطلاقاً", color: "border-green-400 bg-green-50 text-green-800" },
   { value: 2, label: "نادراً", desc: "مرة أو مرتين في الشهر", color: "border-lime-400 bg-lime-50 text-lime-800" },
@@ -168,14 +168,14 @@ const CATEGORY_ICONS: Record<string, string> = {
   reading: "📖", writing: "✏️", attention: "🎯", memory: "🧠", social: "🤝", motor: "🖐️",
 };
 
-// ─── الفئة العمرية ─────────────────────────────────────────────────────────────────────────────
+// ─── الفئة العمرية ────────────────────────────────────────────────────────────
 function getAgeGroup(age: number): string {
   if (age <= 5) return "preschool";
   if (age <= 12) return "school";
   return "teen";
 }
 
-// ─── المكونَّ الرئيسي ─────────────────────────────────────────────────────────────────────────
+// ─── المكوّن الرئيسي ──────────────────────────────────────────────────────────
 interface ScreeningPageProps {
   childId: string;
 }
@@ -189,20 +189,8 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const childName = searchParams.get("name") ?? "الطفل";
   const childAge = parseInt(searchParams.get("age") ?? "8", 10);
 
-  // قراءة pathType وmode من URL
   const urlPathType = searchParams.get("pathType") ?? "learning";
   const mode = searchParams.get("mode") ?? "";
-
-  // ─── FIX #4: قراءة fid من URL كـ sessionId موحَّد ───────────────────────────────
-  // fid = funnelSession.sessionId (= childId) من useChildAssessmentState
-  // fallback chain: fid → childId → session_{childId}_{ts}
-  // مؤمن في useRef → لا collision عبر re-renders
-  const sessionIdRef = useRef<string>(
-    searchParams.get("fid") ||
-    (childId && childId !== "" ? childId : `session_${childId}_${Date.now()}`)
-  );
-  const sessionId = sessionIdRef.current;
-
   const initialScreeningType: ScreeningType = urlPathType === "adhd" ? "adhd" : "dyslexia";
 
   const [phase, setPhase] = useState<Phase>("intro");
@@ -210,15 +198,35 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [animating, setAnimating] = useState(false);
+  const [animating] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
 
-  // ─── Sync localStorage → Supabase (fire-and-forget) ────────────────────────────────────────
-  useEffect(() => {
-    void syncLocalSelfAssessmentsToSupabase();
-  }, []);
+  // ─── FIX #3: sessionId مُولَّد مرة واحدة عند mount (لا collision) ────────────
+  // FIX #4: مسار child يستخدم buildChildFunnelSessionId — مسار self يستخدم uuid
+  const sessionIdRef = useRef<string>(
+    mode === "child" || (!mode && !!childId)
+      ? buildChildFunnelSessionId(childId)
+      : `session_${childId}_${Date.now()}`
+  );
+  const sessionId = sessionIdRef.current;
 
-  // ─── تصفية الأسئلة حسب العمر ────────────────────────────────────────────────────────────
+  // ─── FIX #5: FunnelSession + trackFunnelStart عند mount (مرة واحدة) ─────────
+  const funnelSessionRef = useRef<FunnelSession | null>(null);
+  if (!funnelSessionRef.current) {
+    funnelSessionRef.current = new FunnelSession(sessionId, urlPathType === "adhd" ? "adhd" : "learning");
+    // attach real ID مباشرة لأنه معروف من mount
+    funnelSessionRef.current.attachRealSessionId(sessionId);
+  }
+
+  useEffect(() => {
+    // FIX #5: trackFunnelStart يسجّل بداية صفحة الفحص في DB
+    if (funnelSessionRef.current) {
+      void trackFunnelStart(funnelSessionRef.current);
+    }
+    void syncLocalSelfAssessmentsToSupabase();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── تصفية الأسئلة حسب العمر ─────────────────────────────────────────────
   const ageGroup = getAgeGroup(childAge);
   const questions = ALL_QUESTIONS.filter((q) => q.ageGroups.includes(ageGroup));
   const totalQuestions = questions.length;
@@ -228,7 +236,7 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
   const isLastQuestion = currentIndex === totalQuestions - 1;
   const canComplete = answeredCount >= Math.ceil(totalQuestions * 0.7);
 
-  // ─── حفظ الإجابات في localStorage ─────────────────────────────────────────────────────────
+  // ─── حفظ الإجابات في localStorage ────────────────────────────────────────
   const STORAGE_KEY = `screening_${childId}_${screeningType}`;
 
   useEffect(() => {
@@ -242,29 +250,27 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     }
   }, [STORAGE_KEY]);
 
-  // ─── اختيار إجابة ──────────────────────────────────────────────────────────────────────────
+  // ─── FIX #7: حُذف totalQuestions من deps — غير مستخدم داخل الدالة ──────────
   const handleAnswer = useCallback(
     (value: number) => {
       if (!currentQuestion || animating) return;
-
       const newAnswers = { ...answers, [currentQuestion.id]: value };
       setAnswers(newAnswers);
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ answers: newAnswers, currentIndex }));
       setShowValidation(false);
     },
-    [currentQuestion, answers, currentIndex, totalQuestions, animating, STORAGE_KEY]
+    [currentQuestion, answers, currentIndex, animating, STORAGE_KEY]  // FIX #7
   );
 
-  // ─── إنهاء الفحص وحساب النتيجة ───────────────────────────────────────────────────────
-  //
-  // FIX #4: يستخدم sessionId (= fid من URL) بدلاً من توليد session_id جديد
+  // ─── إنهاء الفحص وحساب النتيجة محلياً ───────────────────────────────────
   function handleComplete() {
     setPhase("submitting");
     const result = calculateLocalScore(answers, questions);
-    const completedAt = new Date().toISOString();
 
+    // FIX #3: sessionId ثابت من sessionIdRef — لا توليد جديد هنا
+    const completedAt = new Date().toISOString();
     const resultPayload = {
-      sessionId,
+      sessionId,   // ← ثابت من useRef
       childName,
       childId,
       childAge,
@@ -277,13 +283,12 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     };
     localStorage.setItem(`result_${sessionId}`, JSON.stringify(resultPayload));
 
-    // تحديث سجل self assessments إذا كان مسار self
     if (mode === "self") {
       try {
         const SELF_KEY = "tashkheesy_self_assessments";
         const existing = localStorage.getItem(SELF_KEY);
         const list: unknown[] = existing ? JSON.parse(existing) : [];
-        list.unshift({
+        const entry = {
           id: sessionId,
           sessionId,
           name: childName,
@@ -293,14 +298,14 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
           screeningType,
           completedAt,
           resultKey: `result_${sessionId}`,
-        });
+        };
+        list.unshift(entry);
         localStorage.setItem(SELF_KEY, JSON.stringify(list));
       } catch {}
     }
 
     localStorage.removeItem(STORAGE_KEY);
 
-    // ─── Sprint 5: Persist to Supabase (fire-and-forget, self only) ────────────────────────
     if (mode === "self") {
       void upsertRemoteScreeningResult({
         sessionId,
@@ -320,8 +325,8 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
       });
     }
 
-    // ─── Analytics upsert (fire-and-forget) ────────────────────────────────────────────────────
-    // FIX #4: يستخدم sessionId (= fid) → يُدمج مع row pathSelected عبر onConflict
+    // FIX #4: sessionId = buildChildFunnelSessionId(childId) للطفل
+    // → يتطابق مع row اختيار المسار → upsert يُكمل نفس الـ row
     void upsertScreeningResultAnalytics({
       sessionId,
       pathType: urlPathType,
@@ -340,7 +345,7 @@ export default function ScreeningPage({ childId }: ScreeningPageProps) {
     }, 800);
   }
 
-  // ─── مرحلة المقدمة (path-aware) ────────────────────────────────────────────────────────
+  // ─── مرحلة المقدمة ───────────────────────────────────────────────────────────
   if (phase === "intro") {
     const isAdhd = urlPathType === "adhd";
     const pathTitle = isAdhd

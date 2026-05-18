@@ -2,27 +2,11 @@
  * useChildAssessmentState.ts
  * Sprint 2.2 — Step 7b: Child Funnel Instrumentation
  *
- * Mirror of useSelfAssessmentState.ts adapted for child assessment path.
- *
- * الفروق الجوهرية عن self:
- *   1. childId يأتي من URL param (/:childId) — ليس مُولَّداً هنا
- *   2. لا يوجد form validation — المعلومات تأتي مكتملة من ChooseChildPath
- *   3. pathType محدد مسبقاً من ChooseChildPath — ليس اختيار المستخدم هنا
- *   4. ageGroup متاح كـ extra signal للـ analytics
- *
- * FIX 1 (sessionId mismatch):
- *   attachRealSessionId(childId) قبل trackFunnelSubmit()
- *   ضمان: session_id في Supabase = childId دائماً
- *
- * FIX 2 (beforeunload reliability):
- *   visibilitychange fallback بجانب beforeunload
- *
- * FIX 3 (trackFunnelSubmit → upsert):
- *   موجود في screeningAnalytics.ts — لا تغيير هنا.
- *
- * FIX #4 (session_id unification):
- *   يُمرَّر funnelSession.sessionId (= childId بعد attach) عبر buildIntroUrl
- *   كـ &fid=... → يقرأه ScreeningPage ويستخدمه كـ sessionId الوحيد.
+ * AUDIT FIXES (2026-05-18):
+ *   #4 — session_id alignment:
+ *         attachRealSessionId يستخدم buildChildFunnelSessionId(childId)
+ *         ليتطابق مع session_id الذي تكتبه ChooseChildPath
+ *         و ScreeningPage (upsertScreeningResultAnalytics).
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -37,6 +21,7 @@ import {
 } from "./assessmentLogic";
 import {
   FunnelSession,
+  buildChildFunnelSessionId,
   trackFunnelSubmit,
   trackFunnelAbandonment,
 } from "@/lib/screeningAnalytics";
@@ -60,11 +45,19 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
   // ─── UI state ────────────────────────────────────────────────────────────────
   const [visible, setVisible] = useState(false);
 
-  // ─── FunnelSession (created once per mount) ──────────────────────────────────
-  // sessionId = pending-{ts} حتى نستدعي attachRealSessionId(childId)
+  // ─── FunnelSession ──────────────────────────────────────────────────────────
+  // FIX #4: نستخدم buildChildFunnelSessionId مباشرة كـ session_id الأولي
+  // (لا نحتاج pending- لأن childId معروف من mount)
   const funnelSessionRef = useRef<FunnelSession | null>(null);
   if (!funnelSessionRef.current) {
-    funnelSessionRef.current = new FunnelSession(`pending-${Date.now()}`, pathType);
+    // نبدأ بالـ unified ID مباشرة — نفس ما كتبه trackFunnelPathSelected
+    funnelSessionRef.current = new FunnelSession(
+      buildChildFunnelSessionId(childId),
+      pathType
+    );
+    // نضع attachRealSessionId بنفس القيمة لتأمين _realIdAttached = true
+    // حتى لا يُرسَل abandonment قبل أن يُكتب الـ row
+    funnelSessionRef.current.attachRealSessionId(buildChildFunnelSessionId(childId));
   }
   const funnelSession = funnelSessionRef.current;
 
@@ -98,24 +91,16 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
   }, [funnelSession]);
 
   // ─── handleStartAssessment ───────────────────────────────────────────────────
-  //
-  // FIX 1: attachRealSessionId(childId) قبل trackFunnelSubmit
-  // FIX #4: تمرير funnelSession.sessionId (= childId) كـ fid في URL
   function handleStartAssessment() {
     const ageNum = parseInt(childAge, 10) || 0;
 
-    // حفظ profile الطفل (idempotent)
     saveChildProfile(childId, childName, ageNum, pathType, ageGroup);
 
-    // FIX 1: ربط session بـ childId الحقيقي قبل أي Supabase write
-    funnelSession.attachRealSessionId(childId);
-
-    // upsert إلى screening_analytics
+    // FIX #4: session_id = buildChildFunnelSessionId(childId) بالفعل — upsert
     void trackFunnelSubmit(funnelSession);
 
-    // FIX #4: مرّر sessionId الموحَّد (= childId) عبر URL param &fid
     navigate(
-      buildIntroUrl(childId, childName, ageNum, mode, pathType, ageGroup, funnelSession.sessionId)
+      buildIntroUrl(childId, childName, ageNum, mode, pathType, ageGroup)
     );
   }
 
@@ -128,7 +113,7 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
     navigate(buildResultUrl(sessionId, name, itemPathType));
   }
 
-  // ─── Derived ─────────────────────────────────────────────────────────────────
+  // ─── Derived ──────────────────────────────────────────────────────────────────
   const safeRedirect = buildSafeRedirect(
     window.location.pathname,
     window.location.search
@@ -136,25 +121,18 @@ export function useChildAssessmentState({ childId }: ChildAssessmentParams) {
   const loginUrl = `/login?redirect=${encodeURIComponent(safeRedirect)}`;
 
   return {
-    // auth
     user,
     authLoading,
-    // child identity
     childId,
     childName,
     childAge,
     ageGroup,
-    // url
     pathType,
     mode,
-    // ui
     visible,
-    // funnel (Step 7b)
     funnelSession,
-    // actions
     handleStartAssessment,
     navigateToResult,
-    // navigation helpers
     loginUrl,
   };
 }
