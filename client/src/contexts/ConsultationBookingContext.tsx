@@ -1,5 +1,5 @@
 /**
- * ConsultationBookingContext.tsx — Sprint 3.1 Priority 2 (updated pre-P3)
+ * ConsultationBookingContext.tsx — Sprint 3.3 PHASE 1 (updated)
  *
  * Context مستقل تمامًا عن ConsultationContext.
  *
@@ -12,6 +12,22 @@
  * الفصل يجب أن يكون كاملاً على مستوى الكود.
  * إذا احتجت بيانات consultation → مرّرها عبر startBookingSession() params.
  * إذا احتجت intent لاحقًا → استخدم ConsultationBookingOrchestrator.
+ *
+ * ─── Sprint 3.3 Changes ──────────────────────────────────────────────────────
+ *
+ * ADDED: transitionTo() — المسار الوحيد لتغيير الـ lifecycle phase.
+ *   - يُصدر domain event BOOKING_PHASE_TRANSITIONED عند كل transition ناجح.
+ *   - الـ UI يستدعي orchestrator الذي يستدعي transitionTo().
+ *   - لا تستدعي transitionTo() مباشرة من الـ UI.
+ *
+ * PRESERVED: advancePhase() — محفوظ للتوافق مع الكود القائم.
+ *   - سيُزال في Sprint 3.4 بعد ترحيل جميع المستدعيين إلى transitionTo().
+ *
+ * ADDED: hydrateOnce guard — يمنع double-recovery في React StrictMode.
+ *
+ * sourceIntentId — immutable linkage:
+ *   startBookingSession يقبل consultationIntentId ويُخزنه في sourceIntentId.
+ *   المعرفان identicals في v1 — sourceIntentId هو الاسم الكنسي.
  *
  * الفرق المعماري:
  *   ConsultationContext          → WHY + WHERE (لماذا + من أين)
@@ -45,6 +61,15 @@ import {
   isValidTransition,
 } from "../types/consultationBookingTypes";
 import { consultationBookingRepository } from "../repositories/ConsultationBookingRepository";
+import {
+  bookingEventBus,
+  createBookingEvent,
+} from "../types/bookingDomainEvents";
+import type {
+  BookingPhaseTransitionedEvent,
+  BookingSessionCreatedEvent,
+  BookingRecoveredEvent,
+} from "../types/bookingDomainEvents";
 
 // ─── State ────────────────────────────────────────────────────────────────
 interface BookingState {
@@ -108,7 +133,22 @@ interface ConsultationBookingContextValue {
     specialistRecommendation?: SpecialistRecommendation;
   }): ConsultationBookingSession;
 
+  /**
+   * transitionTo() — Sprint 3.3: المسار الوحيد لتغيير الـ lifecycle phase.
+   *
+   * RULE 2: الـ UI لا يستدعي هذا مباشرة.
+   *         يستدعيه orchestrator بعد validation + persistence.
+   *
+   * يُصدر BOOKING_PHASE_TRANSITIONED event عند كل transition ناجح.
+   */
+  transitionTo(to: BookingLifecyclePhase, triggeredBy?: "orchestrator" | "recovery" | "expiration"): boolean;
+
+  /**
+   * @deprecated استخدم transitionTo() بدلاً منه.
+   * محفوظ للتوافق مع الكود القائم — سيُزال في Sprint 3.4.
+   */
   advancePhase(to: BookingLifecyclePhase): boolean;
+
   selectSpecialist(specialistId: string): void;
   selectSlot(slotId: string): void;
   cancelBooking(reason?: BookingRecoveryReason): void;
@@ -126,8 +166,17 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const sessionRef = useRef<ConsultationBookingSession | null>(null);
   sessionRef.current = state.session;
 
+  /**
+   * hydrateOnce guard — Sprint 3.1 hardening
+   * يمنع double-recovery في React StrictMode.
+   */
+  const hydratedRef = useRef(false);
+
   // ── Recovery عند mount ──────────────────────────────────
   useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+
     dispatch({ type: "RECOVERY_STARTED" });
     const recovered = consultationBookingRepository.loadActive();
 
@@ -149,6 +198,18 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       };
       consultationBookingRepository.save(updatedSession);
       dispatch({ type: "SESSION_RECOVERED", session: updatedSession });
+
+      // Domain event: BOOKING_RECOVERED
+      const recoveryEvent: BookingRecoveredEvent = createBookingEvent(
+        "BOOKING_RECOVERED",
+        updatedSession.sessionId,
+        updatedSession.sourceIntentId,
+        {
+          recoveredPhase: updatedSession.bookingFlowPhase,
+          recoveredAt: updatedSession.recoveryState.recoveredAt ?? new Date().toISOString(),
+        },
+      );
+      bookingEventBus.publish(recoveryEvent);
     } else {
       if (recovered && isSessionExpired(recovered)) {
         consultationBookingRepository.invalidate(recovered.sessionId, "mount_ttl_check");
@@ -161,8 +222,12 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const startBookingSession = useCallback(
     (params: Parameters<ConsultationBookingContextValue["startBookingSession"]>[0]) => {
       const now = new Date().toISOString();
+      const sessionId = generateBookingSessionId();
+
       const newSession: ConsultationBookingSession = {
-        sessionId: generateBookingSessionId(),
+        sessionId,
+        // sourceIntentId = consultationIntentId (v1 identicals)
+        sourceIntentId: params.consultationIntentId,
         consultationIntentId: params.consultationIntentId,
         bookingFlowPhase: "CREATED",
         bookingStatus: "CREATED",
@@ -178,35 +243,72 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       };
 
       consultationBookingRepository.save(newSession);
-      // setActive بعد save مباشرة — activeBookingSessionId صريح
       consultationBookingRepository.setActive(newSession.sessionId);
       dispatch({ type: "SESSION_STARTED", session: newSession });
+
+      // Domain event: BOOKING_SESSION_CREATED
+      const createdEvent: BookingSessionCreatedEvent = createBookingEvent(
+        "BOOKING_SESSION_CREATED",
+        sessionId,
+        newSession.sourceIntentId,
+        {
+          entryPoint: params.entryPoint,
+          entitlementType: params.entitlementType,
+          assessmentSessionId: params.assessmentSessionId,
+        },
+      );
+      bookingEventBus.publish(createdEvent);
+
       return newSession;
     },
-    []
+    [],
   );
 
-  // ── advancePhase ─────────────────────────────────────
-  const advancePhase = useCallback((to: BookingLifecyclePhase): boolean => {
-    const current = sessionRef.current;
-    if (!current) return false;
+  // ── transitionTo() — Sprint 3.3: canonical mutation path ────────────────
+  const transitionTo = useCallback(
+    (
+      to: BookingLifecyclePhase,
+      triggeredBy: "orchestrator" | "recovery" | "expiration" = "orchestrator",
+    ): boolean => {
+      const current = sessionRef.current;
+      if (!current) return false;
 
-    if (!isValidTransition(current.bookingFlowPhase, to)) {
-      console.warn(`[BookingCtx] Invalid transition: ${current.bookingFlowPhase} → ${to}`);
-      return false;
-    }
+      const from = current.bookingFlowPhase;
 
-    const updated: ConsultationBookingSession = {
-      ...current,
-      bookingFlowPhase: to,
-      bookingStatus: to,
-      lastActivityAt: new Date().toISOString(),
-    };
+      if (!isValidTransition(from, to)) {
+        console.warn(`[BookingCtx] Invalid transition: ${from} → ${to}`);
+        return false;
+      }
 
-    consultationBookingRepository.save(updated);
-    dispatch({ type: "PHASE_ADVANCED", phase: to, session: updated });
-    return true;
-  }, []);
+      const updated: ConsultationBookingSession = {
+        ...current,
+        bookingFlowPhase: to,
+        bookingStatus: to,
+        lastActivityAt: new Date().toISOString(),
+      };
+
+      consultationBookingRepository.save(updated);
+      dispatch({ type: "PHASE_ADVANCED", phase: to, session: updated });
+
+      // Domain event: BOOKING_PHASE_TRANSITIONED
+      const transitionEvent: BookingPhaseTransitionedEvent = createBookingEvent(
+        "BOOKING_PHASE_TRANSITIONED",
+        current.sessionId,
+        current.sourceIntentId,
+        { fromPhase: from, toPhase: to, triggeredBy },
+      );
+      bookingEventBus.publish(transitionEvent);
+
+      return true;
+    },
+    [],
+  );
+
+  // ── advancePhase — @deprecated: delegates to transitionTo ────────────────
+  const advancePhase = useCallback(
+    (to: BookingLifecyclePhase): boolean => transitionTo(to, "orchestrator"),
+    [transitionTo],
+  );
 
   // ── selectSpecialist ─────────────────────────────────
   const selectSpecialist = useCallback((specialistId: string): void => {
@@ -263,6 +365,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     isRecovering: state.isRecovering,
     hasActiveSession: state.hasActiveSession,
     startBookingSession,
+    transitionTo,
     advancePhase,
     selectSpecialist,
     selectSlot,
@@ -285,7 +388,7 @@ export function useConsultationBooking(): ConsultationBookingContextValue {
   if (!ctx) {
     throw new Error(
       "useConsultationBooking must be used within ConsultationBookingProvider. " +
-      "Do NOT import ConsultationContext inside this hook."
+      "Do NOT import ConsultationContext inside this hook.",
     );
   }
   return ctx;

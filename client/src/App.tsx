@@ -49,10 +49,15 @@ const AdminResultPreview = lazy(() => import("./components/screening/ResultDemo"
 
 // ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────────────────
 const ConsultationIntroPage   = lazy(
-  () => import("./components/consultation/ConsultationIntroPage")
+  () => import("./components/consultation/ConsultationIntroPage"),
 );
 const ConsultationBookingPage = lazy(
-  () => import("./components/consultation/ConsultationBookingPage")
+  () => import("./components/consultation/ConsultationBookingPage"),
+);
+
+// ─── صفحة مراجعة الحجز (Sprint 3.3 PHASE 1) ──────────────────────────────
+const BookingReviewPage = lazy(
+  () => import("./pages/BookingReviewPage"),
 );
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
@@ -172,12 +177,26 @@ function ConsultationIntroNoIndex() {
 /**
  * ConsultationBookingNoIndex — Sprint 3.0c
  * Route: /consultation/booking
- * السياقي: يقرأ intent من ConsultationContext ويُظهر سياق التقييم.
  */
 function ConsultationBookingNoIndex() {
   return (
     <SensitiveNoIndex>
       <ConsultationBookingPage />
+    </SensitiveNoIndex>
+  );
+}
+
+/**
+ * BookingReviewNoIndex — Sprint 3.3 PHASE 1
+ * Route: /consultation/review
+ *
+ * UX boundary — الصفحة قبل persistence commit.
+ * الـ UI يعرض فقط — لا تأكيد، لا Supabase write، لا transitionTo() مباشر.
+ */
+function BookingReviewNoIndex() {
+  return (
+    <SensitiveNoIndex>
+      <BookingReviewPage />
     </SensitiveNoIndex>
   );
 }
@@ -215,9 +234,21 @@ function Router() {
         <Route path="/choose-child-path/:childId" component={ChooseChildPathWrapper} />
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
-        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────── */}
+        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0 → 3.3) ───────────────── */}
         <Route path="/consultation/start"   component={ConsultationIntroNoIndex} />
         <Route path="/consultation/booking" component={ConsultationBookingNoIndex} />
+        {/*
+         * /consultation/review — Sprint 3.3 PHASE 1
+         *
+         * ARCHITECTURE CONTRACT:
+         *   UI: عرض ملخص فقط — لا تأكيد مباشر
+         *   Persistence: Phase 2 (Supabase layer — لم تُبنَ بعد)
+         *   Confirmation: Phase 4 (transactional — بعد reservation + persistence)
+         *
+         * ISOLATION RULE: BookingReviewPage لا تستورد ConsultationContext.
+         * MUTATION RULE:  لا transitionTo() من الـ UI مباشرة.
+         */}
+        <Route path="/consultation/review"  component={BookingReviewNoIndex} />
 
         {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────── */}
         <Route path="/login"   component={Login} />
@@ -255,17 +286,28 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
           {/*
-           * ConsultationProvider — Sprint 3.0a
-           * ConsultationBookingProvider — Sprint 3.1 Priority 2
+           * Provider Architecture — Sprint 3.3
            *
-           * الترتيب مقصود:
-           *   ConsultationProvider   → intent + flow phase (WHY + WHERE)
-           *   ConsultationBookingProvider → booking session + lifecycle (HOW)
+           * ─── Layer 1: ConsultationProvider ────────────────────────────
+           * WHY + WHERE: intent + flow phase
+           * Source: ConsultationContext.tsx
            *
-           * ConsultationBookingProvider داخل ConsultationProvider لأن:
-           *   - booking يحتاج intent جاهز عند startBookingSession
-           *   - لكنه لا يقرأ ConsultationContext مباشرة (فصل كامل)
-           *   - التداخل في الشجرة ≠ التداخل في المنطق
+           * ─── Layer 2: ConsultationBookingProvider ──────────────────────
+           * HOW: booking session + lifecycle state machine
+           * Source: ConsultationBookingContext.tsx
+           *
+           * ISOLATION RULE:
+           *   ConsultationBookingProvider لا يقرأ ConsultationContext مباشرة.
+           *   التداخل في الشجرة ≠ التداخل في المنطق.
+           *
+           * MUTATION RULE (Sprint 3.3):
+           *   Phase mutations: transitionTo() عبر orchestrator فقط.
+           *   UI → orchestrator → transitionTo() → domain event.
+           *   لا تستدعي transitionTo() مباشرة من الـ UI.
+           *
+           * PERSISTENCE (Sprint 3.3 Phase 2):
+           *   Supabase layer سيكون authoritative source of truth.
+           *   Runtime context يصبح cache + orchestration layer.
            */}
           <ConsultationProvider>
             <ConsultationBookingProvider>

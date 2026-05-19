@@ -1,5 +1,5 @@
 /**
- * consultationBookingTypes.ts — Sprint 3.1 Priority 3 (Post-hardening)
+ * consultationBookingTypes.ts — Sprint 3.3 PHASE 1 (updated)
  *
  * ─── ARCHITECTURE RULES ────────────────────────────────────────────────────
  *
@@ -23,30 +23,22 @@
  *    sourceIntentId هو الرابط الثابت بين BookingSession و ConsultationIntent.
  *    لا تُعدِّل sourceIntentId بعد إنشاء الجلسة — immutable بعد creation.
  *    consultationIntentId محفوظ كـ alias للتوافق مع الكود القائم.
+ *
+ * 5. TRANSITION_MUTATION_RULE (Sprint 3.3)
+ *    transitionTo() هو المسار الوحيد لتغيير bookingFlowPhase.
+ *    لا تُعدِّل bookingFlowPhase مباشرة من الـ UI.
+ *    الـ UI يستدعي orchestrator → orchestrator يستدعي transitionTo().
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 // ─── Lifecycle Future Marker ─────────────────────────────────────────────────
-/**
- * NOTE — Lifecycle intentionally simplified for Sprint 3.1.
- *
- * المراحل التي ستُضاف في Sprint 3.2+:
- *   CONFIRMED → PENDING_PAYMENT → PAID → SCHEDULED → COMPLETED
- *
- * لا تغيّر هذا الملف — أنشئ types/consultationBookingPaymentTypes.ts
- */
 export const LIFECYCLE_NOTE = "simplified_sprint_3.1" as const;
 
 // ─── Route Constants ──────────────────────────────────────────────────────────
-/**
- * CONSULTATION_ROUTES — ثوابت الروابط لـ booking flow.
- *
- * المبدأ: orchestrator يُعيد nextRoute، والـ UI يستدعي navigate().
- * الـ navigation لا تحدث أبدًا داخل orchestrator.
- */
 export const CONSULTATION_ROUTES = {
   START:   "/consultation/start",
   BOOKING: "/consultation/booking",
+  REVIEW:  "/consultation/review",
 } as const;
 
 export type ConsultationRoute = typeof CONSULTATION_ROUTES[keyof typeof CONSULTATION_ROUTES];
@@ -62,6 +54,18 @@ export type BookingLifecyclePhase =
   | "CANCELLED"
   | "EXPIRED"
   | "ABANDONED";
+
+/**
+ * BookingPhase — الاسم الكنسي الرسمي (Sprint 3.1+).
+ * استخدم هذا في الكود الجديد.
+ */
+export type BookingPhase = BookingLifecyclePhase;
+
+/**
+ * @deprecated استخدم BookingPhase أو BookingLifecyclePhase.
+ * محفوظ للتوافق — نفس النوع.
+ */
+export type BookingLifecyclePhaseAlias = BookingLifecyclePhase;
 
 export const RECOVERABLE_PHASES: BookingLifecyclePhase[] = [
   "SPECIALIST_SELECTION",
@@ -108,19 +112,7 @@ export type BookingRecoveryReason =
   | "orchestrator_validation"
   | "mount_ttl_check";
 
-// ─── Recovery Execution Mode (Point 4) ──────────────────────────────────────
-/**
- * RecoveryExecution — كيف يتم تنفيذ RecoveryAction.
- *
- * AUTO:                     يتم تلقائيًا بدون تدخل المستخدم.
- *                           مثال: resume_active_booking إذا كانت الجلسة نشطة.
- * MANUAL:                   يتطلب تدخل المستخدم (navigate, click).
- *                           مثال: redirect_to_payment.
- * USER_CONFIRMATION_REQUIRED: يتطلب موافقة صريحة قبل التنفيذ.
- *                             مثال: resume_active_booking إذا كانت الجلسة قديمة.
- *
- * Sprint 3.2+: استخدم هذا لتحديد UX pattern في recovery screens.
- */
+// ─── Recovery Execution Mode ─────────────────────────────────────────────────
 export type RecoveryExecution =
   | "AUTO"
   | "MANUAL"
@@ -144,46 +136,26 @@ export interface BookingRecoveryState {
 }
 
 // ─── Booking Denial ───────────────────────────────────────────────────────────
-/**
- * BookingDenialReason — لماذا رُفض الحجز.
- *
- * RULE: هذا domain code — لا يُعرض مباشرة للمستخدم أبدًا.
- * استخدم resolveBookingDenialPresentation() في useConsultationBooking.ts.
- */
 export type BookingDenialReason =
-  | "entitlement_expired"       // انتهى الاستحقاق
-  | "already_active"            // يوجد حجز نشط بالفعل
-  | "validation_failed"         // بيانات ناقصة أو خاطئة
-  | "assessment_expired"        // انتهت صلاحية التقييم (Sprint 3.2+)
-  | "specialist_unavailable"    // لا يوجد أخصائي متاح (Sprint 3.3+)
-  | "payment_required"          // يجب الدفع أولاً (Sprint 3.2+)
-  | "geo_restriction"           // قيود جغرافية (Sprint 4+)
-  | "parental_consent_required" // موافقة ولي الأمر مطلوبة (Sprint 4+)
-  | "unknown";                   // خطأ غير متوقع
+  | "entitlement_expired"
+  | "already_active"
+  | "validation_failed"
+  | "assessment_expired"
+  | "specialist_unavailable"
+  | "payment_required"
+  | "geo_restriction"
+  | "parental_consent_required"
+  | "unknown";
 
-/**
- * RecoveryAction — ماذا يفعل النظام عند الرفض.
- * يُحوَّل في UI إلى فعل بناءً على الحالة.
- */
 export type RecoveryAction =
-  | "redirect_to_assessment"    // أعد التقييم
-  | "redirect_to_payment"       // ادفع أولاً
-  | "show_retry_dialog"         // أعد المحاولة
-  | "resume_active_booking"     // استأنف الحجز النشط
-  | "contact_support"           // تواصل مع الدعم
-  | "none";                     // لا إجراء ممكن
+  | "redirect_to_assessment"
+  | "redirect_to_payment"
+  | "show_retry_dialog"
+  | "resume_active_booking"
+  | "contact_support"
+  | "none";
 
 // ─── BookingInitializationResult ─────────────────────────────────────────────
-/**
- * BookingInitializationResult — نتيجة initBooking().
- *
- * المبدأ:
- *   - success: الـ UI يعرف nextRoute ويستدعي navigate()
- *   - failure: الـ UI يعرف denialReason ويتصرف بناءً عليه
- *
- * الـ navigation لا تحدث أبدًا داخل orchestrator.
- * orchestrator يعرف nextRoute لكنه لا يتنقل بنفسه.
- */
 export type BookingInitializationResult =
   | {
       success: true;
@@ -208,20 +180,6 @@ export interface SpecialistRecommendation {
 }
 
 // ─── ConsultationBookingSession (Domain Object) ──────────────────────────────
-/**
- * ConsultationBookingSession — runtime booking state.
- *
- * BOOKING_CONTEXT_BOUNDARY:
- *   هذا الكائن يملك runtime booking data فقط.
- *   لا يملك: assessment payload / clinical severity / entitlement policy.
- *
- * sourceIntentId — immutable linkage (Point 5):
- *   الرابط الثابت بين هذه الجلسة والـ ConsultationIntent الذي أنشأها.
- *   لا تُعدِّل هذا الحقل بعد creation.
- *   يُستخدم لـ: analytics correlation / CRM sync / audit trail / abandonment recovery.
- *
- * consultationIntentId — alias محفوظ للتوافق مع الكود القائم.
- */
 export interface ConsultationBookingSession {
   sessionId: string;
 
@@ -235,7 +193,7 @@ export interface ConsultationBookingSession {
   /**
    * @deprecated استخدم sourceIntentId بدلاً منه.
    * محفوظ مؤقتًا للتوافق مع الكود القائم.
-   * سيُزال في Sprint 3.3+.
+   * سيُزال في Sprint 3.4+.
    */
   consultationIntentId: string;
 
@@ -272,7 +230,15 @@ export interface ConsultationBookingRepository {
 }
 
 // ─── Lifecycle Transition Validation ────────────────────────────────────────
-const ALLOWED_TRANSITIONS: Partial<Record<BookingLifecyclePhase, BookingLifecyclePhase[]>> = {
+/**
+ * ALLOWED_TRANSITIONS — export const (Sprint 3.1 hardening).
+ *
+ * قابل للاستيراد من خارج هذا الملف:
+ *   import { ALLOWED_TRANSITIONS } from "../types/consultationBookingTypes";
+ *
+ * Sprint 3.3: يُستخدم من orchestrator للتحقق قبل transitionTo().
+ */
+export const ALLOWED_TRANSITIONS: Readonly<Partial<Record<BookingLifecyclePhase, BookingLifecyclePhase[]>>> = {
   CREATED:              ["SPECIALIST_SELECTION", "CANCELLED", "ABANDONED"],
   SPECIALIST_SELECTION: ["SLOT_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
   SLOT_SELECTION:       ["REVIEW", "SPECIALIST_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
@@ -282,10 +248,18 @@ const ALLOWED_TRANSITIONS: Partial<Record<BookingLifecyclePhase, BookingLifecycl
   CANCELLED:            [],
   EXPIRED:              [],
   ABANDONED:            [],
-};
+} as const;
 
 export function isValidTransition(from: BookingLifecyclePhase, to: BookingLifecyclePhase): boolean {
   return ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+/**
+ * getAllowedNextPhases — utility للـ UI/orchestrator.
+ * يُعيد قائمة الانتقالات المتاحة من phase معين.
+ */
+export function getAllowedNextPhases(from: BookingLifecyclePhase): BookingLifecyclePhase[] {
+  return ALLOWED_TRANSITIONS[from] ?? [];
 }
 
 export function generateBookingSessionId(): string {
