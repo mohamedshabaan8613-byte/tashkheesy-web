@@ -32,15 +32,18 @@ import type {
 // ---------------------------------------------------------------------------
 
 /**
- * بناء URL الحجز المباشر (بدون سياق تقييم)
+ * بناء URL الحجز المباشر (الوجهة النهائية بعد تأكيد النية)
  */
 export function buildDirectBookingUrl(): string {
-  return "/consultation";
+  return "/booking";
 }
 
 /**
- * بناء URL intro بعد نتيجة تقييم
- * يُمرَّر pathType كـ query param للتخصيص البصري للصفحة.
+ * بناء URL intro بعد نتيجة تقييم.
+ * يُمرَّر pathType + mode كـ query params للتخصيص البصري للصفحة.
+ *
+ * ⚠️ يجب أن يتطابق مع Route الموجود في App.tsx:
+ * <Route path="/consultation/start" />
  */
 export function buildAssessmentResultUrl(
   payload: Pick<AssessmentResultPayload, "pathType" | "assessmentMode">
@@ -50,7 +53,14 @@ export function buildAssessmentResultUrl(
     path: payload.pathType,
     mode: payload.assessmentMode,
   });
-  return `/consultation?${params.toString()}`;
+  return `/consultation/start?${params.toString()}`;
+}
+
+/**
+ * بناء URL intro للدخول المباشر بدون سياق تقييم
+ */
+export function buildConsultationStartUrl(): string {
+  return "/consultation/start";
 }
 
 /**
@@ -61,12 +71,12 @@ export function buildFollowUpUrl(previousConsultationId: string): string {
     from: "follow_up",
     ref: previousConsultationId,
   });
-  return `/consultation?${params.toString()}`;
+  return `/consultation/start?${params.toString()}`;
 }
 
 /**
  * استخراج EntryPoint من URL params الحالية
- * (مفيد لـ ConsultationIntroPage عند reload)
+ * (مفيد لـ ConsultationIntroPage عند reload أو direct URL access)
  */
 export function resolveEntryPoint(
   searchParams: URLSearchParams
@@ -88,9 +98,7 @@ export function resolveEntryPoint(
 
 export interface UseConsultationFlowReturn {
   /**
-   * الطريقة الرئيسية — تعيّن النية وتنقل لشاشة consultation.
-   *
-   * @param options - بيانات النية (entryPoint + بيانات اختيارية)
+   * الطريقة الرئيسية — تعيّن النية وتنقل لشاشة consultation intro.
    */
   navigateToConsultation: (
     options: Omit<ConsultationIntent, "initiatedAt" | "confirmed">
@@ -103,18 +111,18 @@ export interface UseConsultationFlowReturn {
   exitFlow: () => void;
 
   /**
-   * يُحدِّث النية الحالية بـ confirmed: true ثم ينقل لشاشة الحجز.
+   * يُحدِّث النية بـ confirmed: true وينقل مباشرة لـ /booking.
+   * يُستدعى من زر "متابعة إلى الحجز" في ConsultationIntroPage.
    */
   confirmAndBook: () => void;
 
-  /**
-   * الحالة الحالية للـ flow مشتقة من intent
-   */
+  /** الحالة الحالية للـ flow مشتقة من intent */
   flowState: ConsultationFlowState;
 
   // Re-export URL builders للاستخدام المباشر من الـ components
   buildDirectBookingUrl: typeof buildDirectBookingUrl;
   buildAssessmentResultUrl: typeof buildAssessmentResultUrl;
+  buildConsultationStartUrl: typeof buildConsultationStartUrl;
   buildFollowUpUrl: typeof buildFollowUpUrl;
   resolveEntryPoint: typeof resolveEntryPoint;
 }
@@ -132,7 +140,7 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
   }
 
   // -------------------------------------------------------------------------
-  // navigateToConsultation
+  // navigateToConsultation — sets intent + navigates to /consultation/start
   // -------------------------------------------------------------------------
   const navigateToConsultation = useCallback(
     (options: Omit<ConsultationIntent, "initiatedAt" | "confirmed">) => {
@@ -144,36 +152,31 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
 
       setIntent(newIntent);
 
-      // Navigate to correct URL based on entry point
       switch (options.entryPoint) {
         case "assessment_result": {
           const payload = options.assessmentResult;
-          if (payload) {
-            setLocation(
-              buildAssessmentResultUrl({
-                pathType: payload.pathType,
-                assessmentMode: payload.assessmentMode,
-              })
-            );
-          } else {
-            setLocation(buildDirectBookingUrl());
-          }
+          setLocation(
+            payload
+              ? buildAssessmentResultUrl({
+                  pathType: payload.pathType,
+                  assessmentMode: payload.assessmentMode,
+                })
+              : buildConsultationStartUrl()
+          );
           break;
         }
-
         case "follow_up": {
-          if (options.previousConsultationId) {
-            setLocation(buildFollowUpUrl(options.previousConsultationId));
-          } else {
-            setLocation(buildDirectBookingUrl());
-          }
+          setLocation(
+            options.previousConsultationId
+              ? buildFollowUpUrl(options.previousConsultationId)
+              : buildConsultationStartUrl()
+          );
           break;
         }
-
         case "direct_booking":
         case "returning_user":
         default:
-          setLocation(buildDirectBookingUrl());
+          setLocation(buildConsultationStartUrl());
           break;
       }
     },
@@ -181,14 +184,17 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
   );
 
   // -------------------------------------------------------------------------
-  // confirmAndBook — يُستدعى من زر التأكيد في ConsultationIntroPage
+  // confirmAndBook — الخطوة الأخيرة: من intro إلى /booking
   // -------------------------------------------------------------------------
   const confirmAndBook = useCallback(() => {
-    if (!intent) return;
+    if (!intent) {
+      // Fallback: direct navigation even without intent
+      setLocation(buildDirectBookingUrl());
+      return;
+    }
     setIntent({ ...intent, confirmed: true });
-    // الـ navigate لـ booking step يحدث في ConsultationIntroPage
-    // عبر useEffect يراقب intent.confirmed
-  }, [intent, setIntent]);
+    setLocation(buildDirectBookingUrl());
+  }, [intent, setIntent, setLocation]);
 
   // -------------------------------------------------------------------------
   // exitFlow
@@ -204,6 +210,7 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
     flowState,
     buildDirectBookingUrl,
     buildAssessmentResultUrl,
+    buildConsultationStartUrl,
     buildFollowUpUrl,
     resolveEntryPoint,
   };

@@ -29,7 +29,6 @@ const Impact       = lazy(() => import("./Impact"));
 const ChildrenPage    = lazy(() => import("./components/children/ChildrenPage"));
 const ScreeningPage   = lazy(() => import("./components/screening/ScreeningPage"));
 const ScreeningResult = lazy(() => import("./components/screening/ScreeningResult"));
-const ResultDemo      = lazy(() => import("./components/screening/ResultDemo"));
 const ScreeningIntro  = lazy(() => import("./components/screening/ScreeningIntro"));
 const AssessmentStart = lazy(() => import("./components/AssessmentStart"));
 const SelfAssessment  = lazy(() => import("./components/SelfAssessment"));
@@ -38,17 +37,19 @@ const SelfAssessment  = lazy(() => import("./components/SelfAssessment"));
 const ChooseChildPath  = lazy(() => import("./components/screening/ChooseChildPath"));
 const ChooseSelfPath   = lazy(() => import("./components/screening/ChooseSelfPath"));
 const SpecialistsMatch = lazy(() => import("./components/screening/SpecialistsMatch"));
+
 // ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────────────
 const Login   = lazy(() => import("./components/Login"));
 const Account = lazy(() => import("./components/Account"));
-// ─── لوحة الإدارة (Sprint 6B) ────────────────────────────────────────────
-const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
-// ─── معاينة النتائج الداخلية — للأدمن فقط (نُقلت من /result-demo) ───────
+
+// ─── لوحة الإدارة + معاينة النتائج (Sprint 6B) ─────────────────────────
+const AdminDashboard     = lazy(() => import("./components/AdminDashboard"));
 const AdminResultPreview = lazy(() => import("./components/screening/ResultDemo"));
 
 // ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────────────────
-const ConsultationIntroPage = lazy(() => import("./components/consultation/ConsultationIntroPage"));
-// ────────────────────────────────────────────────────────────────
+const ConsultationIntroPage = lazy(
+  () => import("./components/consultation/ConsultationIntroPage")
+);
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
 function SensitiveNoIndex({ children }: { children: ReactNode }) {
@@ -156,24 +157,32 @@ function SpecialistsMatchNoIndex() {
   return <SensitiveNoIndex><SpecialistsMatch /></SensitiveNoIndex>;
 }
 
+function ConsultationIntroNoIndex() {
+  return (
+    <SensitiveNoIndex>
+      <ConsultationIntroPage />
+    </SensitiveNoIndex>
+  );
+}
+
 function Router() {
   return (
     <Suspense fallback={<PageSkeleton />}>
       <Switch>
         {/* ─── الصفحات الرئيسية العامة القابلة للفهرسة ───────────────────── */}
-        <Route path="/"                  component={Home} />
-        <Route path="/services"          component={Services} />
-        <Route path="/pricing"           component={Pricing} />
-        <Route path="/team"              component={Team} />
-        <Route path="/knowledge"         component={Knowledge} />
-        <Route path="/contact"           component={Contact} />
-        <Route path="/privacy"           component={Privacy} />
-        <Route path="/disclaimer"        component={Disclaimer} />
-        <Route path="/terms"             component={Terms} />
-        <Route path="/refund-policy"     component={RefundPolicy} />
-        <Route path="/ai-insights"       component={AIInsights} />
-        <Route path="/faq"               component={FAQ} />
-        <Route path="/impact"            component={Impact} />
+        <Route path="/"              component={Home} />
+        <Route path="/services"      component={Services} />
+        <Route path="/pricing"       component={Pricing} />
+        <Route path="/team"          component={Team} />
+        <Route path="/knowledge"     component={Knowledge} />
+        <Route path="/contact"       component={Contact} />
+        <Route path="/privacy"       component={Privacy} />
+        <Route path="/disclaimer"    component={Disclaimer} />
+        <Route path="/terms"         component={Terms} />
+        <Route path="/refund-policy" component={RefundPolicy} />
+        <Route path="/ai-insights"   component={AIInsights} />
+        <Route path="/faq"           component={FAQ} />
+        <Route path="/impact"        component={Impact} />
 
         {/* ─── صفحات الحجز والفحص الحساسة: noindex, nofollow ─────────────── */}
         <Route path="/booking"                     component={BookingNoIndex} />
@@ -189,18 +198,30 @@ function Router() {
         <Route path="/choose-child-path/:childId" component={ChooseChildPathWrapper} />
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
-        {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────── */}
+        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────── */}
+        <Route path="/consultation/start" component={ConsultationIntroNoIndex} />
+
+        {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────── */}
         <Route path="/login"   component={Login} />
         <Route path="/account" component={Account} />
 
-        
-          {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ──────────────────────── */}
-          <Route path="/consultation/start" component={ConsultationIntroPage} />
-        {/* ─── لوحة الإدارة + معاينة النتائج الداخلية (admin-only) ─────── */}
-        <Route path="/admin"         component={() => <SensitiveNoIndex><AdminDashboard /></SensitiveNoIndex>} />
-        <Route path="/admin/preview" component={() => <SensitiveNoIndex><
-          {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ────────────────────── */}
-          <Route path="/consultation/start" component={ConsultationIntroPage} /> /></SensitiveNoIndex>} />
+        {/* ─── لوحة الإدارة + معاينة النتائج الداخلية (admin-only) ─────────── */}
+        <Route
+          path="/admin"
+          component={() => (
+            <SensitiveNoIndex>
+              <AdminDashboard />
+            </SensitiveNoIndex>
+          )}
+        />
+        <Route
+          path="/admin/preview"
+          component={() => (
+            <SensitiveNoIndex>
+              <AdminResultPreview />
+            </SensitiveNoIndex>
+          )}
+        />
 
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />
