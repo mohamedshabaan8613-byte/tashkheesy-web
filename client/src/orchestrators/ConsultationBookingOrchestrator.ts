@@ -1,24 +1,29 @@
 /**
- * ConsultationBookingOrchestrator.ts — Sprint 3.1 Priority 3
+ * ConsultationBookingOrchestrator.ts — Sprint 3.1 Priority 3 (Post-hardening)
  *
- * Core orchestration layer — framework-agnostic و testable.
+ * ─── ORCHESTRATOR_BOUNDARY ──────────────────────────────────────────────────
+ * هذا الملف يحتوي فقط على:
+ *   ✅ Input validation
+ *   ✅ Entitlement resolution (placeholder → Sprint 3.2 backend)
+ *   ✅ Route resolution
+ *   ✅ Session initialization payload building
+ *   ✅ BookingInitializationResult construction
  *
- * ❌ لا يحتوي هذا الملف على:
- *   - React hooks
- *   - useContext / useEffect / useState
- *   - navigate() — الـ navigation في UI دائمًا
- *   - import من ConsultationContext
- *   - import من ConsultationBookingContext
+ * ❌ ممنوع إضافة هذه داخل هذا الملف أبدًا:
+ *   ❌ analytics / tracking / telemetry
+ *   ❌ UX copy / error messages للمستخدم
+ *   ❌ navigate() أو أي routing مباشر
+ *   ❌ payment redirect logic
+ *   ❌ recommendation ranking
+ *   ❌ UI dialogs / toasts
+ *   ❌ React hooks / useContext / useEffect
+ *   ❌ import من ConsultationContext أو ConsultationBookingContext
  *
- * ✅ يحتوي فقط على:
- *   - Pure validation functions
- *   - Entitlement resolution logic
- *   - Domain payload building
- *   - BookingInitializationResult construction
- *   - nextRoute resolution (يُعيد للـ UI ليس ينتقل بنفسه)
+ * الـ navigation يحدث دائمًا في UI بناءً على result.nextRoute.
+ * ────────────────────────────────────────────────────────────────────────────
  *
  * المسار:
- *   UI → useConsultationBooking() hook → orchestrator → BookingContext → Repository
+ *   UI → useConsultationBookingAdapter() hook → orchestrator → BookingContext → Repository
  */
 
 import type {
@@ -33,38 +38,50 @@ import type {
 } from "../types/consultationBookingTypes";
 import { CONSULTATION_ROUTES } from "../types/consultationBookingTypes";
 
-// ─── Input Types ──────────────────────────────────────────────────────────
+// ─── Input Types ──────────────────────────────────────────────────────────────
 
 /**
- * بيانات التقييم المختصرة التي ترسلها ScreeningResult.
- * الـ orchestrator يبني payload الكامل داخليًا.
+ * AssessmentBookingInput — ما يرسله ScreeningResult فقط.
+ *
+ * RULE: ScreeningResult لا تبني BookingSessionPayload بنفسها.
+ * ترسل هذا الـ input فقط، والـ orchestrator يبني الباقي داخليًا.
  */
 export interface AssessmentBookingInput {
+  /** من ConsultationContext.intent.intentId — يُخزَّن كـ sourceIntentId */
   consultationIntentId: string;
   assessmentSessionId: string;
   specialistRecommendation?: SpecialistRecommendation;
 }
 
 /**
- * بيانات دخول ConsultationIntroPage.
- * أبسط — لا assessment لديها.
+ * IntroPageBookingInput — ما يرسله ConsultationIntroPage فقط.
+ * لا assessment لديه.
  */
 export interface IntroPageBookingInput {
+  /** من ConsultationContext.intent.intentId — يُخزَّن كـ sourceIntentId */
   consultationIntentId: string;
 }
 
-/** دالة الحقن — تستقبلها الـ orchestrator بدل import مباشر للـ Context */
+/**
+ * StartSessionFn — دالة الحقن من BookingContext.
+ *
+ * الـ orchestrator يستقبل هذه الدالة بدل import مباشر للـ Context،
+ * محافظًا على framework-agnostic design.
+ */
 export type StartSessionFn = (params: {
   consultationIntentId: string;
+  sourceIntentId: string;
   entryPoint: BookingEntryPoint;
   entitlementType: BookingEntitlementType;
   assessmentSessionId?: string;
   specialistRecommendation?: SpecialistRecommendation;
 }) => ConsultationBookingSession;
 
-// ─── Internal Helpers ───────────────────────────────────────────────────────
+// ─── Internal Pure Helpers ────────────────────────────────────────────────────
 
 function resolveEntitlement(entryPoint: BookingEntryPoint): BookingEntitlementType {
+  // Sprint 3.1: بسيط بناءً على entryPoint.
+  // Sprint 3.2+: سيُربط بـ backend entitlement check.
   switch (entryPoint) {
     case "post_assessment":
     case "post_screening":
@@ -75,7 +92,7 @@ function resolveEntitlement(entryPoint: BookingEntryPoint): BookingEntitlementTy
 }
 
 function resolveNextRoute(_entryPoint: BookingEntryPoint): ConsultationRoute {
-  // Sprint 3.1: جميع المداخل تصل إلى booking page.
+  // Sprint 3.1: جميع المداخل → booking page.
   // Sprint 3.3+: قد يتفرع بناءً على entitlementType (direct to payment etc.)
   return CONSULTATION_ROUTES.BOOKING;
 }
@@ -89,24 +106,23 @@ function makeDenial(
 }
 
 function validateIntentId(id: string | undefined): string | null {
-  if (!id?.trim()) return "يجب توفير consultationIntentId لبدء الحجز";
+  if (!id?.trim()) return "consultationIntentId مطلوب لبدء الحجز";
   return null;
 }
 
-// ─── Exported Core Functions (testable, framework-agnostic) ────────────────────────
+// ─── Exported Core Functions (testable, framework-agnostic) ──────────────────
 
 /**
  * startFromAssessment — بدء حجز من ScreeningResult.
  *
- * قاعدة مهمة: ScreeningResult لا تبني BookingSessionPayload بنفسها.
- * ترسل AssessmentBookingInput فقط، orchestrator يبني الباقي.
+ * consultationIntentId يُخزَّن كـ sourceIntentId (immutable linkage).
  */
 export function startFromAssessment(
   input: AssessmentBookingInput,
   startSession: StartSessionFn
 ): BookingInitializationResult {
-  const err = validateIntentId(input.consultationIntentId);
-  if (err) return makeDenial("validation_failed", err, "none");
+  const intentErr = validateIntentId(input.consultationIntentId);
+  if (intentErr) return makeDenial("validation_failed", intentErr, "none");
 
   if (!input.assessmentSessionId?.trim()) {
     return makeDenial(
@@ -116,16 +132,17 @@ export function startFromAssessment(
     );
   }
 
-  const entryPoint: BookingEntryPoint    = "post_assessment";
-  const entitlementType                  = resolveEntitlement(entryPoint);
-  const nextRoute                        = resolveNextRoute(entryPoint);
+  const entryPoint      = "post_assessment" as const;
+  const entitlementType = resolveEntitlement(entryPoint);
+  const nextRoute       = resolveNextRoute(entryPoint);
 
   const session = startSession({
     consultationIntentId: input.consultationIntentId,
+    sourceIntentId:       input.consultationIntentId, // immutable linkage
     entryPoint,
     entitlementType,
-    assessmentSessionId: input.assessmentSessionId,
-    specialistRecommendation: input.specialistRecommendation,
+    assessmentSessionId:       input.assessmentSessionId,
+    specialistRecommendation:  input.specialistRecommendation,
   });
 
   return {
@@ -140,21 +157,22 @@ export function startFromAssessment(
 /**
  * startFromIntroPage — بدء حجز من ConsultationIntroPage.
  *
- * لا يحتاج assessment — مدخل مباشر.
+ * consultationIntentId يُخزَّن كـ sourceIntentId (immutable linkage).
  */
 export function startFromIntroPage(
   input: IntroPageBookingInput,
   startSession: StartSessionFn
 ): BookingInitializationResult {
-  const err = validateIntentId(input.consultationIntentId);
-  if (err) return makeDenial("validation_failed", err, "none");
+  const intentErr = validateIntentId(input.consultationIntentId);
+  if (intentErr) return makeDenial("validation_failed", intentErr, "none");
 
-  const entryPoint: BookingEntryPoint    = "consultation_intro";
-  const entitlementType                  = resolveEntitlement(entryPoint);
-  const nextRoute                        = resolveNextRoute(entryPoint);
+  const entryPoint      = "consultation_intro" as const;
+  const entitlementType = resolveEntitlement(entryPoint);
+  const nextRoute       = resolveNextRoute(entryPoint);
 
   const session = startSession({
     consultationIntentId: input.consultationIntentId,
+    sourceIntentId:       input.consultationIntentId, // immutable linkage
     entryPoint,
     entitlementType,
   });
@@ -169,8 +187,8 @@ export function startFromIntroPage(
 }
 
 /**
- * النتيجة المتوقعة من دالة denialReason إلى recoveryAction.
- * يستخدمه الـ UI hook adapter لإظهار الرسالة الصحيحة.
+ * getRecoveryActionForDenial — ماذا يجب أن يفعل الـ UI عند الرفض.
+ * يستخدمه useConsultationBookingAdapter.
  */
 export function getRecoveryActionForDenial(reason: BookingDenialReason): RecoveryAction {
   const map: Record<BookingDenialReason, RecoveryAction> = {
