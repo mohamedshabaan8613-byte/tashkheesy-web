@@ -19,6 +19,11 @@
  * - معاينة المتخصصين تعكس pathType فقط (learning أو adhd)
  * - لا sticky CTA
  * - لا أزرار حجز متكررة
+ *
+ * Sprint 3.0f — Assessment Flow Integration:
+ * - handleBooking الآن يبني ConsultationIntent كامل ويستدعي setIntent()
+ * - التنقل عبر buildConsultationStartUrl() → /consultation/start
+ * - إزالة أي navigate مباشر لـ /specialists أو /booking
  */
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -52,6 +57,12 @@ import {
 import { toast } from "sonner";
 import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
 import { fetchRemoteScreeningResultBySessionId } from "@/lib/screeningResults";
+import { useConsultation } from "@/contexts/ConsultationContext";
+import {
+  CONSULTATION_ROUTES,
+  type ConsultationIntent,
+  type ResultSeverity,
+} from "@/types/consultationTypes";
 
 // ─── أنواع البيانات ───────────────────────────────────────────────────────────
 interface CategoryScore {
@@ -76,6 +87,36 @@ interface StoredResult {
   completedAt: string;
   answeredCount: number;
   totalCount: number;
+}
+
+// ─── Severity mapper — riskLevel → ResultSeverity ────────────────────────────
+function toResultSeverity(
+  riskLevel: StoredResult["result"]["riskLevel"]
+): ResultSeverity {
+  switch (riskLevel) {
+    case "low":
+      return "low_risk";
+    case "medium":
+      return "moderate";
+    case "high":
+    case "critical":
+      return "high_risk";
+    default:
+      return "needs_evaluation";
+  }
+}
+
+// ─── URL builder لـ /consultation/start ──────────────────────────────────────
+function buildConsultationStartUrl(intent: ConsultationIntent): string {
+  const payload = intent.assessmentResult;
+  const params = new URLSearchParams({
+    entryPoint: intent.entryPoint,
+    pathType: payload?.pathType ?? "learning",
+    sessionId: payload?.sessionId ?? "",
+    from: "result",
+  });
+  if (payload?.severity) params.set("severity", payload.severity);
+  return `${CONSULTATION_ROUTES.START}?${params.toString()}`;
 }
 
 // ─── إعدادات مستويات المؤشرات ────────────────────────────────────────────────
@@ -332,6 +373,7 @@ interface ScreeningResultProps {
 
 export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
   const [, navigate] = useLocation();
+  const { setIntent } = useConsultation();
   const urlSearchParams = new URLSearchParams(window.location.search);
   const urlPathType = urlSearchParams.get("pathType") ?? "learning";
 
@@ -455,14 +497,33 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
     return () => observer.disconnect();
   }, [data]);
 
-  // ─── دالة الحجز الوحيدة في الصفحة ───────────────────────────────────────
+  // ─── handleBooking — Sprint 3.0f ─────────────────────────────────────────
+  // يبني ConsultationIntent كامل من نتيجة الفحص الحالية
+  // ثم يستدعي setIntent() → navigate إلى /consultation/start
+  // لا navigate مباشر لـ /specialists أو /booking
   const handleBooking = () => {
-    const params = new URLSearchParams({
-      pathType: urlPathType,
-      sessionId,
-      from: "result",
-    });
-    navigate(`/specialists?${params.toString()}`);
+    if (!data) return;
+
+    const urlMode =
+      new URLSearchParams(window.location.search).get("mode") ?? "child";
+
+    const intent: ConsultationIntent = {
+      entryPoint: "assessment_result",
+      initiatedAt: new Date().toISOString(),
+      assessmentResult: {
+        sessionId,
+        pathType: urlPathType as "learning" | "adhd",
+        assessmentMode: urlMode as "child" | "self",
+        resultKey: data.result.riskLevel,
+        subjectName: data.childName ?? "",
+        subjectAge: data.childAge ?? undefined,
+        completedAt: data.completedAt,
+        severity: toResultSeverity(data.result.riskLevel),
+      },
+    };
+
+    setIntent(intent);
+    navigate(buildConsultationStartUrl(intent));
   };
 
   // ─── دالة المشاركة ───────────────────────────────────────────────────────
@@ -801,74 +862,61 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                         Math.floor(aiText.length * 0.6),
                         Math.floor(aiText.length * 0.82)
                       )
-                    : "الفهم المبكر لهذه المؤشرات يُمكّنك من اتخاذ خطوات دعم مناسبة في الوقت الصحيح — وهذا يُحدث فارقاً حقيقياً في المسيرة التعليمية.",
+                    : config.reassurance,
               },
               {
                 num: "٤",
-                title: "ما الخطوة التالية الأنسب؟",
-                icon: ArrowLeft,
-                color: "#FCD34D",
-                bg: "rgba(252,211,77,0.1)",
-                border: "rgba(252,211,77,0.2)",
+                title: "ما الخطوة التالية؟",
+                icon: TrendingUp,
+                color: "#FDE68A",
+                bg: "rgba(253,230,138,0.1)",
+                border: "rgba(253,230,138,0.2)",
                 content:
                   aiText.length > 0
                     ? aiText.substring(Math.floor(aiText.length * 0.82))
-                    : "يُنصح بمناقشة هذه النتائج مع متخصص معتمد لوضع خطة دعم مناسبة ومخصصة لاحتياجاتك.",
+                    : "التحدث مع متخصص معتمد هو أفضل خطوة يمكنك اتخاذها الآن. الاستشارة الأولى تُساعدك على فهم النتائج بعمق أكبر وتحديد خطة دعم مخصصة.",
               },
-            ].map((section, i) => {
-              const SectionIcon = section.icon;
+            ].map((card, idx) => {
+              const CardIcon = card.icon;
               return (
                 <div
-                  key={i}
-                  className="fade-in-up rounded-2xl p-5"
+                  key={idx}
+                  className="fade-in-up rounded-2xl p-6"
                   style={{
-                    background: section.bg,
-                    border: `1px solid ${section.border}`,
-                    transitionDelay: `${i * 80}ms`,
+                    background: card.bg,
+                    border: `1px solid ${card.border}`,
                   }}
                 >
-                  <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-3 mb-4">
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: "rgba(255,255,255,0.1)",
-                        border: `1px solid ${section.border}`,
-                      }}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${card.color}20` }}
                     >
-                      <SectionIcon size={16} style={{ color: section.color }} />
+                      <CardIcon size={16} style={{ color: card.color }} />
                     </div>
                     <div className="flex items-center gap-2">
                       <span
-                        className="text-lg font-black"
-                        style={{
-                          color: section.color,
-                          fontFamily: "'Cairo', sans-serif",
-                          opacity: 0.6,
-                        }}
+                        className="text-xs font-bold"
+                        style={{ color: card.color, fontFamily: "'Cairo', sans-serif" }}
                       >
-                        {section.num}
+                        {card.num}
                       </span>
                       <h3
-                        className="text-sm font-bold"
-                        style={{
-                          color: section.color,
-                          fontFamily: "'Cairo', sans-serif",
-                          fontWeight: 700,
-                        }}
+                        className="text-sm font-bold text-white"
+                        style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
                       >
-                        {section.title}
+                        {card.title}
                       </h3>
                     </div>
                   </div>
                   <p
-                    className="text-sm leading-relaxed"
+                    className="text-blue-100 text-sm leading-relaxed"
                     style={{
-                      color: "rgba(255,255,255,0.82)",
                       fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                       lineHeight: 1.85,
                     }}
                   >
-                    {section.content}
+                    {card.content}
                   </p>
                 </div>
               );
@@ -880,169 +928,111 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
       {/* ═══════════════════════════════════════════════════════════════════════
           3. تفصيل النتائج حسب المجال
       ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="py-14" style={{ background: "white" }}>
+      <section className="py-14" style={{ background: "#F4EFE8" }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 fade-in-up">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4"
-              style={{
-                background: "rgba(37,99,235,0.07)",
-                border: "1px solid rgba(37,99,235,0.15)",
-              }}
-            >
-              <TrendingUp size={14} style={{ color: "#1E4E8C" }} />
-              <span
-                className="text-xs font-semibold text-blue-700"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-              >
-                تفصيل النتائج
-              </span>
-            </div>
             <h2
               className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
               style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
             >
-              النتائج حسب المجال
+              تفصيل النتائج حسب المجال
             </h2>
             <p
-              className="text-slate-500 max-w-lg mx-auto"
+              className="text-slate-500 text-sm max-w-md mx-auto"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
             >
-              تفصيل دقيق لكل مجال تم تقييمه في الفحص
+              كل مجال يعكس مجموعة أسئلة مستقلة — والنسبة تُشير إلى مستوى المؤشرات فيه
             </p>
           </div>
 
-          {sortedCategories.length > 0 && (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {sortedCategories.map(([cat, scores], i) => {
-                const catInfo = CATEGORY_INFO[cat] ?? {
-                  label: cat,
-                  icon: "📊",
-                  desc: "",
-                };
-                const pct = Math.round(scores.percentage);
-                let barColor = "#10B981";
-                let badgeText = "جيد";
-                let badgeBg = "#ECFDF5";
-                let badgeColor = "#059669";
-                if (pct >= 70) {
-                  barColor = "#EF4444";
-                  badgeText = "يحتاج اهتماماً";
-                  badgeBg = "#FEF2F2";
-                  badgeColor = "#DC2626";
-                } else if (pct >= 50) {
-                  barColor = "#F97316";
-                  badgeText = "يحتاج متابعة";
-                  badgeBg = "#FFF7ED";
-                  badgeColor = "#EA580C";
-                } else if (pct >= 30) {
-                  barColor = "#F4C46A";
-                  badgeText = "متوسط";
-                  badgeBg = "#FFFBEB";
-                  badgeColor = "#D97706";
-                }
-                return (
-                  <div
-                    key={cat}
-                    className="fade-in-up rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-md"
-                    style={{
-                      background: "white",
-                      border: "1.5px solid #DFF3F1",
-                      boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
-                      transitionDelay: `${i * 60}ms`,
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
+          <div className="space-y-3">
+            {sortedCategories.map(([key, score], idx) => {
+              const info = CATEGORY_INFO[key] ?? { label: key, icon: "📊", desc: "" };
+              const pct = Math.round(score.percentage);
+              const barColor =
+                pct >= 70
+                  ? "#DC2626"
+                  : pct >= 50
+                  ? "#EA580C"
+                  : pct >= 30
+                  ? "#D97706"
+                  : "#059669";
+              return (
+                <div
+                  key={key}
+                  className="fade-in-up rounded-2xl p-5"
+                  style={{
+                    background: "white",
+                    border: "1.5px solid #DFF3F1",
+                    boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{info.icon}</span>
+                      <div>
                         <div
-                          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                          style={{ background: "#F4EFE8", border: "1px solid #DFF3F1" }}
+                          className="text-sm font-bold text-slate-900"
+                          style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
                         >
-                          {catInfo.icon}
+                          {info.label}
                         </div>
-                        <div>
-                          <div
-                            className="text-sm font-bold text-slate-900"
-                            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
-                          >
-                            {catInfo.label}
-                          </div>
-                          <div
-                            className="text-xs text-slate-400 mt-0.5"
-                            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                          >
-                            {catInfo.desc}
-                          </div>
+                        <div
+                          className="text-xs text-slate-400"
+                          style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                        >
+                          {info.desc}
                         </div>
                       </div>
-                      <span
-                        className="text-2xl font-black"
-                        style={{ fontFamily: "'Cairo', sans-serif", color: barColor }}
-                      >
-                        {pct}%
-                      </span>
                     </div>
-                    <AnimatedProgressBar percentage={pct} color={barColor} />
-                    <div className="mt-3 flex justify-between items-center">
-                      <span
-                        className="text-xs text-slate-400"
-                        style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                      >
-                        {scores.score} من {scores.max} نقطة
-                      </span>
-                      <span
-                        className="text-xs font-semibold px-3 py-1 rounded-full"
-                        style={{
-                          background: badgeBg,
-                          color: badgeColor,
-                          fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                        }}
-                      >
-                        {badgeText}
-                      </span>
-                    </div>
+                    <span
+                      className="text-lg font-black"
+                      style={{ fontFamily: "'Cairo', sans-serif", color: barColor }}
+                    >
+                      {pct}%
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <AnimatedProgressBar percentage={pct} color={barColor} />
+                </div>
+              );
+            })}
+          </div>
 
-          {/* التوصيات المخصصة */}
+          {/* التوصيات */}
           {data.result.recommendations.length > 0 && (
             <div
               className="fade-in-up mt-8 rounded-2xl p-6"
-              style={{ background: "#FFFBEB", border: "1.5px solid #FDE68A" }}
+              style={{
+                background: "white",
+                border: "1.5px solid #DFF3F1",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+              }}
             >
               <div className="flex items-center gap-3 mb-5">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: "#FEF3C7", border: "1px solid #FDE68A" }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: "#DFF3F1" }}
                 >
-                  <FileText size={18} style={{ color: "#F4C46A" }} />
+                  <Star size={16} style={{ color: "#2BBDB6" }} />
                 </div>
                 <h3
-                  className="text-base font-black text-slate-900"
-                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 800 }}
+                  className="text-base font-bold text-slate-900"
+                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
                 >
-                  توصيات مخصصة لك
+                  التوصيات الأولية
                 </h3>
               </div>
-              <div className="space-y-3">
-                {data.result.recommendations.slice(0, 4).map((rec, i) => (
-                  <div key={i} className="flex items-start gap-3">
+              <ul className="space-y-3">
+                {data.result.recommendations.map((rec, i) => (
+                  <li key={i} className="flex items-start gap-3">
                     <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                      style={{ background: "#FEF3C7", border: "1px solid #FDE68A" }}
+                      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      style={{ background: "#DFF3F1" }}
                     >
-                      <span
-                        className="text-xs font-black"
-                        style={{ color: "#F4C46A", fontFamily: "'Cairo', sans-serif" }}
-                      >
-                        {i + 1}
-                      </span>
+                      <CheckCircle2 size={12} style={{ color: "#2BBDB6" }} />
                     </div>
                     <p
-                      className="text-slate-600 text-sm leading-relaxed"
+                      className="text-sm text-slate-600 leading-relaxed"
                       style={{
                         fontFamily: "'IBM Plex Sans Arabic', sans-serif",
                         lineHeight: 1.8,
@@ -1050,33 +1040,36 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                     >
                       {rec}
                     </p>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          4. معاينة فريق المتخصصين (path-aware، بدون أسماء شخصية)
+          4. معاينة فريق المتخصصين
       ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="py-14" style={{ background: "#F4EFE8" }}>
+      <section
+        className="py-14"
+        style={{ background: "linear-gradient(160deg, #F0F9FF 0%, #F4EFE8 100%)" }}
+      >
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 fade-in-up">
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4"
               style={{
-                background: "rgba(20,184,166,0.08)",
-                border: "1px solid rgba(20,184,166,0.2)",
+                background: "rgba(30,78,140,0.08)",
+                border: "1px solid rgba(30,78,140,0.15)",
               }}
             >
-              <Users size={14} style={{ color: "#2BBDB6" }} />
+              <Users size={14} style={{ color: "#1E4E8C" }} />
               <span
                 className="text-xs font-semibold"
-                style={{ color: "#0F766E", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                style={{ color: "#1E4E8C", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
               >
-                الخطوة التالية
+                فريق متخصص
               </span>
             </div>
             <h2
@@ -1086,51 +1079,46 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
               {specialistPreview.heading}
             </h2>
             <p
-              className="text-slate-500 max-w-xl mx-auto"
-              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
+              className="text-slate-500 text-sm max-w-lg mx-auto"
+              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
             >
               {specialistPreview.description}
             </p>
           </div>
 
-          {/* بطاقات المتخصصين — معاينة فقط، بدون أزرار حجز فردية */}
-          <div className="grid sm:grid-cols-3 gap-4 mb-6">
-            {specialistPreview.cards.map((card, i) => (
+          <div className="grid sm:grid-cols-3 gap-4">
+            {specialistPreview.cards.map((card, idx) => (
               <div
-                key={i}
-                className="fade-in-up rounded-2xl p-5 transition-all duration-300"
+                key={idx}
+                className="fade-in-up rounded-2xl p-5 text-center"
                 style={{
                   background: "white",
                   border: "1.5px solid #DFF3F1",
                   boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
-                  transitionDelay: `${i * 80}ms`,
                 }}
               >
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-4"
-                  style={{
-                    background: `${card.color}10`,
-                    border: `1px solid ${card.color}20`,
-                  }}
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl"
+                  style={{ background: `${card.color}12`, border: `1px solid ${card.color}20` }}
                 >
                   {card.icon}
                 </div>
-                <h3
-                  className="text-sm font-black text-slate-900 mb-3"
-                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 800 }}
+                <div
+                  className="text-sm font-bold text-slate-900 mb-3"
+                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 700 }}
                 >
                   {card.role}
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {card.specialties.map((s, j) => (
+                </div>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {card.specialties.map((s, si) => (
                     <span
-                      key={j}
-                      className="text-xs px-2.5 py-1 rounded-full font-medium"
+                      key={si}
+                      className="text-xs px-2.5 py-1 rounded-full"
                       style={{
                         background: `${card.color}10`,
                         color: card.color,
-                        border: `1px solid ${card.color}20`,
                         fontFamily: "'IBM Plex Sans Arabic', sans-serif",
+                        border: `1px solid ${card.color}20`,
                       }}
                     >
                       {s}
@@ -1140,64 +1128,41 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
               </div>
             ))}
           </div>
-
-          {/* ملاحظة توضيحية */}
-          <div
-            className="fade-in-up flex items-start gap-3 rounded-2xl px-5 py-4"
-            style={{
-              background: "rgba(20,184,166,0.06)",
-              border: "1px solid rgba(20,184,166,0.15)",
-            }}
-          >
-            <Info
-              size={15}
-              style={{ color: "#2BBDB6", flexShrink: 0, marginTop: "2px" }}
-            />
-            <p
-              className="text-xs text-slate-500 leading-relaxed"
-              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
-            >
-              هذه معاينة لنوع المتخصصين المناسبين لنتائج فحصك. بعد الضغط على زر الحجز أدناه، ستتمكن من الاطلاع على التفاصيل الكاملة لكل متخصص واختيار الأنسب لك.
-            </p>
-          </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
           5. الأسئلة الشائعة
       ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="py-14" style={{ background: "white" }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8 fade-in-up">
+      <section className="py-14" style={{ background: "#F4EFE8" }}>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10 fade-in-up">
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4"
-              style={{
-                background: "rgba(37,99,235,0.07)",
-                border: "1px solid rgba(37,99,235,0.15)",
-              }}
+              style={{ background: "#DFF3F1", border: "1px solid rgba(43,189,182,0.2)" }}
             >
-              <HelpCircle size={14} style={{ color: "#1E4E8C" }} />
+              <HelpCircle size={14} style={{ color: "#2BBDB6" }} />
               <span
-                className="text-xs font-semibold text-blue-700"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                className="text-xs font-semibold"
+                style={{ color: "#0F766E", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
               >
                 أسئلة شائعة
               </span>
             </div>
             <h2
-              className="text-2xl font-black text-slate-900"
+              className="text-2xl sm:text-3xl font-black text-slate-900"
               style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900 }}
             >
-              قبل أن تتخذ خطوتك التالية
+              أسئلة يطرحها أولياء الأمور
             </h2>
           </div>
           <div className="space-y-3">
-            {FAQ_ITEMS.map((item, i) => (
+            {FAQ_ITEMS.map((item, idx) => (
               <AccordionItem
-                key={i}
+                key={idx}
                 item={item}
-                isOpen={openFaq === i}
-                onToggle={() => setOpenFaq(openFaq === i ? null : i)}
+                isOpen={openFaq === idx}
+                onToggle={() => setOpenFaq(openFaq === idx ? null : idx)}
               />
             ))}
           </div>
@@ -1206,117 +1171,72 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
 
       {/* ═══════════════════════════════════════════════════════════════════════
           6. CTA الوحيد — نهاية الصفحة
+          Sprint 3.0f: handleBooking → ConsultationContext → /consultation/start
       ═══════════════════════════════════════════════════════════════════════ */}
       <section
-        className="py-20 relative overflow-hidden no-print"
+        className="py-16 no-print"
         style={{
-          background: "linear-gradient(135deg, #1e3a8a 0%, #1E4E8C 45%, #0f766e 100%)",
+          background: "linear-gradient(160deg, #1E4E8C 0%, #2BBDB6 100%)",
         }}
       >
-        {/* دوائر زخرفية */}
-        <div
-          className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)",
-            transform: "translate(30%, -30%)",
-          }}
-        />
-        <div
-          className="absolute bottom-0 left-0 w-80 h-80 rounded-full pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(20,184,166,0.12) 0%, transparent 70%)",
-            transform: "translate(-30%, 30%)",
-          }}
-        />
-
-        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 text-center">
-          {/* Badge */}
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
           <div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 fade-in-up"
+            className="fade-in-up inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
             style={{
-              background: "rgba(255,255,255,0.12)",
-              border: "1px solid rgba(255,255,255,0.2)",
+              background: "rgba(255,255,255,0.15)",
+              border: "1px solid rgba(255,255,255,0.25)",
             }}
           >
-            <ChevronRight size={14} className="text-teal-300" />
+            <BadgeCheck size={14} className="text-white" />
             <span
-              className="text-xs font-semibold text-teal-200"
+              className="text-xs font-semibold text-white"
               style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
             >
-              الخطوة الأهم بعد الفحص
+              استشارة متخصصة بناءً على نتائجك
             </span>
           </div>
 
-          {/* العنوان */}
           <h2
-            className="fade-in-up text-3xl sm:text-4xl font-black text-white mb-4"
-            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.25 }}
+            className="fade-in-up text-2xl sm:text-3xl font-black text-white mb-4"
+            style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.3 }}
           >
-            تحتاج مساعدة في فهم هذه النتيجة؟
-            <br />
-            <span
-              style={{
-                background: "linear-gradient(135deg, #5eead4 0%, #a5f3fc 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              نحن هنا لمساعدتك
-            </span>
+            احجز استشارتك مع متخصص
           </h2>
-
           <p
-            className="fade-in-up text-blue-100 text-base max-w-lg mx-auto mb-5 leading-relaxed"
-            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9 }}
+            className="fade-in-up text-blue-100 text-sm max-w-md mx-auto mb-8"
+            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85 }}
           >
-            {config.reassurance}
+            سيطّلع المتخصص على نتائج فحصك قبل الجلسة ليكون مستعداً لمناقشتها معك بعمق وتقديم خطة دعم مخصصة.
           </p>
 
-          {/* ملاحظة دعم تحت الـ reassurance */}
-          <p
-            className="fade-in-up text-blue-200 text-sm max-w-md mx-auto mb-10 leading-relaxed"
-            style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.85, opacity: 0.85 }}
-          >
-            يمكنك حجز استشارة أولية لمناقشة المؤشرات والحصول على توجيه أوضح — بهدوء وبدون ضغط.
-          </p>
-
-          {/* ─── CTA الوحيد في الصفحة بالكامل ─── */}
           <button
             onClick={handleBooking}
-            className="fade-in-up group flex items-center justify-center gap-3 rounded-2xl font-black text-base transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto mx-auto no-print"
+            className="fade-in-up inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-base transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
               background: "white",
-              color: "#1e3a8a",
+              color: "#1E4E8C",
               fontFamily: "'Cairo', sans-serif",
-              fontWeight: 800,
-              boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
-              padding: "1.1rem 2.5rem",
+              fontWeight: 900,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
             }}
           >
-            <Calendar size={18} />
-            احجز استشارة لفهم النتيجة
-            <ArrowLeft
-              size={18}
-              className="transition-transform group-hover:-translate-x-1"
-            />
+            <Calendar size={20} />
+            احجز استشارة الآن
+            <ChevronRight size={18} />
           </button>
 
-          {/* ضمانات */}
-          <div className="fade-in-up flex flex-wrap justify-center gap-5 mt-8">
+          <div className="fade-in-up mt-6 flex items-center justify-center gap-6">
             {[
-              { icon: Lock, text: "خصوصية كاملة — بياناتك لن تُشارك" },
-              { icon: Shield, text: "لا ضغط — أنت تتحكم في كل خطوة" },
-              { icon: BadgeCheck, text: "متخصصون معتمدون" },
+              { icon: Clock, text: "متاح هذا الأسبوع" },
+              { icon: MessageCircle, text: "أونلاين أو حضوري" },
+              { icon: Shield, text: "سري وآمن تماماً" },
             ].map((item, i) => {
               const ItemIcon = item.icon;
               return (
-                <div key={i} className="flex items-center gap-2 text-blue-100">
-                  <ItemIcon size={14} className="text-teal-300 flex-shrink-0" />
+                <div key={i} className="flex items-center gap-1.5">
+                  <ItemIcon size={13} className="text-blue-200" />
                   <span
-                    className="text-sm"
+                    className="text-xs text-blue-100"
                     style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                   >
                     {item.text}
@@ -1328,42 +1248,6 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
         </div>
       </section>
 
-      {/* ─── Footer ──────────────────────────────────────────────────────────── */}
-      <footer className="py-10" style={{ background: "#243B53" }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div
-            className="py-5 mb-5"
-            style={{
-              borderTop: "1px solid #1E293B",
-              borderBottom: "1px solid #1E293B",
-            }}
-          >
-            <p
-              className="text-slate-500 text-xs leading-relaxed text-center max-w-2xl mx-auto"
-              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9 }}
-            >
-              <strong className="text-slate-400">إخلاء مسؤولية:</strong> هذه النتائج هي لأغراض توجيهية أولية فقط ولا تُعدّ تشخيصاً طبياً أو نفسياً رسمياً. يُرجى استشارة متخصص معتمد للحصول على تقييم دقيق وشامل. منصة تشخيصي لا تتحمل مسؤولية أي قرارات تُتخذ بناءً على هذه النتائج وحدها.
-            </p>
-          </div>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            {[
-              { label: "سياسة الخصوصية", path: "/privacy" },
-              { label: "إخلاء المسؤولية", path: "/disclaimer" },
-              { label: "الخدمات", path: "/services" },
-              { label: "الصفحة الرئيسية", path: "/" },
-            ].map((link, i) => (
-              <button
-                key={i}
-                onClick={() => navigate(link.path)}
-                className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-              >
-                {link.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
