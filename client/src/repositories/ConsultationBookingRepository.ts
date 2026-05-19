@@ -1,55 +1,49 @@
 /**
- * ConsultationBookingRepository.ts — Sprint 3.1 Priority 2
+ * ConsultationBookingRepository.ts — Sprint 3.1 Priority 2 (updated pre-P3)
  *
  * Implementation باستخدام sessionStorage.
- * الجلسة تعيش خارج React state — تبقى عند page refresh.
+ * الجلسة تعيش خارج React state.
  *
- * التصميم المقصود:
- * - الواجهة ثابتة (ConsultationBookingRepository interface)
- * - الـ implementation قابلة للتبديل إلى Supabase دون تغيير API
- * - TTL: 2 ساعة — auto-expire عند load
+ * التحديث pre-P3:
+ * - setActive() / getActiveId() / loadActive() / clearActive()
+ * - invalidate() تستخدم BookingRecoveryReason taxonomy
+ * - loadLatest() تعتمد activeBookingSessionId أولاً
  */
 
 import type {
-  ConsultationBookingSession,
+  BookingRecoveryReason,
   ConsultationBookingRepository,
+  ConsultationBookingSession,
 } from "../types/consultationBookingTypes";
 import { isSessionExpired } from "../types/consultationBookingTypes";
 
-const STORAGE_KEY = "tashkheesy:consultation_booking_session";
-const LATEST_KEY  = "tashkheesy:consultation_booking_latest_id";
+const STORAGE_KEY  = "tashkheesy:cbs";          // consultation_booking_session
+const ACTIVE_KEY   = "tashkheesy:cbs_active_id"; // activeBookingSessionId — صريح
 
-// ─── SessionStorage Implementation ───────────────────────────────────────
 class SessionStorageBookingRepository implements ConsultationBookingRepository {
-  /**
-   * يحفظ الجلسة في sessionStorage ويسجّل sessionId كـ latest.
-   */
+
+  // ── save ──────────────────────────────────────────────────
   save(session: ConsultationBookingSession): void {
     try {
-      const key = `${STORAGE_KEY}:${session.sessionId}`;
-      sessionStorage.setItem(key, JSON.stringify(session));
-      sessionStorage.setItem(LATEST_KEY, session.sessionId);
+      sessionStorage.setItem(
+        `${STORAGE_KEY}:${session.sessionId}`,
+        JSON.stringify(session)
+      );
     } catch (err) {
-      // sessionStorage ممكن يكون ممتلئ أو محجوب في بعض البيئات
-      console.warn("[BookingRepository] Failed to save session:", err);
+      console.warn("[BookingRepo] save failed:", err);
     }
   }
 
-  /**
-   * يُحمِّل جلسة بواسطة sessionId.
-   * يُعيد null إذا انتهت صلاحيتها ويحذفها تلقائيًا.
-   */
+  // ── load ──────────────────────────────────────────────────
   load(sessionId: string): ConsultationBookingSession | null {
     try {
-      const key = `${STORAGE_KEY}:${sessionId}`;
-      const raw = sessionStorage.getItem(key);
+      const raw = sessionStorage.getItem(`${STORAGE_KEY}:${sessionId}`);
       if (!raw) return null;
 
       const session: ConsultationBookingSession = JSON.parse(raw);
 
-      // Auto-expire
       if (isSessionExpired(session)) {
-        this.invalidate(sessionId, "TTL_EXPIRED");
+        this.invalidate(sessionId, "ttl_expired");
         return null;
       }
 
@@ -59,58 +53,87 @@ class SessionStorageBookingRepository implements ConsultationBookingRepository {
     }
   }
 
-  /**
-   * يُحمِّل آخر جلسة نشطة.
-   * يُستخدم عند العودة للصفحة أو page refresh لـ recovery.
-   */
-  loadLatest(): ConsultationBookingSession | null {
+  // ── setActive ────────────────────────────────────────────
+  /** يحدد activeBookingSessionId صراحةً. يُستدعى بعد save() مباشرة. */
+  setActive(sessionId: string): void {
     try {
-      const latestId = sessionStorage.getItem(LATEST_KEY);
-      if (!latestId) return null;
-      return this.load(latestId);
+      sessionStorage.setItem(ACTIVE_KEY, sessionId);
+    } catch (err) {
+      console.warn("[BookingRepo] setActive failed:", err);
+    }
+  }
+
+  // ── getActiveId ───────────────────────────────────────────
+  getActiveId(): string | null {
+    try {
+      return sessionStorage.getItem(ACTIVE_KEY);
     } catch {
       return null;
     }
   }
 
+  // ── loadActive ────────────────────────────────────────────
+  /** يحمِّل الجلسة النشطة بواسطة activeBookingSessionId — هذا مصدر الحقيقة */
+  loadActive(): ConsultationBookingSession | null {
+    const activeId = this.getActiveId();
+    if (!activeId) return null;
+    return this.load(activeId);
+  }
+
+  // ── loadLatest (alias لـ loadActive) ────────────────────────
   /**
-   * يُبطل الجلسة ويحذفها من storage.
-   * يُستخدم عند: entitlement expired, specialist unavailable, explicit cancel.
+   * ‹legacy alias› يتحوّل إلى loadActive().
+   * تجنّب استخدامه في كود جديد — استخدم loadActive() بدلاً.
    */
-  invalidate(sessionId: string, reason: string): void {
+  loadLatest(): ConsultationBookingSession | null {
+    return this.loadActive();
+  }
+
+  // ── invalidate ────────────────────────────────────────────
+  /**
+   * يُبطل الجلسة ويحتفظ بسجل السبب (BookingRecoveryReason) للـ audit.
+   * يتقبل taxonomy موحد بدل string حر.
+   */
+  invalidate(sessionId: string, reason: BookingRecoveryReason): void {
     try {
       const key = `${STORAGE_KEY}:${sessionId}`;
       const raw = sessionStorage.getItem(key);
 
       if (raw) {
         const session: ConsultationBookingSession = JSON.parse(raw);
-        // نحتفظ بسجل الإبطال لـ debugging
-        const invalidated = {
+        const invalidated: ConsultationBookingSession = {
           ...session,
-          bookingFlowPhase: "EXPIRED" as const,
-          bookingStatus: "EXPIRED" as const,
+          bookingFlowPhase: "EXPIRED",
+          bookingStatus: "EXPIRED",
           recoveryState: {
             ...session.recoveryState,
-            status: "invalidated" as const,
-            failureReason: reason,
+            status: "invalidated",
+            reason,                          // taxonomy موحد
+            auditNote: `invalidated at ${new Date().toISOString()} — reason: ${reason}`,
           },
         };
         sessionStorage.setItem(key, JSON.stringify(invalidated));
       }
 
-      // إزالة من latest إذا كانت هي الأخيرة
-      const latestId = sessionStorage.getItem(LATEST_KEY);
-      if (latestId === sessionId) {
-        sessionStorage.removeItem(LATEST_KEY);
+      if (this.getActiveId() === sessionId) {
+        this.clearActive();
       }
     } catch (err) {
-      console.warn("[BookingRepository] Failed to invalidate session:", err);
+      console.warn("[BookingRepo] invalidate failed:", err);
     }
   }
 
-  /**
-   * يمسح كل جلسات الحجز (logout / new flow).
-   */
+  // ── clearActive ───────────────────────────────────────────
+  /** يزيل activeBookingSessionId فقط بدون حذف بيانات الجلسة */
+  clearActive(): void {
+    try {
+      sessionStorage.removeItem(ACTIVE_KEY);
+    } catch (err) {
+      console.warn("[BookingRepo] clearActive failed:", err);
+    }
+  }
+
+  // ── clear (all sessions) ──────────────────────────────────
   clear(): void {
     try {
       const keys: string[] = [];
@@ -119,17 +142,13 @@ class SessionStorageBookingRepository implements ConsultationBookingRepository {
         if (key?.startsWith(STORAGE_KEY)) keys.push(key);
       }
       keys.forEach(k => sessionStorage.removeItem(k));
-      sessionStorage.removeItem(LATEST_KEY);
+      sessionStorage.removeItem(ACTIVE_KEY);
     } catch (err) {
-      console.warn("[BookingRepository] Failed to clear sessions:", err);
+      console.warn("[BookingRepo] clear failed:", err);
     }
   }
 }
 
-// ─── Singleton Export ──────────────────────────────────────────────────────
-/**
- * instance واحد يُستخدم في كل التطبيق.
- * لا تُنشئ instances جديدة في المكوّنات.
- */
+/** Singleton — instance واحد في كل التطبيق */
 export const consultationBookingRepository: ConsultationBookingRepository =
   new SessionStorageBookingRepository();
