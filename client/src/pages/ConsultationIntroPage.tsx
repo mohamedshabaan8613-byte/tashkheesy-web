@@ -1,7 +1,7 @@
 /**
- * ConsultationIntroPage.tsx — Sprint 3.1 Priority 3 Wiring
+ * ConsultationIntroPage.tsx — Sprint 3.1 Post-Hardening (6 Points)
  *
- * ─── WIRING RULES ─────────────────────────────────────────────────────────
+ * ─── WIRING RULES ──────────────────────────────────────────────────────────────
  * ✅ مسموح:
  *   - startFromIntroPage()  ← من useConsultationBookingAdapter
  *   - navigate(result.nextRoute)  ← بناءً على ما يُعيده orchestrator
@@ -10,15 +10,32 @@
  *
  * ❌ ممنوع:
  *   - booking initialization logic في الصفحة
- *   - استدعاء startBookingSession() مباشرة
  *   - بناء BookingSessionPayload يدوياً
  *   - Supabase / payments / AI matching
- * ──────────────────────────────────────────────────────────────────────────
  *
- * المحتوى السياقي:
- *   - from assessment  → يُبرز التوصية وأهمية الاستشارة
- *   - direct / follow_up → محتوى عام عن الاستشارة
- *   - no intent         → redirect للبداية
+ * ─── GUARD_HOOK_BOUNDARY (Point 1) ────────────────────────────────────────────
+ * useIntroGuard() يحتوي فقط:
+ * ✅ validate intent presence
+ * ✅ redirect invalid access → /consultation/start
+ *
+ * ❌ ممنوع داخل useIntroGuard():
+ * ❌ analytics / tracking
+ * ❌ hydration / session restoration
+ * ❌ booking recovery logic
+ * ❌ UI copy decisions
+ *
+ * ─── INTRO_CONTENT_BOUNDARY (Point 3) ─────────────────────────────────────────
+ * resolveIntroContent() يحتوي فقط:
+ * ✅ emotional copy (headline / subline)
+ * ✅ CTA labels
+ * ✅ badge labels
+ *
+ * ❌ ممنوع داخل resolveIntroContent():
+ * ❌ entitlement awareness / pricing logic
+ * ❌ specialist selection logic
+ * ❌ severity policy
+ * ❌ recommendation engine data
+ * ──────────────────────────────────────────────────────────────────────────
  */
 
 import { useEffect, useState } from "react";
@@ -29,9 +46,27 @@ import {
   useConsultationBookingAdapter,
 } from "../hooks/useConsultationBooking";
 import type { BookingDenialPresentation } from "../hooks/useConsultationBooking";
+import { resolveRecoveryPolicy } from "../utils/recoveryPolicy";
 
-// ─── Content by Entry Point ────────────────────────────────────────────────
-
+// ─── INTRO_CONTENT_BOUNDARY (Point 3) ───────────────────────────────────────
+/**
+ * IntroContent — محتوى عاطفي وUX copy فقط.
+ *
+ * مسموح:
+ *   ✅ emotional copy (headline / subline)
+ *   ✅ CTA labels
+ *   ✅ badge labels
+ *
+ * ممنوع إضافة مستقبلاً:
+ *   ❌ entitlement awareness ("free session" / "paid")
+ *   ❌ pricing information
+ *   ❌ specialist match scores
+ *   ❌ severity thresholds
+ *   ❌ recommendation ranking
+ *
+ * إذا احتجت هذه الدالة خارج هذا النطاق —
+ * أنشئ resolveIntroPageSpecialistCopy() منفصلة في Sprint 3.3.
+ */
 type IntroContent = {
   headline: string;
   subline: string;
@@ -66,8 +101,23 @@ function resolveIntroContent(entryPoint: string | undefined): IntroContent {
   }
 }
 
-// ─── Guard ─────────────────────────────────────────────────────────────────
-
+// ─── GUARD_HOOK_BOUNDARY (Point 1) ───────────────────────────────────────────
+/**
+ * useIntroGuard — guard محدود المسؤولية.
+ *
+ * مسموح فقط:
+ *   ✅ validate intent presence
+ *   ✅ redirect invalid access
+ *
+ * ممنوع إضافة مستقبلاً:
+ *   ❌ analytics / tracking
+ *   ❌ hydration / session restoration
+ *   ❌ booking recovery logic
+ *   ❌ UI copy decisions
+ *
+ * إذا كبيرت هذه الدالة عن 3-4 سطور —
+ * أنت تُضيف شيئًا خارج مسؤوليته.
+ */
 function useIntroGuard() {
   const { intent, hasActiveIntent } = useConsultationContext();
   const navigate = useNavigate();
@@ -94,7 +144,7 @@ const BENEFITS = [
   { icon: "⚡", text: "حجز في دقائق، جلسة خلال 48 ساعة" },
 ] as const;
 
-// ─── Main Component ────────────────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function ConsultationIntroPage() {
   const navigate = useNavigate();
@@ -106,16 +156,9 @@ export default function ConsultationIntroPage() {
 
   const content = resolveIntroContent(entryPoint);
 
-  // Guard
   if (!isReady || !intent) return null;
 
-  // ─ Start Booking ─────────────────────────────────────────────────────
-  /**
-   * handleStartBooking — النقطة الوحيدة لبدء الحجز في هذه الصفحة.
-   *
-   * ✅ يستدعي startFromIntroPage() فقط — لا booking logic هنا.
-   * ✅ navigate() بناءً على result.nextRoute من orchestrator.
-   */
+  // ─── Start Booking ────────────────────────────────────────────────────────
   function handleStartBooking() {
     if (!intent?.intentId) return;
 
@@ -127,41 +170,37 @@ export default function ConsultationIntroPage() {
     });
 
     if (result.success) {
+      // ✅ Point 2: navigate بناءً على result.nextRoute من orchestrator
+      // nextRoute مقيد بـ ConsultationRoute type — لا hardcoded strings
       navigate(result.nextRoute);
       return;
     }
 
     const presentation = resolveBookingDenialPresentation(result.denialReason);
+
+    // ✅ Point 5: استخدام RecoveryPolicy لتحديد UX pattern
+    const policy = resolveRecoveryPolicy(presentation.recoveryAction, null);
+    void policy; // Sprint 3.2: استخدم policy.execution لتحديد UX
+
     setDenial(presentation);
     setIsStarting(false);
   }
 
-  // ─ Recovery ──────────────────────────────────────────────────────────
+  // ─── Recovery ────────────────────────────────────────────────────────────
   function handleRecoveryAction(presentation: BookingDenialPresentation) {
     switch (presentation.recoveryAction) {
-      case "redirect_to_assessment":
-        navigate("/assessment");
-        break;
-      case "resume_active_booking":
-        navigate("/consultation/booking");
-        break;
-      case "redirect_to_payment":
-        navigate("/consultation/start");
-        break;
-      case "contact_support":
-        navigate("/contact");
-        break;
-      default:
-        setDenial(null);
+      case "redirect_to_assessment":  navigate("/assessment"); break;
+      case "resume_active_booking":   navigate("/consultation/booking"); break;
+      case "redirect_to_payment":     navigate("/consultation/start"); break;
+      case "contact_support":         navigate("/contact"); break;
+      default:                        setDenial(null);
     }
   }
 
-  // ─ Render ─────────────────────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-10 dark:bg-gray-950">
       <div className="mx-auto max-w-xl">
 
-        {/* Badge */}
         {content.badge && (
           <div className="mb-6 text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-4 py-1.5 text-xs font-semibold text-teal-700 dark:bg-teal-900/50 dark:text-teal-300">
@@ -171,7 +210,6 @@ export default function ConsultationIntroPage() {
           </div>
         )}
 
-        {/* Headline */}
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-bold leading-snug text-gray-900 dark:text-white">
             {content.headline}
@@ -181,11 +219,7 @@ export default function ConsultationIntroPage() {
           </p>
         </header>
 
-        {/* Benefits */}
-        <ul
-          aria-label="مميزات الاستشارة"
-          className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2"
-        >
+        <ul aria-label="مميزات الاستشارة" className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {BENEFITS.map(({ icon, text }) => (
             <li
               key={text}
@@ -197,16 +231,10 @@ export default function ConsultationIntroPage() {
           ))}
         </ul>
 
-        {/* Denial Card */}
         {denial && (
-          <div
-            role="alert"
-            className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 dark:border-red-800 dark:bg-red-950"
-          >
+          <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 p-5 dark:border-red-800 dark:bg-red-950">
             {denial.title && (
-              <p className="mb-1 font-semibold text-red-800 dark:text-red-200">
-                {denial.title}
-              </p>
+              <p className="mb-1 font-semibold text-red-800 dark:text-red-200">{denial.title}</p>
             )}
             <p className="text-sm text-red-700 dark:text-red-300">{denial.userMessage}</p>
             {denial.actionLabel && denial.recoveryAction !== "none" && (
@@ -220,7 +248,6 @@ export default function ConsultationIntroPage() {
           </div>
         )}
 
-        {/* CTA */}
         <div className="text-center">
           <button
             onClick={handleStartBooking}
@@ -237,16 +264,11 @@ export default function ConsultationIntroPage() {
                 </svg>
                 جاري التحضير...
               </span>
-            ) : (
-              content.ctaLabel
-            )}
+            ) : content.ctaLabel}
           </button>
-
           <p className="mt-4 text-xs text-gray-400">
             بالمتابعة، أنت توافق على{" "}
-            <a href="/terms" className="underline underline-offset-2 hover:text-gray-600">
-              شروط الاستخدام
-            </a>
+            <a href="/terms" className="underline underline-offset-2 hover:text-gray-600">شروط الاستخدام</a>
           </p>
         </div>
 

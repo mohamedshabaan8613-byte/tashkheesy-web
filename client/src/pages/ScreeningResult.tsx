@@ -1,7 +1,7 @@
 /**
- * ScreeningResult.tsx — Sprint 3.1 Priority 3 Wiring
+ * ScreeningResult.tsx — Sprint 3.1 Post-Hardening (6 Points)
  *
- * ─── WIRING RULES ─────────────────────────────────────────────────────────
+ * ─── WIRING RULES ──────────────────────────────────────────────────────────────
  * ✅ مسموح:
  *   - startFromAssessment()  ← من useConsultationBookingAdapter
  *   - navigate(result.nextRoute)  ← بناءً على ما يُعيده orchestrator
@@ -10,10 +10,22 @@
  *
  * ❌ ممنوع:
  *   - بناء BookingSessionPayload يدوياً
- *   - استدعاء startBookingSession() مباشرة
  *   - حساب entitlementType
  *   - تحديد route يدوياً
  *   - Supabase / payments / AI matching
+ *
+ * ─── GUARD_HOOK_BOUNDARY (Point 1) ────────────────────────────────────────────
+ * useAssessmentGuard() يحتوي فقط:
+ * ✅ validate intent presence
+ * ✅ validate entryPoint === "assessment_result"
+ * ✅ redirect invalid access → /consultation/start
+ *
+ * ❌ ممنوع داخل useAssessmentGuard():
+ * ❌ analytics / tracking
+ * ❌ hydration / session restoration
+ * ❌ booking recovery logic
+ * ❌ UI copy decisions
+ * ❌ entitlement checks
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -25,28 +37,44 @@ import {
   useConsultationBookingAdapter,
 } from "../hooks/useConsultationBooking";
 import type { BookingDenialPresentation } from "../hooks/useConsultationBooking";
+import { resolveRecoveryPolicy } from "../utils/recoveryPolicy";
 
-// ─── Guard ─────────────────────────────────────────────────────────────────
-
+// ─── GUARD_HOOK_BOUNDARY (Point 1) ───────────────────────────────────────────
 /**
- * يتحقق من وجود الـ assessment result في الـ intent.
- * ScreeningResult لا تُعرض بدون assessment data.
+ * useAssessmentGuard — guard محدود المسؤولية.
+ *
+ * مسموح فقط:
+ *   ✅ validate intent presence
+ *   ✅ validate entryPoint === "assessment_result"
+ *   ✅ redirect invalid access
+ *
+ * ممنوع إضافة مستقبلاً:
+ *   ❌ analytics events
+ *   ❌ booking session hydration
+ *   ❌ entitlement resolution
+ *   ❌ recovery logic
+ *   ❌ UI state decisions
+ *
+ * إذا كبيرت هذه الدالة عن 3-4 سطور —
+ * أنت تُضيف شيئًا خارج مسؤوليته.
  */
 function useAssessmentGuard() {
   const { intent, hasActiveIntent } = useConsultationContext();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // إذا لم يكن هناك intent نشط أو لم يأتِ من assessment — أعد للبداية
     if (!hasActiveIntent || intent?.entryPoint !== "assessment_result") {
       navigate("/consultation/start", { replace: true });
     }
   }, [hasActiveIntent, intent, navigate]);
 
-  return { intent, isReady: hasActiveIntent && intent?.entryPoint === "assessment_result" };
+  return {
+    intent,
+    isReady: hasActiveIntent && intent?.entryPoint === "assessment_result",
+  };
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
 function DenialCard({ presentation, onAction }: {
   presentation: BookingDenialPresentation;
@@ -112,36 +140,23 @@ function ConfirmResumeDialog({ presentation, onConfirm, onDismiss }: {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function ScreeningResult() {
   const navigate = useNavigate();
   const { intent, isReady } = useAssessmentGuard();
   const { startFromAssessment } = useConsultationBookingAdapter();
 
-  const [isStarting, setIsStarting]           = useState(false);
-  const [denial, setDenial]                   = useState<BookingDenialPresentation | null>(null);
-  const [showConfirm, setShowConfirm]         = useState(false);
+  const [isStarting, setIsStarting]   = useState(false);
+  const [denial, setDenial]           = useState<BookingDenialPresentation | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  // Guard: لا تُصيَّر الصفحة قبل التحقق
-  if (!isReady || !intent) {
-    return null;
-  }
+  if (!isReady || !intent) return null;
 
-  // ─ Assessment display data ─────────────────────────────────────────────
-  // المحتوى يأتي من ConsultationContext.intent — ScreeningResult لا تملك data
-  const assessmentResult = intent.assessmentResult;
+  const assessmentResult    = intent.assessmentResult;
   const assessmentSessionId = intent.assessmentSessionId ?? "";
 
-  // ─ Start Booking ──────────────────────────────────────────────────────
-  /**
-   * handleStartBooking — النقطة الوحيدة لبدء الحجز في هذه الصفحة.
-   *
-   * ✅ يستدعي startFromAssessment() فقط.
-   * ✅ navigate() بناءً على result.nextRoute من orchestrator.
-   * ❌ لا يبني payload.
-   * ❌ لا يحدد route يدوياً.
-   */
+  // ─── Start Booking ────────────────────────────────────────────────────────
   function handleStartBooking() {
     if (!intent?.intentId || !assessmentSessionId) return;
 
@@ -155,64 +170,48 @@ export default function ScreeningResult() {
     });
 
     if (result.success) {
-      // ✅ navigation بناءً على ما أعاده orchestrator — لا hardcoded route
+      // ✅ Point 2: navigate بناءً على result.nextRoute من orchestrator
+      // nextRoute مقيد بـ ConsultationRoute type — لا hardcoded strings
       navigate(result.nextRoute);
       return;
     }
 
-    // ✅ تحويل domain denial reason → UX copy
     const presentation = resolveBookingDenialPresentation(result.denialReason);
 
-    // USER_CONFIRMATION_REQUIRED → dialog
-    if (presentation.recoveryExecution === "USER_CONFIRMATION_REQUIRED") {
+    // ✅ Point 5: استخدام RecoveryPolicy لتحديد UX pattern
+    const policy = resolveRecoveryPolicy(presentation.recoveryAction, null);
+
+    if (policy.execution === "USER_CONFIRMATION_REQUIRED") {
       setShowConfirm(true);
       setDenial(presentation);
       setIsStarting(false);
       return;
     }
 
-    // MANUAL → inline denial card
     setDenial(presentation);
     setIsStarting(false);
   }
 
-  // ─ Recovery Actions ────────────────────────────────────────────────────
+  // ─── Recovery ────────────────────────────────────────────────────────────
   function handleRecoveryAction(presentation: BookingDenialPresentation) {
     switch (presentation.recoveryAction) {
-      case "redirect_to_assessment":
-        navigate("/assessment");
-        break;
-      case "redirect_to_payment":
-        // Sprint 3.2+ — payment route لم يُبنَ بعد
-        navigate("/consultation/start");
-        break;
-      case "resume_active_booking":
-        navigate("/consultation/booking");
-        break;
-      case "show_retry_dialog":
-        setDenial(null);
-        break;
-      case "contact_support":
-        navigate("/contact");
-        break;
-      default:
-        setDenial(null);
+      case "redirect_to_assessment":  navigate("/assessment"); break;
+      case "redirect_to_payment":     navigate("/consultation/start"); break;
+      case "resume_active_booking":   navigate("/consultation/booking"); break;
+      case "show_retry_dialog":       setDenial(null); break;
+      case "contact_support":         navigate("/contact"); break;
+      default:                        setDenial(null);
     }
   }
 
-  // ─ Render ──────────────────────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-gray-950">
       <div className="mx-auto max-w-2xl">
 
-        {/* Header */}
         <header className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900">
-            <svg
-              aria-hidden="true"
-              className="h-8 w-8 text-teal-600 dark:text-teal-300"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            >
+            <svg aria-hidden="true" className="h-8 w-8 text-teal-600 dark:text-teal-300"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round"
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -225,7 +224,6 @@ export default function ScreeningResult() {
           </p>
         </header>
 
-        {/* Assessment Summary */}
         {assessmentResult && (
           <section
             aria-label="ملخص نتائج التقييم"
@@ -249,7 +247,6 @@ export default function ScreeningResult() {
           </section>
         )}
 
-        {/* Denial Card */}
         {denial && !showConfirm && (
           <div className="mb-6">
             <DenialCard
@@ -259,7 +256,6 @@ export default function ScreeningResult() {
           </div>
         )}
 
-        {/* CTA — Start Booking */}
         <div className="text-center">
           <button
             onClick={handleStartBooking}
@@ -272,14 +268,11 @@ export default function ScreeningResult() {
                 <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10"
                     stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
                 جاري التحضير...
               </span>
-            ) : (
-              "احجز استشارتك المجانية الآن"
-            )}
+            ) : "احجز استشارتك المجانية الآن"}
           </button>
           <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
             سيتم اختيار الأخصائي الأنسب بناءً على نتائج تقييمك
@@ -288,18 +281,11 @@ export default function ScreeningResult() {
 
       </div>
 
-      {/* Resume Confirmation Dialog */}
       {showConfirm && denial && (
         <ConfirmResumeDialog
           presentation={denial}
-          onConfirm={() => {
-            setShowConfirm(false);
-            handleRecoveryAction(denial);
-          }}
-          onDismiss={() => {
-            setShowConfirm(false);
-            setDenial(null);
-          }}
+          onConfirm={() => { setShowConfirm(false); handleRecoveryAction(denial); }}
+          onDismiss={() => { setShowConfirm(false); setDenial(null); }}
         />
       )}
     </main>
