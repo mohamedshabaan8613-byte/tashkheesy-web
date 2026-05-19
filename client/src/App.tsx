@@ -169,11 +169,6 @@ function ConsultationIntroNoIndex() {
   );
 }
 
-/**
- * ConsultationBookingNoIndex — Sprint 3.0c
- * Route: /consultation/booking
- * السياقي: يقرأ intent من ConsultationContext ويُظهر سياق التقييم.
- */
 function ConsultationBookingNoIndex() {
   return (
     <SensitiveNoIndex>
@@ -215,7 +210,7 @@ function Router() {
         <Route path="/choose-child-path/:childId" component={ChooseChildPathWrapper} />
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
-        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────── */}
+        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0+) ────────────────────── */}
         <Route path="/consultation/start"   component={ConsultationIntroNoIndex} />
         <Route path="/consultation/booking" component={ConsultationBookingNoIndex} />
 
@@ -255,17 +250,34 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
           {/*
-           * ConsultationProvider — Sprint 3.0a
-           * ConsultationBookingProvider — Sprint 3.1 Priority 2
+           * ─── Provider Tree — Runtime Coordinator Architecture ──────────
            *
-           * الترتيب مقصود:
-           *   ConsultationProvider   → intent + flow phase (WHY + WHERE)
-           *   ConsultationBookingProvider → booking session + lifecycle (HOW)
+           * الترتيب محدد ومقصود:
            *
-           * ConsultationBookingProvider داخل ConsultationProvider لأن:
-           *   - booking يحتاج intent جاهز عند startBookingSession
-           *   - لكنه لا يقرأ ConsultationContext مباشرة (فصل كامل)
-           *   - التداخل في الشجرة ≠ التداخل في المنطق
+           *   ConsultationProvider
+           *     → WHY + WHERE: intent + flow phase
+           *     → يُحدد سبب الحجز ومصدره (تقييم / مباشر / إحالة)
+           *
+           *   ConsultationBookingProvider
+           *     → HOW: booking session + lifecycle + runtime
+           *     → Runtime Coordinator الوحيد للـ booking workflow:
+           *         • hydration lifecycle (hydrateOnce guard)
+           *         • runtime safety validation (runtimeSafetyCheck)
+           *         • active booking recovery (recovery on mount)
+           *         • expiration monitoring (polling 60s)
+           *         • ownership state (ownershipToken)
+           *         • transition dispatching (transitionTo)
+           *         • booking runtime cache (sessionRef)
+           *
+           * ISOLATION RULE:
+           *   ConsultationBookingProvider لا يقرأ ConsultationContext مباشرة.
+           *   التداخل في الشجرة ≠ التداخل في المنطق.
+           *   البيانات تُمرر عبر startBookingSession() params فقط.
+           *
+           * MUTATION RULE:
+           *   لا توجد صفحة تُعدِّل booking phase مباشرة.
+           *   جميع الانتقالات تمر عبر transitionTo() في Provider.
+           * ────────────────────────────────────────────────────────────────
            */}
           <ConsultationProvider>
             <ConsultationBookingProvider>
