@@ -1,310 +1,200 @@
 /**
- * consultationBookingTypes.ts — Consultation Booking Domain Types
+ * consultationBookingTypes.ts — Sprint 3.1 Priority 2
  *
- * Sprint 3.1 — Business Layer Foundation
- * Priority 2: Booking Domain Isolation
+ * Domain types لـ Consultation Booking.
+ * مستقلة تمامًا عن generic booking system.
  *
- * هذا الملف يعرّف نطاق الحجز بشكل مستقل تماماً.
- *
- * الفرق المعماري الحاسم:
- *   ConsultationContext   → intent + flow phase (WHY + WHERE)
- *   ConsultationBookingContext → booking session + lifecycle (HOW)
- *
- * الترتيب المعماري:
- *   types (هنا) → lib/consultationBookingRepository.ts → context → hooks → UI
- *
- * لا تضع booking logic داخل ConsultationContext.
- * لا تضع consultation intent logic داخل BookingContext.
+ * المبدأ: ConsultationBookingSession هو domain object كامل،
+ * وليس مجرد state مبعثرة في React.
  */
 
-import type { ConsultationEntryPoint } from "./consultationTypes";
-import type {
-  ConsultationEntitlement,
-  BookingDenialReason,
-} from "./consultationEntitlements";
-
-// ---------------------------------------------------------------------------
-// Booking Lifecycle Phase
-// ---------------------------------------------------------------------------
-
+// ─── Booking Lifecycle Phases ──────────────────────────────────────────────
 /**
- * حالات دورة حياة الحجز.
+ * BookingLifecyclePhase — آلة حالة الحجز
  *
- * State Machine:
+ * الانتقالات المسموحة:
+ *   CREATED → SPECIALIST_SELECTION
+ *   SPECIALIST_SELECTION → SLOT_SELECTION
+ *   SLOT_SELECTION → REVIEW
+ *   REVIEW → CONFIRMED
+ *   CONFIRMED → COMPLETED
  *
- *   CREATED
- *     ↓
- *   SPECIALIST_SELECTION
- *     ↓
- *   SLOT_SELECTION
- *     ↓
- *   REVIEW
- *     ↓
- *   CONFIRMED
- *     ↓
- *   COMPLETED
- *
- * من أي حالة:
- *   CANCELLED — ألغى المستخدم بشكل صريح
- *   EXPIRED   — انتهت صلاحية الجلسة تلقائياً
- *   ABANDONED — غادر المستخدم بدون إلغاء
+ *   أي phase → CANCELLED | EXPIRED | ABANDONED
  */
 export type BookingLifecyclePhase =
-  | "CREATED"               // جلسة حجز منشأة، لم يبدأ بعد
-  | "SPECIALIST_SELECTION"  // يختار المتخصص
-  | "SLOT_SELECTION"        // اختار الموعد
-  | "REVIEW"                // مراجعة قبل التأكيد
-  | "CONFIRMED"             // تم التأكيد
-  | "COMPLETED"             // تمت الاستشارة فعلياً
-  | "CANCELLED"             // ألغى
-  | "EXPIRED"               // انتهت الصلاحية
-  | "ABANDONED";            // غادر بدون إلغاء
+  | "CREATED"               // تم إنشاء الجلسة، لم يبدأ بعد
+  | "SPECIALIST_SELECTION"  // المستخدم يختار الأخصائي
+  | "SLOT_SELECTION"        // المستخدم يختار الموعد
+  | "REVIEW"                // مراجعة الاختيارات قبل التأكيد
+  | "CONFIRMED"             // تم تأكيد الحجز
+  | "COMPLETED"             // اكتملت الجلسة
+  | "CANCELLED"             // ألغاه المستخدم
+  | "EXPIRED"               // انتهت صلاحية الجلسة أو entitlement
+  | "ABANDONED";            // غادر بدون إكمال (no interaction timeout)
 
+/** الفازات التي يمكن استئناف recovery منها */
+export const RECOVERABLE_PHASES: BookingLifecyclePhase[] = [
+  "SPECIALIST_SELECTION",
+  "SLOT_SELECTION",
+  "REVIEW",
+];
+
+/** الفازات النهائية التي لا يمكن الاستئناف منها */
+export const TERMINAL_PHASES: BookingLifecyclePhase[] = [
+  "CONFIRMED",
+  "COMPLETED",
+  "CANCELLED",
+  "EXPIRED",
+  "ABANDONED",
+];
+
+// ─── Entry Points ──────────────────────────────────────────────────────────
 /**
- * Transitions صالحة بين حالات دورة حياة الحجز.
- * مستخدمة كـ guards في consultationBookingRepository.
+ * من أين دخل المستخدم إلى consultation booking.
+ * يُستخدم لتخصيص المحتوى وتتبع قمع التحويل.
  */
-export type BookingLifecycleTransition =
-  | { from: "CREATED";              to: "SPECIALIST_SELECTION" }
-  | { from: "SPECIALIST_SELECTION"; to: "SLOT_SELECTION" }
-  | { from: "SPECIALIST_SELECTION"; to: "CANCELLED" }
-  | { from: "SPECIALIST_SELECTION"; to: "EXPIRED" }
-  | { from: "SLOT_SELECTION";       to: "REVIEW" }
-  | { from: "SLOT_SELECTION";       to: "SPECIALIST_SELECTION" }  // back
-  | { from: "SLOT_SELECTION";       to: "CANCELLED" }
-  | { from: "SLOT_SELECTION";       to: "EXPIRED" }
-  | { from: "REVIEW";               to: "CONFIRMED" }
-  | { from: "REVIEW";               to: "SLOT_SELECTION" }        // back
-  | { from: "REVIEW";               to: "CANCELLED" }
-  | { from: "CONFIRMED";            to: "COMPLETED" }
-  | { from: "CONFIRMED";            to: "CANCELLED" };
+export type BookingEntryPoint =
+  | "post_assessment"         // بعد إنهاء التقييم مباشرة
+  | "post_screening"          // بعد نتيجة الفحص
+  | "specialist_match"        // من صفحة مطابقة الأخصائيين
+  | "direct_navigation"       // دخل مباشرة على الرابط
+  | "consultation_intro";     // من ConsultationIntroPage
 
+// ─── Entitlement Types ─────────────────────────────────────────────────────
 /**
- * الحالات النهائية — لا يمكن الانتقال منها.
+ * نوع الاستحقاق — ماذا يحق للمستخدم حجزه.
+ * مؤقت الآن، سيُوسَّع عند ربط نظام الدفع.
  */
-export const BOOKING_TERMINAL_PHASES: ReadonlySet<BookingLifecyclePhase> =
-  new Set(["COMPLETED", "CANCELLED", "EXPIRED", "ABANDONED"]);
+export type BookingEntitlementType =
+  | "free_first_consultation"  // الجلسة الأولى المجانية
+  | "paid_consultation"        // جلسة مدفوعة
+  | "package_session"          // ضمن باقة
+  | "follow_up";               // متابعة بعد تقييم
 
+// ─── Booking Recovery State ───────────────────────────────────────────────
 /**
- * الحالات القابلة للاستعادة — Recovery ممكن.
+ * حالة الاسترداد — ماذا يفعل النظام عند refresh أو عودة المستخدم.
  */
-export const BOOKING_RECOVERABLE_PHASES: ReadonlySet<BookingLifecyclePhase> =
-  new Set(["SPECIALIST_SELECTION", "SLOT_SELECTION", "REVIEW"]);
+export type BookingRecoveryStatus =
+  | "fresh"           // جلسة جديدة، لا يوجد شيء للاسترداد
+  | "recovered"       // تم استرداد الجلسة بنجاح
+  | "invalidated"     // انتهى entitlement أثناء الحجز
+  | "rerouted"        // أُعيد التوجيه بسبب specialist unavailable
+  | "partial"         // استرداد جزئي (بعض البيانات فُقدت)
+  | "failed";         // فشل الاسترداد تماماً
 
-// ---------------------------------------------------------------------------
-// Booking Recovery State
-// ---------------------------------------------------------------------------
-
-/**
- * حالة Recovery لجلسة الحجز.
- * تُخزّن داخل ConsultationBookingSession.
- */
 export interface BookingRecoveryState {
-  /** هل تم استعادة هذه الجلسة من انقطاع */
-  wasRecovered: boolean;
-
-  /** سبب الانقطاع الأخير */
-  lastInterruptionReason?: BookingInterruptionReason;
-
-  /** عدد محاولات الاستعادة */
-  recoveryAttempts: number;
-
-  /** آخر وقت نشاط قبل الانقطاع */
-  lastActiveAt?: string;
-
-  /** الحالة التي كان فيها الحجز عند الانقطاع */
-  interruptedAtPhase?: BookingLifecyclePhase;
+  status: BookingRecoveryStatus;
+  recoveredAt?: string;        // ISO timestamp
+  recoveredPhase?: BookingLifecyclePhase;
+  failureReason?: string;
 }
 
+// ─── Specialist Recommendation ────────────────────────────────────────────
 /**
- * أسباب انقطاع الحجز.
+ * توصية الأخصائي — تأتي من نتيجة التقييم.
+ * قراءة فقط في booking context، لا يُعدَّل هنا.
  */
-export type BookingInterruptionReason =
-  | "page_refresh"          // تحديث الصفحة
-  | "browser_back"          // ضغط Back
-  | "navigation_away"       // تنقل لصفحة أخرى
-  | "entitlement_expired"   // انتهى الاستحقاق أثناء الحجز
-  | "specialist_unavailable" // المتخصص أصبح غير متاح
-  | "session_timeout";      // انتهت مدة الجلسة
+export interface SpecialistRecommendation {
+  specialistId: string;
+  matchScore: number;          // 0–100
+  matchReasons: string[];      // أسباب المطابقة من التقييم
+  assessmentSessionId: string; // الجلسة التي أنتجت التوصية
+}
 
-// ---------------------------------------------------------------------------
-// Consultation Booking Session
-// ---------------------------------------------------------------------------
-
+// ─── ConsultationBookingSession (Domain Object) ───────────────────────────
 /**
- * ConsultationBookingSession — الكيان المركزي لنطاق الحجز.
+ * ConsultationBookingSession — الـ domain object المركزي.
  *
- * هذا هو domain object المستقل الوحيد.
- * كل booking state يجب أن يعيش هنا — ليس scattered.
- *
- * فرق حاسم:
- *   ConsultationIntent   = context (لا يتغيّر)
- *   ConsultationBookingSession = booking runtime state (يتغيّر)
+ * هذا ليس React state — يُخزَّن في repository مستقل
+ * ويعيش طوال دورة حياة الحجز حتى بعد page refresh.
  */
 export interface ConsultationBookingSession {
-  // -------------------------------------------------------------------------
-  // Identity
-  // -------------------------------------------------------------------------
+  // ── Identity ──────────────────────────────────────────
+  sessionId: string;              // UUID فريد لهذه الجلسة
+  consultationIntentId: string;   // يربطها بـ ConsultationContext intent
 
-  /** UUID فريد لهذه الجلسة */
-  sessionId: string;
+  // ── Lifecycle ─────────────────────────────────────────
+  bookingFlowPhase: BookingLifecyclePhase;
+  createdAt: string;              // ISO timestamp
+  lastActivityAt: string;         // آخر نشاط — يُستخدم لـ ABANDONED detection
+  expiresAt: string;              // TTL — 2 ساعة من الإنشاء
 
-  /** معرّف النية المرتبطة */
-  consultationIntentId: string;
+  // ── Entry Context ─────────────────────────────────────
+  entryPoint: BookingEntryPoint;
+  assessmentSessionId?: string;   // إذا جاء من تقييم
+  entitlementType: BookingEntitlementType;
 
-  // -------------------------------------------------------------------------
-  // Context (read from ConsultationIntent at creation time)
-  // -------------------------------------------------------------------------
-
-  /** من أين جاء المستخدم */
-  entryPoint: ConsultationEntryPoint;
-
-  /** معرّف جلسة التقييم المرتبطة */
-  assessmentSessionId?: string;
-
-  /** نوع الاستحقاق عند بدء الجلسة */
-  entitlementType: ConsultationEntitlement;
-
-  // -------------------------------------------------------------------------
-  // Lifecycle
-  // -------------------------------------------------------------------------
-
-  /** الحالة الحالية في دورة حياة الحجز */
-  bookingStatus: BookingLifecyclePhase;
-
-  /** وقت إنشاء الجلسة */
-  createdAt: string;
-
-  /** آخر نشاط */
-  lastActivityAt: string;
-
-  /** وقت التأكيد النهائي */
-  confirmedAt?: string;
-
-  // -------------------------------------------------------------------------
-  // Selection State
-  // -------------------------------------------------------------------------
-
-  /** معرّف المتخصص المختار */
-  selectedSpecialistId?: string;
-
-  /** معرّف الموعد المختار */
-  selectedSlotId?: string;
-
-  /**
-   * معرّف المتخصص المقترح (ليس المختار).
-   * سيُملأ في Sprint 3.1 Priority 4 (Specialist Recommendation Engine).
-   */
-  recommendedSpecialistId?: string;
-
-  // -------------------------------------------------------------------------
-  // Recovery
-  // -------------------------------------------------------------------------
-
-  /** حالة recovery الحجز */
+  // ── Recovery ──────────────────────────────────────────
   recoveryState: BookingRecoveryState;
 
-  // -------------------------------------------------------------------------
-  // Denial
-  // -------------------------------------------------------------------------
+  // ── Selections ────────────────────────────────────────
+  selectedSpecialistId?: string;
+  selectedSlotId?: string;
+  specialistRecommendation?: SpecialistRecommendation;
 
-  /**
-   * سبب الرفض إن وجد.
-   * يُستخدم في حالة CANCELLED أو EXPIRED.
-   */
-  denialReason?: BookingDenialReason;
+  // ── Status ────────────────────────────────────────────
+  bookingStatus: BookingLifecyclePhase; // alias لـ bookingFlowPhase للوضوح
 }
 
-// ---------------------------------------------------------------------------
-// Booking Metadata
-// ---------------------------------------------------------------------------
-
+// ─── Repository Interface ─────────────────────────────────────────────────
 /**
- * Metadata لـ analytics وتتبع دورة حياة الحجز.
- */
-export interface BookingMetadata {
-  /** معرّف الجلسة */
-  sessionId: string;
-
-  /** من أين جاء المستخدم */
-  entryPoint: ConsultationEntryPoint;
-
-  /** نوع الاستحقاق */
-  entitlementType: ConsultationEntitlement;
-
-  /** معرّف جلسة التقييم المرتبطة */
-  assessmentSessionId?: string;
-
-  /** هل تم استعادة الجلسة من انقطاع */
-  wasRecovered: boolean;
-
-  /** عدد محاولات الاستعادة */
-  recoveryAttempts: number;
-
-  /** وقت الإنشاء */
-  createdAt: string;
-
-  /** وقت التأكيد (إن تم) */
-  confirmedAt?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Booking Context Value
-// ---------------------------------------------------------------------------
-
-/**
- * الواجهة الرسمية لـ ConsultationBookingContext.
+ * ConsultationBookingRepository — الواجهة الرسمية للتخزين.
  *
- * مفصول تماماً عن ConsultationContextValue.
- * لا يجب أن يتقاطعا.
+ * السبب: لا تجعل الـ booking يعيش داخل React state فقط.
+ * حتى لو كانت الـ implementation الأولى sessionStorage،
+ * الواجهة مستعدة للترقية إلى Supabase لاحقًا.
  */
-export interface ConsultationBookingContextValue {
-  /** الجلسة النشطة حالياً (null إذا لم تبدأ) */
-  bookingSession: ConsultationBookingSession | null;
+export interface ConsultationBookingRepository {
+  save(session: ConsultationBookingSession): void;
+  load(sessionId: string): ConsultationBookingSession | null;
+  loadLatest(): ConsultationBookingSession | null;
+  invalidate(sessionId: string, reason: string): void;
+  clear(): void;
+}
 
-  /** الحالة الحالية — اختصار لـ bookingSession.bookingStatus */
-  bookingPhase: BookingLifecyclePhase | null;
+// ─── Lifecycle Transition Validation ─────────────────────────────────────
+const ALLOWED_TRANSITIONS: Partial<Record<BookingLifecyclePhase, BookingLifecyclePhase[]>> = {
+  CREATED: ["SPECIALIST_SELECTION", "CANCELLED", "ABANDONED"],
+  SPECIALIST_SELECTION: ["SLOT_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
+  SLOT_SELECTION: ["REVIEW", "SPECIALIST_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
+  REVIEW: ["CONFIRMED", "SLOT_SELECTION", "CANCELLED", "EXPIRED"],
+  CONFIRMED: ["COMPLETED", "CANCELLED"],
+  COMPLETED: [],
+  CANCELLED: [],
+  EXPIRED: [],
+  ABANDONED: [],
+};
 
-  /** هل توجد جلسة نشطة؟ */
-  hasActiveBooking: boolean;
+/**
+ * يتحقق من أن الانتقال بين فازتين مسموح به.
+ * يمنع الانتقالات غير الصحيحة قبل حدوثها.
+ */
+export function isValidTransition(
+  from: BookingLifecyclePhase,
+  to: BookingLifecyclePhase
+): boolean {
+  return ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
+}
 
-  /** هل تم استعادة هذه الجلسة من انقطاع؟ */
-  wasSessionRecovered: boolean;
+/**
+ * يُنشئ sessionId فريد (UUID v4 آمن).
+ */
+export function generateBookingSessionId(): string {
+  return `bks_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
 
-  // -------------------------------------------------------------------------
-  // Actions
-  // -------------------------------------------------------------------------
+/**
+ * يحسب تاريخ انتهاء صلاحية الجلسة (2 ساعة).
+ */
+export function calculateBookingExpiry(fromDate = new Date()): string {
+  const expiry = new Date(fromDate.getTime() + 2 * 60 * 60 * 1000);
+  return expiry.toISOString();
+}
 
-  /** إنشاء جلسة حجز جديدة */
-  startBookingSession: (
-    intentId: string,
-    entryPoint: ConsultationEntryPoint,
-    entitlementType: ConsultationEntitlement,
-    assessmentSessionId?: string
-  ) => ConsultationBookingSession;
-
-  /** الانتقال إلى الحالة التالية */
-  advanceBookingPhase: (
-    to: BookingLifecyclePhase
-  ) => boolean; // returns false if transition invalid
-
-  /** تحديث اختيار المتخصص */
-  selectSpecialist: (specialistId: string) => void;
-
-  /** تحديث اختيار الموعد */
-  selectSlot: (slotId: string) => void;
-
-  /** إلغاء جلسة الحجز مع سبب */
-  cancelBookingSession: (reason?: BookingDenialReason) => void;
-
-  /** مسح جلسة الحجز بالكامل */
-  clearBookingSession: () => void;
-
-  /** استعادة الجلسة بعد انقطاع */
-  recoverBookingSession: (
-    reason: BookingInterruptionReason
-  ) => ConsultationBookingSession | null;
-
-  /** الـ metadata الحالية لـ analytics */
-  getBookingMetadata: () => BookingMetadata | null;
+/**
+ * يتحقق من أن الجلسة لم تنته صلاحيتها.
+ */
+export function isSessionExpired(session: ConsultationBookingSession): boolean {
+  return new Date(session.expiresAt) < new Date();
 }
