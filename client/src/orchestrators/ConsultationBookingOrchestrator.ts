@@ -1,181 +1,188 @@
 /**
- * ConsultationBookingOrchestrator.ts — Sprint 3.1 Pre-Priority-3
+ * ConsultationBookingOrchestrator.ts — Sprint 3.1 Priority 3
  *
- * طبقة orchestration بين UI و ConsultationBookingContext.
- *
- * المبدأ:
- *   UI → Orchestrator → BookingContext → Repository
- *
- *   وليس:
- *   UI → startBookingSession() مباشرة
- *
- * لماذا orchestrator وليس UI مباشرة؟
- *   - في Sprint 3.2+: entitlement check سيكون هنا، ليس في button click
- *   - في Sprint 3.3+: specialist availability check هنا
- *   - في Sprint 3.4+: backend validation هنا
- *   - الـ UI لا يعرف هذه التفاصيل — يرسل payload فقط
+ * Core orchestration layer — framework-agnostic و testable.
  *
  * ❌ لا يحتوي هذا الملف على:
  *   - React hooks
- *   - استدعاء أي Context
- *   - UI لوجيك
+ *   - useContext / useEffect / useState
+ *   - navigate() — الـ navigation في UI دائمًا
+ *   - import من ConsultationContext
+ *   - import من ConsultationBookingContext
  *
  * ✅ يحتوي فقط على:
- *   - Validation logic
- *   - Entitlement check (placeholder الآن)
- *   - Session creation payload building
- *   - تحويل النتيجة للـ hook المستخدم
+ *   - Pure validation functions
+ *   - Entitlement resolution logic
+ *   - Domain payload building
+ *   - BookingInitializationResult construction
+ *   - nextRoute resolution (يُعيد للـ UI ليس ينتقل بنفسه)
+ *
+ * المسار:
+ *   UI → useConsultationBooking() hook → orchestrator → BookingContext → Repository
  */
 
 import type {
+  BookingDenialReason,
   BookingEntitlementType,
   BookingEntryPoint,
+  BookingInitializationResult,
   ConsultationBookingSession,
+  ConsultationRoute,
+  RecoveryAction,
   SpecialistRecommendation,
 } from "../types/consultationBookingTypes";
+import { CONSULTATION_ROUTES } from "../types/consultationBookingTypes";
 
-// ─── Orchestrator Input ─────────────────────────────────────────────────
+// ─── Input Types ──────────────────────────────────────────────────────────
+
 /**
- * ما يرسله الـ UI إلى الـ orchestrator.
- * لا يحتوي على أي نتائج — فقط وصف النية.
+ * بيانات التقييم المختصرة التي ترسلها ScreeningResult.
+ * الـ orchestrator يبني payload الكامل داخليًا.
  */
-export interface BookingInitPayload {
-  /** من ConsultationContext.intent.intentId */
+export interface AssessmentBookingInput {
   consultationIntentId: string;
-  /** من أين دخل المستخدم */
-  entryPoint: BookingEntryPoint;
-  /** إذا جاء من تقييم */
-  assessmentSessionId?: string;
-  /** إذا كانت التوصية جاهزة من التقييم */
+  assessmentSessionId: string;
   specialistRecommendation?: SpecialistRecommendation;
 }
 
-// ─── Orchestrator Result ───────────────────────────────────────────────
-export type BookingInitResult =
-  | { ok: true;  session: ConsultationBookingSession }
-  | { ok: false; reason: "entitlement_expired" | "already_active" | "validation_failed"; message: string };
-
-// ─── Entitlement Resolution (placeholder Sprint 3.1) ─────────────────────
 /**
- * يحدد نوع الاستحقاق بناءً على المدخل.
- *
- * الآن (Sprint 3.1): بسيط — كل مدخل post_assessment يحصل free_first_consultation.
- * Sprint 3.2+: سيُربط بنظام الاشتراكات والدفع.
+ * بيانات دخول ConsultationIntroPage.
+ * أبسط — لا assessment لديها.
  */
-function resolveEntitlement(payload: BookingInitPayload): BookingEntitlementType {
-  switch (payload.entryPoint) {
+export interface IntroPageBookingInput {
+  consultationIntentId: string;
+}
+
+/** دالة الحقن — تستقبلها الـ orchestrator بدل import مباشر للـ Context */
+export type StartSessionFn = (params: {
+  consultationIntentId: string;
+  entryPoint: BookingEntryPoint;
+  entitlementType: BookingEntitlementType;
+  assessmentSessionId?: string;
+  specialistRecommendation?: SpecialistRecommendation;
+}) => ConsultationBookingSession;
+
+// ─── Internal Helpers ───────────────────────────────────────────────────────
+
+function resolveEntitlement(entryPoint: BookingEntryPoint): BookingEntitlementType {
+  switch (entryPoint) {
     case "post_assessment":
     case "post_screening":
       return "free_first_consultation";
-    case "specialist_match":
-    case "consultation_intro":
-      return "paid_consultation";
-    case "direct_navigation":
-      return "paid_consultation";
     default:
       return "paid_consultation";
   }
 }
 
-// ─── Validation ─────────────────────────────────────────────────────────
-function validatePayload(payload: BookingInitPayload): string | null {
-  if (!payload.consultationIntentId?.trim()) {
-    return "consultationIntentId مطلوب لبدء جلسة الحجز";
-  }
-  if (!payload.entryPoint) {
-    return "entryPoint مطلوب لـ orchestration";
-  }
+function resolveNextRoute(_entryPoint: BookingEntryPoint): ConsultationRoute {
+  // Sprint 3.1: جميع المداخل تصل إلى booking page.
+  // Sprint 3.3+: قد يتفرع بناءً على entitlementType (direct to payment etc.)
+  return CONSULTATION_ROUTES.BOOKING;
+}
+
+function makeDenial(
+  denialReason: BookingDenialReason,
+  denialMessage: string,
+  recoveryAction: RecoveryAction
+): BookingInitializationResult {
+  return { success: false, denialReason, denialMessage, recoveryAction };
+}
+
+function validateIntentId(id: string | undefined): string | null {
+  if (!id?.trim()) return "يجب توفير consultationIntentId لبدء الحجز";
   return null;
 }
 
-// ─── createBookingSession ──────────────────────────────────────────────
+// ─── Exported Core Functions (testable, framework-agnostic) ────────────────────────
+
 /**
- * createBookingSession — نقطة الدخول الوحيدة لإنشاء جلسة حجز.
+ * startFromAssessment — بدء حجز من ScreeningResult.
  *
- * يستدعى هذا من useConsultationBookingOrchestrator hook
- * الذي يجسّر بين الـ payload و startBookingSession().
- *
- * التحققات التي يجريها:
- *   1. تحقق payload (consultationIntentId + entryPoint)
- *   2. وضع entitlementType بناءً على entryPoint
- *   3. يحوّل النتيجة إلى BookingInitResult
- *
- * Sprint 3.2+:
- *   أضف هنا:
- *     - checkEntitlementFromBackend(userId)
- *     - checkSpecialistAvailability(specialistId)
- *     - debitEntitlement()
+ * قاعدة مهمة: ScreeningResult لا تبني BookingSessionPayload بنفسها.
+ * ترسل AssessmentBookingInput فقط، orchestrator يبني الباقي.
  */
-export function createBookingSession(
-  payload: BookingInitPayload,
-  startSession: (params: {
-    consultationIntentId: string;
-    entryPoint: BookingEntryPoint;
-    entitlementType: BookingEntitlementType;
-    assessmentSessionId?: string;
-    specialistRecommendation?: SpecialistRecommendation;
-  }) => ConsultationBookingSession
-): BookingInitResult {
-  // 1. Validation
-  const validationError = validatePayload(payload);
-  if (validationError) {
-    return { ok: false, reason: "validation_failed", message: validationError };
+export function startFromAssessment(
+  input: AssessmentBookingInput,
+  startSession: StartSessionFn
+): BookingInitializationResult {
+  const err = validateIntentId(input.consultationIntentId);
+  if (err) return makeDenial("validation_failed", err, "none");
+
+  if (!input.assessmentSessionId?.trim()) {
+    return makeDenial(
+      "validation_failed",
+      "يجب توفير assessmentSessionId للحجز بعد التقييم",
+      "redirect_to_assessment"
+    );
   }
 
-  // 2. Entitlement resolution
-  const entitlementType = resolveEntitlement(payload);
+  const entryPoint: BookingEntryPoint    = "post_assessment";
+  const entitlementType                  = resolveEntitlement(entryPoint);
+  const nextRoute                        = resolveNextRoute(entryPoint);
 
-  // 3. Create session via context
   const session = startSession({
-    consultationIntentId: payload.consultationIntentId,
-    entryPoint: payload.entryPoint,
+    consultationIntentId: input.consultationIntentId,
+    entryPoint,
     entitlementType,
-    assessmentSessionId: payload.assessmentSessionId,
-    specialistRecommendation: payload.specialistRecommendation,
+    assessmentSessionId: input.assessmentSessionId,
+    specialistRecommendation: input.specialistRecommendation,
   });
 
-  return { ok: true, session };
+  return {
+    success: true,
+    bookingSessionId: session.sessionId,
+    nextRoute,
+    entitlementType,
+    recoveryState: session.recoveryState,
+  };
 }
 
-// ─── useConsultationBookingOrchestrator (hook مساعد) ──────────────────────
 /**
- * useConsultationBookingOrchestrator — hook تستخدمه صفحات الدخول.
+ * startFromIntroPage — بدء حجز من ConsultationIntroPage.
  *
- * يجسّر بين الـ UI و orchestration layer.
- * الـ UI لا تستدعي startBookingSession() مباشرة.
- *
- * الاستخدام:
- * ```tsx
- * const { initBooking } = useConsultationBookingOrchestrator();
- *
- * const result = initBooking({
- *   consultationIntentId: intent.intentId,
- *   entryPoint: "post_assessment",
- *   assessmentSessionId: session.id,
- * });
- *
- * if (!result.ok) {
- *   showError(result.message);
- *   return;
- * }
- *
- * navigate("/consultation/booking");
- * ```
+ * لا يحتاج assessment — مدخل مباشر.
  */
-export function useConsultationBookingOrchestrator() {
-  // نتجنب import مباشر لـ ConsultationBookingContext هنا
-  // لذلك نستخدم dynamic import موجود في React core
-  const { useConsultationBooking } = require("../contexts/ConsultationBookingContext") as
-    { useConsultationBooking: () => { startBookingSession: (p: Parameters<typeof createBookingSession>[1]) => ConsultationBookingSession } };
+export function startFromIntroPage(
+  input: IntroPageBookingInput,
+  startSession: StartSessionFn
+): BookingInitializationResult {
+  const err = validateIntentId(input.consultationIntentId);
+  if (err) return makeDenial("validation_failed", err, "none");
 
-  const { startBookingSession } = useConsultationBooking();
+  const entryPoint: BookingEntryPoint    = "consultation_intro";
+  const entitlementType                  = resolveEntitlement(entryPoint);
+  const nextRoute                        = resolveNextRoute(entryPoint);
+
+  const session = startSession({
+    consultationIntentId: input.consultationIntentId,
+    entryPoint,
+    entitlementType,
+  });
 
   return {
-    /**
-     * initBooking — نقطة الدخول الوحيدة من الـ UI.
-     * تستدعي هذا بدل startBookingSession() مباشرة.
-     */
-    initBooking: (payload: BookingInitPayload): BookingInitResult =>
-      createBookingSession(payload, startBookingSession),
+    success: true,
+    bookingSessionId: session.sessionId,
+    nextRoute,
+    entitlementType,
+    recoveryState: session.recoveryState,
   };
+}
+
+/**
+ * النتيجة المتوقعة من دالة denialReason إلى recoveryAction.
+ * يستخدمه الـ UI hook adapter لإظهار الرسالة الصحيحة.
+ */
+export function getRecoveryActionForDenial(reason: BookingDenialReason): RecoveryAction {
+  const map: Record<BookingDenialReason, RecoveryAction> = {
+    entitlement_expired:        "redirect_to_payment",
+    already_active:             "resume_active_booking",
+    validation_failed:          "none",
+    assessment_expired:         "redirect_to_assessment",
+    specialist_unavailable:     "show_retry_dialog",
+    payment_required:           "redirect_to_payment",
+    geo_restriction:            "contact_support",
+    parental_consent_required:  "contact_support",
+    unknown:                    "contact_support",
+  };
+  return map[reason];
 }

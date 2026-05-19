@@ -1,33 +1,35 @@
 /**
- * consultationBookingTypes.ts — Sprint 3.1 Priority 2 (updated pre-P3)
+ * consultationBookingTypes.ts — Sprint 3.1 Priority 3
  *
  * Domain types لـ Consultation Booking.
  * مستقلة تمامًا عن generic booking system.
- *
- * المبدأ: ConsultationBookingSession هو domain object كامل،
- * وليس مجرد state مبعثرة في React.
  */
 
 // ─── Lifecycle Future Marker ──────────────────────────────────────────────
 /**
  * NOTE — Lifecycle intentionally simplified for Sprint 3.1.
  *
- * المراحل التي ستُضاف في Sprint 3.2+ عند ربط نظام الدفع والجدولة:
+ * المراحل التي ستُضاف في Sprint 3.2+:
+ *   CONFIRMED → PENDING_PAYMENT → PAID → SCHEDULED → COMPLETED
  *
- *   CONFIRMED
- *     ↓
- *   PENDING_PAYMENT    ←── مرحلة Sprint 3.2
- *     ↓
- *   PAID               ←── مرحلة Sprint 3.2
- *     ↓
- *   SCHEDULED          ←── مرحلة Sprint 3.3 (calendar sync)
- *     ↓
- *   COMPLETED
- *
- * لا تغيّر هذا الملف لإضافة تلك المراحل — أنشئ ملف جديد:
- *   types/consultationBookingPaymentTypes.ts
+ * لا تغيّر هذا الملف — أنشئ types/consultationBookingPaymentTypes.ts
  */
 export const LIFECYCLE_NOTE = "simplified_sprint_3.1" as const;
+
+// ─── Route Constants ───────────────────────────────────────────────────
+/**
+ * CONSULTATION_ROUTES — ثوابت الروابط لـ booking flow.
+ *
+ * المبدأ: الـ orchestrator يُعيد nextRoute،
+ * والـ UI يستدعي navigate().
+ * الـ navigation لا تحدث أبدًا داخل orchestrator.
+ */
+export const CONSULTATION_ROUTES = {
+  START:   "/consultation/start",
+  BOOKING: "/consultation/booking",
+} as const;
+
+export type ConsultationRoute = typeof CONSULTATION_ROUTES[keyof typeof CONSULTATION_ROUTES];
 
 // ─── Booking Lifecycle Phases ──────────────────────────────────────────────
 export type BookingLifecyclePhase =
@@ -71,29 +73,20 @@ export type BookingEntitlementType =
   | "follow_up";
 
 // ─── Recovery Reason Taxonomy ──────────────────────────────────────────────
-/**
- * BookingRecoveryReason — taxonomy موحد للسبب.
- *
- * يُستخدم في:
- *   - analytics: أي سبب الأكثر تكرارًا؟
- *   - debugging: مسار المستخدم بالضبط
- *   - support: دعم العميل عند الفشل
- *   - medical auditing: تتبع سبب إلغاء جلسة HealthTech
- */
 export type BookingRecoveryReason =
-  | "page_refresh"              // F5 / إعادة تحميل
-  | "browser_back"              // زر back في أثناء الحجز
-  | "tab_restore"               // استعادة تبويب مغلق
-  | "ttl_expired"               // انتهت صلاحية الجلسة (ساعتان)
-  | "specialist_removed"        // الأخصائي أُزيل أثناء الحجز
-  | "specialist_unavailable"    // الأخصائي لا يوجد في الوقت المحدد
-  | "entitlement_invalidated"   // انتهت الاستحقاق أثناء التدفق
-  | "entitlement_expired"       // انتهى وقت الاستحقاق
-  | "session_corrupted"         // بيانات تالفة في sessionStorage
-  | "user_cancelled"            // ألغى المستخدم بنفسه
-  | "inactivity_timeout"        // تجاوز وقت الخمول
-  | "orchestrator_validation"   // فشل تحقق orchestrator
-  | "mount_ttl_check";          // اكتشف عند mount أن الجلسة منتهية
+  | "page_refresh"
+  | "browser_back"
+  | "tab_restore"
+  | "ttl_expired"
+  | "specialist_removed"
+  | "specialist_unavailable"
+  | "entitlement_invalidated"
+  | "entitlement_expired"
+  | "session_corrupted"
+  | "user_cancelled"
+  | "inactivity_timeout"
+  | "orchestrator_validation"
+  | "mount_ttl_check";
 
 // ─── Booking Recovery State ───────────────────────────────────────────────
 export type BookingRecoveryStatus =
@@ -106,12 +99,65 @@ export type BookingRecoveryStatus =
 
 export interface BookingRecoveryState {
   status: BookingRecoveryStatus;
-  reason?: BookingRecoveryReason;     // ← taxonomy موحد بدل failureReason string حر
+  reason?: BookingRecoveryReason;
   recoveredAt?: string;
   recoveredPhase?: BookingLifecyclePhase;
-  /** تفاصيل إضافية للـ support / medical audit */
   auditNote?: string;
 }
+
+// ─── Booking Denial ──────────────────────────────────────────────────────────
+/**
+ * BookingDenialReason — لماذا رُفض الحجز.
+ * كل سبب يمثّل حالة UI مختلفة.
+ */
+export type BookingDenialReason =
+  | "entitlement_expired"       // انتهى الاستحقاق
+  | "already_active"            // يوجد حجز نشط بالفعل
+  | "validation_failed"         // بيانات ناقصة أو خاطئة
+  | "assessment_expired"        // انتهت صلاحية التقييم (Sprint 3.2+)
+  | "specialist_unavailable"    // لا يوجد أخصائي متاح (Sprint 3.3+)
+  | "payment_required"          // يجب الدفع أولاً (Sprint 3.2+)
+  | "geo_restriction"           // قيود جغرافية (Sprint 4+)
+  | "parental_consent_required" // موافقة ولي الأمر مطلوبة (Sprint 4+)
+  | "unknown";                   // خطأ غير متوقع
+
+/**
+ * RecoveryAction — ماذا يفعل النظام عند الرفض.
+ * يُحوّل الـ UI هذا إلى فعل بناءً على الحالة.
+ */
+export type RecoveryAction =
+  | "redirect_to_assessment"    // أعد التقييم
+  | "redirect_to_payment"       // ادفع أولاً
+  | "show_retry_dialog"         // أعد المحاولة
+  | "resume_active_booking"     // استأنف الحجز النشط
+  | "contact_support"           // تواصل مع الدعم
+  | "none";                     // لا إجراء ممكن
+
+// ─── BookingInitializationResult ───────────────────────────────────────────────
+/**
+ * BookingInitializationResult — نتيجة initBooking().
+ *
+ * المبدأ:
+ *   - success: تـ UI يعرف nextRoute ويستدعي navigate()
+ *   - failure: الـ UI يعرف denialReason ويتصرف بناءً عليه
+ *
+ * الـ navigation لا تحدث أبدًا داخل orchestrator.
+ * orchestrator يعرف nextRoute لكنه لا يتنقل بنفسه.
+ */
+export type BookingInitializationResult =
+  | {
+      success: true;
+      bookingSessionId: string;
+      nextRoute: ConsultationRoute;
+      entitlementType: BookingEntitlementType;
+      recoveryState?: BookingRecoveryState;
+    }
+  | {
+      success: false;
+      denialReason: BookingDenialReason;
+      denialMessage: string;
+      recoveryAction: RecoveryAction;
+    };
 
 // ─── Specialist Recommendation ────────────────────────────────────────────
 export interface SpecialistRecommendation {
@@ -123,65 +169,33 @@ export interface SpecialistRecommendation {
 
 // ─── ConsultationBookingSession (Domain Object) ───────────────────────────
 export interface ConsultationBookingSession {
-  // ── Identity ──────────────────────────────────────────
   sessionId: string;
   consultationIntentId: string;
-
-  // ── Lifecycle ─────────────────────────────────────────
   bookingFlowPhase: BookingLifecyclePhase;
   createdAt: string;
   lastActivityAt: string;
   expiresAt: string;
-
-  /**
-   * lifecycleVersion — يتتبع نسخة الـ machine.
-   * عند إضافة PENDING_PAYMENT في Sprint 3.2،
-   * يُرفع إلى "v2" حتى نتجنب migration breakage.
-   */
+  /** v1 = Sprint 3.1 simplified machine. v2 = Sprint 3.2+ payment phases. */
   lifecycleVersion: "v1";
-
-  // ── Entry Context ─────────────────────────────────────
   entryPoint: BookingEntryPoint;
   assessmentSessionId?: string;
   entitlementType: BookingEntitlementType;
-
-  // ── Recovery ──────────────────────────────────────────
   recoveryState: BookingRecoveryState;
-
-  // ── Selections ────────────────────────────────────────
   selectedSpecialistId?: string;
   selectedSlotId?: string;
   specialistRecommendation?: SpecialistRecommendation;
-
-  // ── Status ────────────────────────────────────────────
   bookingStatus: BookingLifecyclePhase;
 }
 
-// ─── Repository Interface (with activeBookingSessionId) ──────────────────────
-/**
- * ConsultationBookingRepository — تحديث pre-Priority-3
- *
- * أضفنا activeBookingSessionId بدل implicit latest.
- *
- * لماذا;
- *   - مستقبلًا: follow-up booking + school bookings + multiple children
- *   - loadLatest() ستكسر إذا كان implicit by timestamp
- *   - activeBookingSessionId صريح ومتحكّم فيه
- */
+// ─── Repository Interface ─────────────────────────────────────────────────
 export interface ConsultationBookingRepository {
   save(session: ConsultationBookingSession): void;
   load(sessionId: string): ConsultationBookingSession | null;
-
-  /** يحدد الجلسة النشطة صراحةً */
   setActive(sessionId: string): void;
-  /** يُعيد معرف الجلسة النشطة */
   getActiveId(): string | null;
-  /** يحمِّل الجلسة النشطة مباشرة */
   loadActive(): ConsultationBookingSession | null;
-
-  /** ‹legacy› يُعيد الجلسة النشطة (loadActive alias) */
+  /** @deprecated استخدم loadActive() */
   loadLatest(): ConsultationBookingSession | null;
-
   invalidate(sessionId: string, reason: BookingRecoveryReason): void;
   clearActive(): void;
   clear(): void;
@@ -189,21 +203,18 @@ export interface ConsultationBookingRepository {
 
 // ─── Lifecycle Transition Validation ─────────────────────────────────────
 const ALLOWED_TRANSITIONS: Partial<Record<BookingLifecyclePhase, BookingLifecyclePhase[]>> = {
-  CREATED: ["SPECIALIST_SELECTION", "CANCELLED", "ABANDONED"],
+  CREATED:              ["SPECIALIST_SELECTION", "CANCELLED", "ABANDONED"],
   SPECIALIST_SELECTION: ["SLOT_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
-  SLOT_SELECTION: ["REVIEW", "SPECIALIST_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
-  REVIEW: ["CONFIRMED", "SLOT_SELECTION", "CANCELLED", "EXPIRED"],
-  CONFIRMED: ["COMPLETED", "CANCELLED"],
-  COMPLETED: [],
-  CANCELLED: [],
-  EXPIRED: [],
-  ABANDONED: [],
+  SLOT_SELECTION:       ["REVIEW", "SPECIALIST_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
+  REVIEW:               ["CONFIRMED", "SLOT_SELECTION", "CANCELLED", "EXPIRED"],
+  CONFIRMED:            ["COMPLETED", "CANCELLED"],
+  COMPLETED:            [],
+  CANCELLED:            [],
+  EXPIRED:              [],
+  ABANDONED:            [],
 };
 
-export function isValidTransition(
-  from: BookingLifecyclePhase,
-  to: BookingLifecyclePhase
-): boolean {
+export function isValidTransition(from: BookingLifecyclePhase, to: BookingLifecyclePhase): boolean {
   return ALLOWED_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
@@ -212,8 +223,7 @@ export function generateBookingSessionId(): string {
 }
 
 export function calculateBookingExpiry(fromDate = new Date()): string {
-  const expiry = new Date(fromDate.getTime() + 2 * 60 * 60 * 1000);
-  return expiry.toISOString();
+  return new Date(fromDate.getTime() + 2 * 60 * 60 * 1000).toISOString();
 }
 
 export function isSessionExpired(session: ConsultationBookingSession): boolean {
