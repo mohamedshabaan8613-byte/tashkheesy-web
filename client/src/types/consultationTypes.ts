@@ -1,29 +1,60 @@
 /**
  * consultationTypes.ts — Consultation Journey Type Definitions
  *
- * Sprint 3.0a | Issue #55 — ConsultationContext type definition
+ * Sprint 3.0 Stabilization — Architecture Review
  *
- * هذا الملف هو المصدر الوحيد لكل أنواع consultation journey.
- * يجب ألا تُعرَّف هذه الأنواع في أي مكان آخر.
+ * تغييرات هذا الإصدار:
+ *   • فصل ConsultationFlowPhase (حالة الرحلة الداخلية) عن ConsultationIntent (سياق الدخول)
+ *   • إضافة CONSULTATION_ROUTES registry للقضاء على hardcoded routes
+ *   • إضافة ConsultationNavigationState لطبقة الـ recovery
+ *   • إضافة ConsultationFlowTransition للـ state machine guards
+ *   • تعليم intent.confirmed كـ @deprecated
  *
  * المستخدمون:
  *   - ConsultationContext.tsx
  *   - useConsultationFlow.ts
- *   - ConsultationIntroPage.tsx (Sprint 3.0b)
+ *   - consultationHydration.ts
+ *   - ConsultationIntroPage.tsx
  *   - BookingPage.tsx (Sprint 3.0c)
  */
 
 import type { PathType, AssessmentMode } from "../lib/assessmentTypes";
 
 // ---------------------------------------------------------------------------
-// نقطة دخول المستخدم إلى consultation
+// Route Registry — مصدر وحيد لجميع consultation routes
 // ---------------------------------------------------------------------------
 
 /**
- * من أين وصل المستخدم إلى شاشة الاستشارة؟
+ * Route Registry لكل consultation routes.
  *
- * - assessment_result  : وصل مباشرة من نتيجة تقييم ذاتي أو تقييم طفل
- * - direct_booking     : ضغط "احجز استشارة" من nav أو landing مباشرة
+ * أي تغيير في مسار يجب أن يتم هنا فقط — وينعكس تلقائياً على كل الـ hook، context،
+ * والـ URL builders.
+ *
+ * ⚠️ يجب أن تتطابق هذه القيم مع Routes المعرفة في App.tsx
+ */
+export const CONSULTATION_ROUTES = {
+  /** شاشة intro السياقي بعد التقييم أو الدخول المباشر */
+  START: "/consultation/start",
+  /** صفحة الحجز السياقي (مستقبل — Sprint 3.0c) */
+  BOOKING: "/consultation/booking",
+  /** صفحة الحجز العام (generic fallback) */
+  BOOKING_GENERIC: "/booking",
+  /** صفحة نجاح الحجز (مستقبل — Sprint 3.1) */
+  SUCCESS: "/consultation/success",
+} as const;
+
+export type ConsultationRoute =
+  (typeof CONSULTATION_ROUTES)[keyof typeof CONSULTATION_ROUTES];
+
+// ---------------------------------------------------------------------------
+// Entry Point — من أين جاء المستخدم?
+// ---------------------------------------------------------------------------
+
+/**
+ * من أين وصل المستخدم إلى شاشة الاستشارة?
+ *
+ * - assessment_result  : وصل مباشرة من نتيجة تقييم
+ * - direct_booking     : ضغط “احجز استشارة” من nav أو landing
  * - follow_up          : لديه جلسة سابقة ويريد متابعة
  * - returning_user     : عاد للموقع وفتح consultation من dashboard
  */
@@ -34,126 +65,148 @@ export type ConsultationEntryPoint =
   | "returning_user";
 
 // ---------------------------------------------------------------------------
-// بيانات نتيجة التقييم التي تُمرَّر للـ consultation
+// Assessment Result Payload
 // ---------------------------------------------------------------------------
 
-/**
- * Payload كامل يصف نتيجة تقييم معيّن.
- * يُستخدم لتخصيص شاشة ConsultationIntro بناءً على السياق.
- */
 export interface AssessmentResultPayload {
-  /** معرّف الجلسة من screening_analytics أو localStorage */
   sessionId: string;
-
-  /** نوع المسار: تعلّم أو ADHD */
   pathType: PathType;
-
-  /** وضع التقييم: ذاتي / والد / legacy */
   assessmentMode: AssessmentMode;
-
-  /**
-   * مفتاح النتيجة كما هو في resultConfig
-   * مثال: "high_adhd", "mild_learning", "low_concern"
-   */
   resultKey: string;
-
-  /** اسم المُقيَّم (المستخدم نفسه أو الطفل) */
   subjectName: string;
-
-  /**
-   * عمر المُقيَّم بالسنوات (undefined للمستخدم البالغ غير المُدخَل)
-   */
   subjectAge?: number;
-
-  /**
-   * معرّف الطفل إذا كان التقييم لطفل (mode = parent)
-   * undefined إذا كان التقييم ذاتياً
-   */
   childId?: string;
-
-  /** ISO 8601 — وقت اكتمال التقييم */
   completedAt: string;
 }
 
 // ---------------------------------------------------------------------------
-// نيّة الحجز — القلب المعماري لـ Sprint 3.0
+// ConsultationIntent — السياق الثابت للرحلة (immutable after creation)
 // ---------------------------------------------------------------------------
 
 /**
- * ConsultationIntent يصف سبب وصول المستخدم لشاشة الاستشارة
- * وكل المعلومات السياقية اللازمة لتخصيص التجربة.
+ * ConsultationIntent يصف لماذا وصل المستخدم.
+ * يجب أن يبقى immutable context — لا يخلط طبقات flow runtime.
  *
- * يُخزَّن في sessionStorage لضمان الاستمرارية عبر navigation
- * دون الاعتماد على URL params أو React state الزائل.
+ * يُخزَّن في sessionStorage لضمان الاستمرارية عبر navigation.
  */
 export interface ConsultationIntent {
   /** من أين وصل المستخدم */
   entryPoint: ConsultationEntryPoint;
 
-  /**
-   * بيانات التقييم إذا كان entryPoint = "assessment_result"
-   * undefined في حالات الحجز المباشر
-   */
+  /** بيانات التقييم إذا كان entryPoint = "assessment_result" */
   assessmentResult?: AssessmentResultPayload;
 
-  /**
-   * معرّف الاستشارة السابقة إذا كان entryPoint = "follow_up"
-   */
+  /** معرّف الاستشارة السابقة إذا كان entryPoint = "follow_up" */
   previousConsultationId?: string;
 
-  /** ISO 8601 — وقت بدء هذه النية (للـ analytics) */
+  /** ISO 8601 — وقت بدء هذه النية */
   initiatedAt: string;
 
   /**
-   * هل تم تأكيد النية وانتقل المستخدم لخطوة الحجز الفعلية؟
-   * false = في شاشة intro، true = انتقل لـ booking
+   * @deprecated — لا تستخدم هذا الحقل لتحديد حالة الرحلة.
+   * بقي مؤقتاً للتوافق مع sessionStorage القديم فقط.
+   * حالة الرحلة من الآن تعيش داخل useConsultationFlow بواسطة:
+   * @see ConsultationFlowPhase
    */
-  confirmed: boolean;
+  confirmed?: boolean;
 }
 
 // ---------------------------------------------------------------------------
-// قيمة الـ Context
+// ConsultationFlowPhase — حالة runtime للرحلة (SEPARATE from intent)
 // ---------------------------------------------------------------------------
 
 /**
- * ما يُعرضه ConsultationContext لكل consumer.
+ * حالة runtime للمستخدم داخل consultation journey.
+ *
+ * هذا هو التصحيح المعماري الحقيقي:
+ * ConsultationIntent = لماذا جاء المستخدم (context)
+ * ConsultationFlowPhase = أين أصبح داخل الرحلة (runtime state)
+ *
+ * State Machine:
+ * IDLE → INTRO → BOOKING → SUCCESS
+ *            ⇓          ⇓
+ *          EXITED      EXITED
+ *            ⇓
+ *          ERROR
  */
-export interface ConsultationContextValue {
-  /** النية الحالية — null إذا لم تُعيَّن بعد */
-  intent: ConsultationIntent | null;
-
-  /**
-   * يعيّن النية ويحفظها في sessionStorage.
-   * يُستدعى من: نتيجة التقييم، زر الحجز المباشر، صفحة المتابعة.
-   */
-  setIntent: (intent: ConsultationIntent) => void;
-
-  /**
-   * يمسح النية بعد اكتمال الحجز أو مغادرة المستخدم.
-   */
-  clearIntent: () => void;
-
-  /**
-   * Helper: هل وصل المستخدم من تقييم؟
-   */
-  isFromAssessment: boolean;
-
-  /**
-   * Helper: هل توجد نية نشطة غير منتهية؟
-   */
-  hasActiveIntent: boolean;
-}
-
-// ---------------------------------------------------------------------------
-// حالة التدفق الداخلية لـ useConsultationFlow
-// ---------------------------------------------------------------------------
+export type ConsultationFlowPhase =
+  | "IDLE"     // لا توجد نية نشطة
+  | "INTRO"    // في شاشة intro
+  | "BOOKING"  // في شاشة الحجز
+  | "SUCCESS"  // تم تأكيد الحجز
+  | "EXITED"   // غادر الرحلة
+  | "ERROR";   // خطأ في أحد الخطوات
 
 /**
- * الحالات الممكنة لرحلة المستخدم داخل consultation flow.
+ * @deprecated — استخدم ConsultationFlowPhase بدلاً من هذا.
+ * محتفظ به مؤقتاً لتجنب breaking changes.
  */
 export type ConsultationFlowState =
-  | "idle"           // لا توجد نية نشطة
-  | "intro"          // في شاشة intro (بعد assessment أو direct)
-  | "booking"        // في شاشة الحجز الفعلية
-  | "confirmed"      // تم تأكيد الحجز
-  | "error";         // خطأ في أحد الخطوات
+  | "idle"
+  | "intro"
+  | "booking"
+  | "confirmed"
+  | "error";
+
+// ---------------------------------------------------------------------------
+// State Machine Guards
+// ---------------------------------------------------------------------------
+
+/**
+ * Transitions صالحة بين الحالات.
+ * تستخدم لاتخاذ قرارات التنقل داخل useConsultationFlow.
+ */
+export type ConsultationFlowTransition =
+  | { from: "IDLE";    to: "INTRO" }
+  | { from: "INTRO";   to: "BOOKING" }
+  | { from: "INTRO";   to: "EXITED" }
+  | { from: "BOOKING"; to: "SUCCESS" }
+  | { from: "BOOKING"; to: "EXITED" }
+  | { from: "BOOKING"; to: "ERROR" };
+
+// ---------------------------------------------------------------------------
+// Navigation Recovery State
+// ---------------------------------------------------------------------------
+
+/**
+ * حالة التنقل تستخدم لطبقة الـ recovery.
+ * تعبّر عن السياق الكامل للمستخدم عند أي نقطة.
+ */
+export interface ConsultationNavigationState {
+  /** الحالة الحالية */
+  phase: ConsultationFlowPhase;
+
+  /** مصدر النية عند استعادة التشغيل */
+  intentSource: "session" | "url" | "fresh" | "none";
+
+  /**
+   * هل تم استعادة الحالة بعد انقطاع مثل refresh أو redirect؟
+   */
+  wasRecovered: boolean;
+
+  /** URL الذي كان فيه المستخدم قبل الانقطاع */
+  previousPath?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Context Value
+// ---------------------------------------------------------------------------
+
+export interface ConsultationContextValue {
+  intent: ConsultationIntent | null;
+  setIntent: (intent: ConsultationIntent) => void;
+  clearIntent: () => void;
+  isFromAssessment: boolean;
+  hasActiveIntent: boolean;
+
+  /**
+   * عمر النية بالثواني — null إذا لا توجد نية
+   * يُستخدم لاكتشاف النيات المنتهية الصلاحية
+   */
+  intentAgeSeconds: number | null;
+
+  /**
+   * مصدر النية عند mount — للـ analytics والـ debugging
+   */
+  intentSource: "session" | "url" | "fresh" | "none";
+}

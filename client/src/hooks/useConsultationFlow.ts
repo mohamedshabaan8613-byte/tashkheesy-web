@@ -1,50 +1,39 @@
 /**
  * useConsultationFlow.ts — Consultation Journey Orchestration Hook
  *
- * Sprint 3.0a | Issue #56 — useConsultationFlow hook
+ * Sprint 3.0 Stabilization — Architecture Review
  *
- * هذا الـ hook هو الواجهة الوحيدة للتنقل داخل consultation journey.
- * يجمع ConsultationContext + wouter navigate في مكان واحد.
- *
- * الاستخدام:
- * // من صفحة نتيجة التقييم
- * const flow = useConsultationFlow();
- * flow.navigateToConsultation({
- *   entryPoint: "assessment_result",
- *   assessmentResult: { ... }
- * });
- *
- * // من زر الحجز المباشر
- * flow.navigateToConsultation({ entryPoint: "direct_booking" });
+ * تغييرات هذا الإصدار:
+ *   • كل الـ routes أصبحت تستخدم CONSULTATION_ROUTES registry
+ *   • إضافة flowPhase (ConsultationFlowPhase) منفصلة عن flowState
+ *   • confirmAndBook يستدعي setLocation مباشرة — لا useEffect side-channel
+ *   • إضافة canConfirm / canExit guards
+ *   • إضافة navigateToBookingDirect() للـ emergency fallback
  */
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useConsultationContext } from "../contexts/ConsultationContext";
-import type {
-  AssessmentResultPayload,
-  ConsultationEntryPoint,
-  ConsultationFlowState,
-  ConsultationIntent,
+import {
+  CONSULTATION_ROUTES,
+  type AssessmentResultPayload,
+  type ConsultationEntryPoint,
+  type ConsultationFlowPhase,
+  type ConsultationFlowState,
+  type ConsultationIntent,
 } from "../types/consultationTypes";
 
 // ---------------------------------------------------------------------------
-// URL builders — centralized route logic
+// URL builders — centralized, use CONSULTATION_ROUTES only
 // ---------------------------------------------------------------------------
 
-/**
- * بناء URL الحجز المباشر (الوجهة النهائية بعد تأكيد النية)
- */
 export function buildDirectBookingUrl(): string {
-  return "/booking";
+  return CONSULTATION_ROUTES.BOOKING_GENERIC;
 }
 
-/**
- * بناء URL intro بعد نتيجة تقييم.
- * يُمرَّر pathType + mode كـ query params للتخصيص البصري للصفحة.
- *
- * ⚠️ يجب أن يتطابق مع Route الموجود في App.tsx:
- * <Route path="/consultation/start" />
- */
+export function buildConsultationStartUrl(): string {
+  return CONSULTATION_ROUTES.START;
+}
+
 export function buildAssessmentResultUrl(
   payload: Pick<AssessmentResultPayload, "pathType" | "assessmentMode">
 ): string {
@@ -53,31 +42,17 @@ export function buildAssessmentResultUrl(
     path: payload.pathType,
     mode: payload.assessmentMode,
   });
-  return `/consultation/start?${params.toString()}`;
+  return `${CONSULTATION_ROUTES.START}?${params.toString()}`;
 }
 
-/**
- * بناء URL intro للدخول المباشر بدون سياق تقييم
- */
-export function buildConsultationStartUrl(): string {
-  return "/consultation/start";
-}
-
-/**
- * بناء URL متابعة جلسة سابقة
- */
 export function buildFollowUpUrl(previousConsultationId: string): string {
   const params = new URLSearchParams({
     from: "follow_up",
     ref: previousConsultationId,
   });
-  return `/consultation/start?${params.toString()}`;
+  return `${CONSULTATION_ROUTES.START}?${params.toString()}`;
 }
 
-/**
- * استخراج EntryPoint من URL params الحالية
- * (مفيد لـ ConsultationIntroPage عند reload أو direct URL access)
- */
 export function resolveEntryPoint(
   searchParams: URLSearchParams
 ): ConsultationEntryPoint {
@@ -93,33 +68,25 @@ export function resolveEntryPoint(
 }
 
 // ---------------------------------------------------------------------------
-// Hook
+// Hook return type
 // ---------------------------------------------------------------------------
 
 export interface UseConsultationFlowReturn {
-  /**
-   * الطريقة الرئيسية — تعيّن النية وتنقل لشاشة consultation intro.
-   */
   navigateToConsultation: (
     options: Omit<ConsultationIntent, "initiatedAt" | "confirmed">
   ) => void;
-
-  /**
-   * ينهي رحلة الاستشارة ويمسح النية.
-   * يُستدعى بعد اكتمال الحجز أو إلغاء المستخدم.
-   */
   exitFlow: () => void;
-
-  /**
-   * يُحدِّث النية بـ confirmed: true وينقل مباشرة لـ /booking.
-   * يُستدعى من زر "متابعة إلى الحجز" في ConsultationIntroPage.
-   */
   confirmAndBook: () => void;
-
-  /** الحالة الحالية للـ flow مشتقة من intent */
+  /** @deprecated — استخدم flowPhase بدلاً */
   flowState: ConsultationFlowState;
-
-  // Re-export URL builders للاستخدام المباشر من الـ components
+  /** حالة الرحلة الحقيقية — تستخدم هذا بدلاً من flowState */
+  flowPhase: ConsultationFlowPhase;
+  /** جاهز للتأكيد — false إذا لا توجد نية نشطة */
+  canConfirm: boolean;
+  /** جاهز للخروج — false عند IDLE و SUCCESS و EXITED */
+  canExit: boolean;
+  /** Emergency fallback: ينقل لـ /booking بدون تعديل intent */
+  navigateToBookingDirect: () => void;
   buildDirectBookingUrl: typeof buildDirectBookingUrl;
   buildAssessmentResultUrl: typeof buildAssessmentResultUrl;
   buildConsultationStartUrl: typeof buildConsultationStartUrl;
@@ -127,21 +94,42 @@ export interface UseConsultationFlowReturn {
   resolveEntryPoint: typeof resolveEntryPoint;
 }
 
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
 export function useConsultationFlow(): UseConsultationFlowReturn {
   const [, setLocation] = useLocation();
   const { intent, setIntent, clearIntent } = useConsultationContext();
 
-  // -------------------------------------------------------------------------
-  // Derive flowState from intent
-  // -------------------------------------------------------------------------
-  let flowState: ConsultationFlowState = "idle";
-  if (intent) {
-    flowState = intent.confirmed ? "booking" : "intro";
-  }
+  // ─ flowPhase — حالة runtime منفصلة عن intent
+  const flowPhase: ConsultationFlowPhase = useMemo(() => {
+    if (!intent) return "IDLE";
+    if (intent.confirmed) return "BOOKING";
+    return "INTRO";
+  }, [intent]);
 
-  // -------------------------------------------------------------------------
-  // navigateToConsultation — sets intent + navigates to /consultation/start
-  // -------------------------------------------------------------------------
+  // ─ flowState (محتفظ للتوافق الخلفي)
+  const flowState: ConsultationFlowState = useMemo(() => {
+    if (!intent) return "idle";
+    if (intent.confirmed) return "booking";
+    return "intro";
+  }, [intent]);
+
+  const canConfirm = useMemo(
+    () => flowPhase === "INTRO" && intent !== null,
+    [flowPhase, intent]
+  );
+
+  const canExit = useMemo(
+    () =>
+      flowPhase !== "IDLE" &&
+      flowPhase !== "SUCCESS" &&
+      flowPhase !== "EXITED",
+    [flowPhase]
+  );
+
+  // ─ navigateToConsultation
   const navigateToConsultation = useCallback(
     (options: Omit<ConsultationIntent, "initiatedAt" | "confirmed">) => {
       const newIntent: ConsultationIntent = {
@@ -183,31 +171,34 @@ export function useConsultationFlow(): UseConsultationFlowReturn {
     [setLocation, setIntent]
   );
 
-  // -------------------------------------------------------------------------
-  // confirmAndBook — الخطوة الأخيرة: من intro إلى /booking
-  // -------------------------------------------------------------------------
+  // ─ confirmAndBook — يستدعي setLocation مباشرة
   const confirmAndBook = useCallback(() => {
-    if (!intent) {
-      // Fallback: direct navigation even without intent
-      setLocation(buildDirectBookingUrl());
-      return;
+    if (intent) {
+      setIntent({ ...intent, confirmed: true });
     }
-    setIntent({ ...intent, confirmed: true });
-    setLocation(buildDirectBookingUrl());
+    // التنقل مباشرة — لا نعتمد على useEffect
+    setLocation(CONSULTATION_ROUTES.BOOKING_GENERIC);
   }, [intent, setIntent, setLocation]);
 
-  // -------------------------------------------------------------------------
-  // exitFlow
-  // -------------------------------------------------------------------------
+  // ─ exitFlow
   const exitFlow = useCallback(() => {
     clearIntent();
   }, [clearIntent]);
+
+  // ─ navigateToBookingDirect — emergency fallback
+  const navigateToBookingDirect = useCallback(() => {
+    setLocation(CONSULTATION_ROUTES.BOOKING_GENERIC);
+  }, [setLocation]);
 
   return {
     navigateToConsultation,
     exitFlow,
     confirmAndBook,
+    navigateToBookingDirect,
     flowState,
+    flowPhase,
+    canConfirm,
+    canExit,
     buildDirectBookingUrl,
     buildAssessmentResultUrl,
     buildConsultationStartUrl,
