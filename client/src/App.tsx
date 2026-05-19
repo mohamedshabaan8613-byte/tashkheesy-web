@@ -3,6 +3,7 @@ import { Route, Switch, useParams } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ConsultationProvider } from "./contexts/ConsultationContext";
 import WhatsAppButton from "./components/WhatsAppButton";
 import PageSkeleton from "./components/PageSkeleton";
 import { Toaster } from "@/components/ui/sonner";
@@ -28,7 +29,6 @@ const Impact       = lazy(() => import("./Impact"));
 const ChildrenPage    = lazy(() => import("./components/children/ChildrenPage"));
 const ScreeningPage   = lazy(() => import("./components/screening/ScreeningPage"));
 const ScreeningResult = lazy(() => import("./components/screening/ScreeningResult"));
-const ResultDemo      = lazy(() => import("./components/screening/ResultDemo"));
 const ScreeningIntro  = lazy(() => import("./components/screening/ScreeningIntro"));
 const AssessmentStart = lazy(() => import("./components/AssessmentStart"));
 const SelfAssessment  = lazy(() => import("./components/SelfAssessment"));
@@ -37,14 +37,22 @@ const SelfAssessment  = lazy(() => import("./components/SelfAssessment"));
 const ChooseChildPath  = lazy(() => import("./components/screening/ChooseChildPath"));
 const ChooseSelfPath   = lazy(() => import("./components/screening/ChooseSelfPath"));
 const SpecialistsMatch = lazy(() => import("./components/screening/SpecialistsMatch"));
+
 // ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────────────
 const Login   = lazy(() => import("./components/Login"));
 const Account = lazy(() => import("./components/Account"));
-// ─── لوحة الإدارة (Sprint 6B) ────────────────────────────────────────────
-const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
-// ─── معاينة النتائج الداخلية — للأدمن فقط (نُقلت من /result-demo) ───────
+
+// ─── لوحة الإدارة + معاينة النتائج (Sprint 6B) ─────────────────────────
+const AdminDashboard     = lazy(() => import("./components/AdminDashboard"));
 const AdminResultPreview = lazy(() => import("./components/screening/ResultDemo"));
-// ────────────────────────────────────────────────────────────────
+
+// ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────────────────
+const ConsultationIntroPage   = lazy(
+  () => import("./components/consultation/ConsultationIntroPage")
+);
+const ConsultationBookingPage = lazy(
+  () => import("./components/consultation/ConsultationBookingPage")
+);
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
 function SensitiveNoIndex({ children }: { children: ReactNode }) {
@@ -152,24 +160,45 @@ function SpecialistsMatchNoIndex() {
   return <SensitiveNoIndex><SpecialistsMatch /></SensitiveNoIndex>;
 }
 
+function ConsultationIntroNoIndex() {
+  return (
+    <SensitiveNoIndex>
+      <ConsultationIntroPage />
+    </SensitiveNoIndex>
+  );
+}
+
+/**
+ * ConsultationBookingNoIndex — Sprint 3.0c
+ * Route: /consultation/booking
+ * السياقي: يقرأ intent من ConsultationContext ويُظهر سياق التقييم.
+ */
+function ConsultationBookingNoIndex() {
+  return (
+    <SensitiveNoIndex>
+      <ConsultationBookingPage />
+    </SensitiveNoIndex>
+  );
+}
+
 function Router() {
   return (
     <Suspense fallback={<PageSkeleton />}>
       <Switch>
         {/* ─── الصفحات الرئيسية العامة القابلة للفهرسة ───────────────────── */}
-        <Route path="/"                  component={Home} />
-        <Route path="/services"          component={Services} />
-        <Route path="/pricing"           component={Pricing} />
-        <Route path="/team"              component={Team} />
-        <Route path="/knowledge"         component={Knowledge} />
-        <Route path="/contact"           component={Contact} />
-        <Route path="/privacy"           component={Privacy} />
-        <Route path="/disclaimer"        component={Disclaimer} />
-        <Route path="/terms"             component={Terms} />
-        <Route path="/refund-policy"     component={RefundPolicy} />
-        <Route path="/ai-insights"       component={AIInsights} />
-        <Route path="/faq"               component={FAQ} />
-        <Route path="/impact"            component={Impact} />
+        <Route path="/"              component={Home} />
+        <Route path="/services"      component={Services} />
+        <Route path="/pricing"       component={Pricing} />
+        <Route path="/team"          component={Team} />
+        <Route path="/knowledge"     component={Knowledge} />
+        <Route path="/contact"       component={Contact} />
+        <Route path="/privacy"       component={Privacy} />
+        <Route path="/disclaimer"    component={Disclaimer} />
+        <Route path="/terms"         component={Terms} />
+        <Route path="/refund-policy" component={RefundPolicy} />
+        <Route path="/ai-insights"   component={AIInsights} />
+        <Route path="/faq"           component={FAQ} />
+        <Route path="/impact"        component={Impact} />
 
         {/* ─── صفحات الحجز والفحص الحساسة: noindex, nofollow ─────────────── */}
         <Route path="/booking"                     component={BookingNoIndex} />
@@ -185,13 +214,31 @@ function Router() {
         <Route path="/choose-child-path/:childId" component={ChooseChildPathWrapper} />
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
-        {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────── */}
+        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────── */}
+        <Route path="/consultation/start"   component={ConsultationIntroNoIndex} />
+        <Route path="/consultation/booking" component={ConsultationBookingNoIndex} />
+
+        {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────── */}
         <Route path="/login"   component={Login} />
         <Route path="/account" component={Account} />
 
-        {/* ─── لوحة الإدارة + معاينة النتائج الداخلية (admin-only) ─────── */}
-        <Route path="/admin"         component={() => <SensitiveNoIndex><AdminDashboard /></SensitiveNoIndex>} />
-        <Route path="/admin/preview" component={() => <SensitiveNoIndex><AdminResultPreview /></SensitiveNoIndex>} />
+        {/* ─── لوحة الإدارة + معاينة النتائج الداخلية (admin-only) ─────────── */}
+        <Route
+          path="/admin"
+          component={() => (
+            <SensitiveNoIndex>
+              <AdminDashboard />
+            </SensitiveNoIndex>
+          )}
+        />
+        <Route
+          path="/admin/preview"
+          component={() => (
+            <SensitiveNoIndex>
+              <AdminResultPreview />
+            </SensitiveNoIndex>
+          )}
+        />
 
         {/* ─── صفحة 404 ─────────────────────────────────────────────────── */}
         <Route path="/404" component={NotFound} />
@@ -206,9 +253,19 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
-          <Router />
-          <WhatsAppButton />
-          <Toaster richColors position="top-center" />
+          {/*
+           * ConsultationProvider — Sprint 3.0a | Issue #57
+           *
+           * يجب أن يكون داخل AuthProvider لأن بعض صفحات consultation
+           * ستتحقق من حالة المصادقة قبل تنفيذ الحجز.
+           * يجب أن يحيط Router بالكامل حتى يتاح useConsultationFlow
+           * في كل Route بما فيها ScreeningResult وBooking.
+           */}
+          <ConsultationProvider>
+            <Router />
+            <WhatsAppButton />
+            <Toaster richColors position="top-center" />
+          </ConsultationProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
