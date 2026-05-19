@@ -47,8 +47,11 @@ const AdminDashboard     = lazy(() => import("./components/AdminDashboard"));
 const AdminResultPreview = lazy(() => import("./components/screening/ResultDemo"));
 
 // ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────────────────
-const ConsultationIntroPage = lazy(
+const ConsultationIntroPage   = lazy(
   () => import("./components/consultation/ConsultationIntroPage")
+);
+const ConsultationBookingPage = lazy(
+  () => import("./components/consultation/ConsultationBookingPage")
 );
 
 // ─── SEO Guard: منع فهرسة الصفحات الحساسة ───────────────────────────────────
@@ -165,6 +168,19 @@ function ConsultationIntroNoIndex() {
   );
 }
 
+/**
+ * ConsultationBookingNoIndex — Sprint 3.0c
+ * Route: /consultation/booking
+ * السياقي: يقرأ intent من ConsultationContext ويُظهر سياق التقييم.
+ */
+function ConsultationBookingNoIndex() {
+  return (
+    <SensitiveNoIndex>
+      <ConsultationBookingPage />
+    </SensitiveNoIndex>
+  );
+}
+
 function Router() {
   return (
     <Suspense fallback={<PageSkeleton />}>
@@ -199,7 +215,8 @@ function Router() {
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
         {/* ─── صفحات الاستشارة السياقية (Sprint 3.0) ─────────────────────── */}
-        <Route path="/consultation/start" component={ConsultationIntroNoIndex} />
+        <Route path="/consultation/start"   component={ConsultationIntroNoIndex} />
+        <Route path="/consultation/booking" component={ConsultationBookingNoIndex} />
 
         {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────── */}
         <Route path="/login"   component={Login} />
