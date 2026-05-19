@@ -2,10 +2,7 @@
  * consultationEntitlements.ts — Consultation Entitlement Domain Types
  *
  * Sprint 3.1 — Business Layer Foundation
- * Priority 1: Entitlement Architecture
- *
- * هذا الملف يعرّف كامل نظام الصلاحيات والاستحقاق
- * للاستشارات في منصة تشخيصي.
+ * Priority 1: Entitlement Architecture (Patched)
  *
  * الترتيب المعماري:
  *   types (هنا) → lib/consultationEntitlements.ts → context → UI
@@ -40,6 +37,10 @@ export type ConsultationEntitlement =
 
 /**
  * حالة الاستحقاق الكاملة مع metadata.
+ *
+ * ملاحظة على entitlementId / consumedAt / remainingSessions:
+ *   nullable حالياً — ستُملأ من قاعدة البيانات في Sprint 3.1 Priority 3 (Persistence Layer).
+ *   تم تعريفها الآن لمنع كسر types مستقبلاً.
  */
 export interface EntitlementStatus {
   /** نوع الاستحقاق */
@@ -65,6 +66,32 @@ export interface EntitlementStatus {
 
   /** مصدر الاستحقاق */
   source: EntitlementSource;
+
+  // -------------------------------------------------------------------------
+  // Persistence Contract Fields — Sprint 3.1 Priority 3 (Persistence Layer)
+  // الحقول التالية nullable حالياً.
+  // ستُملأ من قاعدة البيانات بعد بناء Persistence Layer.
+  // تم تعريفها الآن لمنع breaking changes لاحقاً.
+  // -------------------------------------------------------------------------
+
+  /**
+   * معرّف الاستحقاق من قاعدة البيانات.
+   * null حالياً (inference مؤقت).
+   * في Sprint 3.2+: يجب أن يكون UUID حقيقي من جدول entitlements.
+   */
+  entitlementId: string | null;
+
+  /**
+   * تاريخ استهلاك الاستحقاق (بعد الحجز الفعلي).
+   * null حالياً — يمنع إعادة استخدام نفس الاستحقاق لاحقاً.
+   */
+  consumedAt: string | null;
+
+  /**
+   * عدد الجلسات المتبقية (للمستقبل — multi-session packages).
+   * null حالياً.
+   */
+  remainingSessions: number | null;
 }
 
 /**
@@ -104,7 +131,7 @@ export interface EntitlementCheckResult {
 }
 
 /**
- * أسباب الرفض الممكنة.
+ * أسباب الرفض من الوصول.
  */
 export type EntitlementDenyReason =
   | "no_intent"               // لا توجد نية استشارة
@@ -114,6 +141,41 @@ export type EntitlementDenyReason =
   | "session_active"          // يوجد جلسة نشطة بالفعل
   | "insufficient_balance"    // رصيد غير كافٍ
   | "no_eligible_specialist"; // لا يوجد متخصص مناسب حاليًا
+
+// ---------------------------------------------------------------------------
+// Booking Denial Taxonomy — مركزي وشامل
+// ---------------------------------------------------------------------------
+
+/**
+ * أسباب رفض الحجز — taxonomy كاملة وموحدة.
+ *
+ * المجموعتان:
+ *   المجموعة A: نشطة حالياً (intent / entitlement / session state)
+ *   المجموعة B: لاحقة (geographic / parental) — معرّفة الآن لمنع breaking changes.
+ *
+ * Sprint status:
+ *   intent_expired          → نشطة (Sprint 3.1)
+ *   entitlement_expired     → نشطة (Sprint 3.1)
+ *   session_consumed        → نشطة (Sprint 3.1 Priority 3)
+ *   blocked                 → نشطة (Sprint 3.1)
+ *   assessment_too_old      → نشطة (Sprint 3.1)
+ *   specialist_unavailable  → نشطة (Sprint 3.1)
+ *   payment_required        → نشطة (Sprint 3.1)
+ *   geographic_restriction  → معرّفة / غير مفعّلة (لاحقاً)
+ *   parental_consent_required → معرّفة / غير مفعّلة (لاحقاً)
+ */
+export type BookingDenialReason =
+  // --- المجموعة A: نشطة ---
+  | "intent_expired"              // انتهت صلاحية النية (4 ساعات)
+  | "entitlement_expired"         // انتهى الاستحقاق
+  | "session_consumed"            // تم استهلاك الجلسة — سيُفعّل في Priority 3
+  | "blocked"                     // محظور
+  | "assessment_too_old"          // الفحص قديم (أكثر من 7 أيام)
+  | "specialist_unavailable"      // لا يوجد متخصص متاح
+  | "payment_required"            // يجب الدفع أولاً
+  // --- المجموعة B: معرّفة / غير مفعّلة (لاحقاً) ---
+  | "geographic_restriction"      // TODO Sprint 4+: قيود جغرافية
+  | "parental_consent_required";  // TODO Sprint 4+: موافقة ولي الأمر
 
 // ---------------------------------------------------------------------------
 // Booking Eligibility Result
@@ -127,8 +189,8 @@ export interface BookingEligibilityResult {
   /** هل يمكن الحجز؟ */
   canBook: boolean;
 
-  /** سبب عدم الأهلية (إن وجد) */
-  ineligibilityReason?: BookingIneligibilityReason;
+  /** سبب عدم الأهلية — من BookingDenialReason */
+  ineligibilityReason?: BookingDenialReason;
 
   /** الاستحقاق المكتشف */
   resolvedEntitlement: ConsultationEntitlement;
@@ -145,17 +207,6 @@ export interface BookingEligibilityResult {
   /** metadata إضافي لـ analytics */
   meta: BookingEligibilityMeta;
 }
-
-/**
- * أسباب عدم أهلية الحجز.
- */
-export type BookingIneligibilityReason =
-  | "expired_entitlement"
-  | "blocked_user"
-  | "no_assessment_context"    // محتاج نتيجة فحص للحجز من هذا المسار
-  | "assessment_too_old"       // الفحص قديم جداً
-  | "duplicate_booking"        // حجز مكرر نفس اليوم
-  | "specialist_unavailable";  // المتخصص المطلوب غير متاح
 
 /**
  * إجراءات مطلوبة قبل الحجز.
@@ -193,6 +244,16 @@ export interface BookingEligibilityMeta {
 /**
  * قرار سياسة الوصول — يُستخدم لتحديد ما يجب عرضه في UI.
  * تُرجع من getAccessPolicyDecision().
+ *
+ * ============================================================
+ * ⚠️  POLICY OUTPUT ONLY
+ * هذا الكائن يخرج قرارات سياسة — ليس بيانات عرض.
+ * مسموح: showBookingCTA, bookingCTAEnabled, showFreeBadge,
+ *            showWarningBanner, warningBannerMessage, requiresFreshIntent
+ * غير مسموح: buttonColor, bannerVariant, iconName, className
+ * الفاصل: هل هذا قرار domain أم تفضيل عرض؟
+ *          إذا كان تفضيل عرض → انتقل إلى component مستوى.
+ * ============================================================
  */
 export interface AccessPolicyDecision {
   /** هل يُعرض زر الحجز؟ */

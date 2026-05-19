@@ -2,22 +2,16 @@
  * consultationEntitlements.ts — Consultation Entitlement Business Logic
  *
  * Sprint 3.1 — Business Layer Foundation
- * Priority 1: Entitlement Architecture
+ * Priority 1: Entitlement Architecture (Patched)
  *
- * هذا الملف يحتوي على كامل منطق الأعمال للاستحقاق:
- *   • canAccessConsultation()      — access policy guard
- *   • resolveBookingEligibility()  — booking eligibility resolver
- *   • getEntitlementFromIntent()   — intent → entitlement inference
- *   • getAccessPolicyDecision()    — UI decision helper
- *   • ENTITLEMENT_CONFIG           — centralised config
- *
- * لا يعتمد هذا الملف على React أو أي مكوّن UI.
+ * هذا الملف يحتوي على كامل منطق الأعمال للاستحقاق.
  * Pure business logic — قابل للاختبار بشكل مستقل.
  */
 
 import type { ConsultationIntent } from "../types/consultationTypes";
 import type {
   AccessPolicyDecision,
+  BookingDenialReason,
   BookingEligibilityMeta,
   BookingEligibilityResult,
   ConsultationEntitlement,
@@ -31,21 +25,14 @@ import type {
 // ---------------------------------------------------------------------------
 
 export const ENTITLEMENT_CONFIG: EntitlementConfig = {
-  /** استشارة مجانية صالحة لمدة 48 ساعة من منح الاستحقاق */
   freeEntitlementValidityHours: 48,
-
-  /** الفحص صالح للحجز لمدة 7 أيام */
   maxAssessmentAgeForBookingHours: 7 * 24,
-
-  /** الاستشارة الأولى مجانية دائماً */
   firstConsultationAlwaysFree: true,
-
-  /** إتمام الفحص يمنح استشارة مجانية تلقائياً */
   assessmentCompletionGrantsFreeConsultation: true,
 };
 
 // ---------------------------------------------------------------------------
-// Intent Age Helper
+// Intent Age Helpers
 // ---------------------------------------------------------------------------
 
 function getIntentAgeSeconds(intent: ConsultationIntent): number {
@@ -69,21 +56,24 @@ function getIntentAgeHours(intent: ConsultationIntent): number {
 /**
  * يستنتج ConsultationEntitlement من ConsultationIntent.
  *
- * المنطق:
- * 1. إذا كانت النية من follow_up → FOLLOW_UP
- * 2. إذا كانت النية من assessment_result → FREE_CONSULTATION
- *    (إتمام الفحص يمنح استشارة مجانية تلقائياً)
- * 3. إذا كانت النية من direct_booking → PAID_CONSULTATION
- *    (لا فحص مرتبط — يفترض الدفع)
- * 4. إذا كانت النية منتهية الصلاحية → EXPIRED
+ * ════════════════════════════════════════════════════════════════════
+ * ⚠️  TEMPORARY INFERENCE LAYER — لا تعتمد عليه في production logic.
  *
- * ملاحظة: هذا inference مبدئي.
- * في المستقبل سيُستبدل بـ database lookup فعلي.
+ * المشكلة:
+ *   entryPoint ≠ entitlement.
+ *   نفس entryPoint (مثل assessment_result) يمكن أن يؤدي إلى FREE أو PAID أو BLOCKED
+ *   حسب المستخدم — وهذا لا يمكن معرفته من الـ entryPoint وحده.
+ *
+ * TODO Sprint 3.2+:
+ *   يجب استبدال هذا الاستنتاج بـ:
+ *   • نتيجة حقيقية من جدول entitlements في قاعدة البيانات
+ *   • أو session token موقّع من الـ backend بعد إتمام الفحص
+ *   • entryPoint يبقى navigation context فقط — ليس مصدر استحقاق
+ * ════════════════════════════════════════════════════════════════════
  */
 export function getEntitlementFromIntent(
   intent: ConsultationIntent
 ): ConsultationEntitlement {
-  // فحص انتهاء الصلاحية أولاً (4 ساعات — نفس Intent expiry)
   const intentAgeHours = getIntentAgeHours(intent);
   if (intentAgeHours > 4) {
     return "EXPIRED";
@@ -94,15 +84,12 @@ export function getEntitlementFromIntent(
       return "FOLLOW_UP";
 
     case "assessment_result":
-      // إتمام الفحص يمنح FREE_CONSULTATION
       if (ENTITLEMENT_CONFIG.assessmentCompletionGrantsFreeConsultation) {
         return "FREE_CONSULTATION";
       }
       return "PAID_CONSULTATION";
 
     case "direct_booking":
-      // حجز مباشر بدون فحص — يفترض الدفع
-      // إذا كانت الاستشارة الأولى مجانية → FREE_CONSULTATION
       if (ENTITLEMENT_CONFIG.firstConsultationAlwaysFree) {
         return "FREE_CONSULTATION";
       }
@@ -119,14 +106,14 @@ export function getEntitlementFromIntent(
 
 /**
  * يبني EntitlementStatus كاملاً من Intent.
+ * حقول Persistence (entitlementId, consumedAt, remainingSessions) nullable حالياً.
  */
 export function buildEntitlementStatus(
   intent: ConsultationIntent
 ): EntitlementStatus {
   const entitlement = getEntitlementFromIntent(intent);
   const isFree =
-    entitlement === "FREE_CONSULTATION" ||
-    entitlement === "FOLLOW_UP";
+    entitlement === "FREE_CONSULTATION" || entitlement === "FOLLOW_UP";
   const isFollowUp = entitlement === "FOLLOW_UP";
   const isEligible =
     entitlement !== "EXPIRED" && entitlement !== "BLOCKED";
@@ -138,15 +125,17 @@ export function buildEntitlementStatus(
     isFollowUp,
     remainingSessionsCount: isFree ? 1 : null,
     previousConsultationId: intent.previousConsultationId,
-    expiresAt: null, // يُحسب من قاعدة البيانات مستقبلاً
+    expiresAt: null,
     source:
-      intent.entryPoint === "assessment_completion"
-        ? "assessment_completion"
-        : intent.entryPoint === "follow_up"
+      intent.entryPoint === "follow_up"
         ? "follow_up"
         : intent.entryPoint === "assessment_result"
         ? "assessment_completion"
         : "unknown",
+    // Persistence fields — nullable حتى Sprint 3.1 Priority 3
+    entitlementId: null,
+    consumedAt: null,
+    remainingSessions: null,
   };
 }
 
@@ -156,20 +145,11 @@ export function buildEntitlementStatus(
 
 /**
  * Access policy guard — الباب الأول.
- *
- * يفحص:
- * 1. هل يوجد intent صالح؟
- * 2. هل الاستحقاق يسمح بالوصول؟
- * 3. هل انتهت صلاحية النية؟
- *
- * @param intent — النية الحالية (null إذا لم توجد)
- * @param entitlement — الاستحقاق (optional، يُحسب من intent إذا لم يُعطَ)
  */
 export function canAccessConsultation(
   intent: ConsultationIntent | null,
   entitlement?: ConsultationEntitlement
 ): EntitlementCheckResult {
-  // 1. لا توجد نية
   if (!intent) {
     return {
       canAccess: false,
@@ -180,7 +160,6 @@ export function canAccessConsultation(
     };
   }
 
-  // 2. فحص انتهاء الصلاحية (4 ساعات)
   const intentAgeHours = getIntentAgeHours(intent);
   if (intentAgeHours > 4) {
     return {
@@ -193,10 +172,8 @@ export function canAccessConsultation(
     };
   }
 
-  // 3. حساب الاستحقاق إذا لم يُعطَ
   const resolvedEntitlement = entitlement ?? getEntitlementFromIntent(intent);
 
-  // 4. فحص الاستحقاق
   if (resolvedEntitlement === "EXPIRED") {
     return {
       canAccess: false,
@@ -216,12 +193,7 @@ export function canAccessConsultation(
     };
   }
 
-  // 5. كل الفحوصات نجحت
-  return {
-    canAccess: true,
-    reason: null,
-    shouldRedirect: false,
-  };
+  return { canAccess: true, reason: null, shouldRedirect: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -231,30 +203,22 @@ export function canAccessConsultation(
 interface ResolveBookingEligibilityParams {
   intent: ConsultationIntent | null;
   entitlement?: ConsultationEntitlement;
-  /** عمر النية بالثواني (optional، يُحسب إذا لم يُعطَ) */
   intentAgeSeconds?: number;
 }
 
 /**
  * Booking Eligibility Resolver — الباب الثاني.
- *
- * يفحص ما إذا كان يمكن للمستخدم إتمام الحجز الفعلي.
- * أكثر تفصيلاً من canAccessConsultation — يفحص:
- * - صلاحية سياق الفحص
- * - عمر الفحص
- * - وجود إجراءات مسبقة مطلوبة
- *
- * @returns BookingEligibilityResult مع كامل التفاصيل
+ * ineligibilityReason من BookingDenialReason الآن (ليس BookingIneligibilityReason).
  */
 export function resolveBookingEligibility(
   params: ResolveBookingEligibilityParams
 ): BookingEligibilityResult {
   const { intent, entitlement } = params;
-
   const resolvedAt = new Date().toISOString();
 
-  // بناء meta مشترك
-  const buildMeta = (override?: Partial<BookingEligibilityMeta>): BookingEligibilityMeta => ({
+  const buildMeta = (
+    override?: Partial<BookingEligibilityMeta>
+  ): BookingEligibilityMeta => ({
     derivedFromAssessment:
       intent?.entryPoint === "assessment_result" ||
       !!intent?.assessmentResult,
@@ -267,11 +231,10 @@ export function resolveBookingEligibility(
     ...override,
   });
 
-  // 1. لا توجد نية
   if (!intent) {
     return {
       canBook: false,
-      ineligibilityReason: "no_assessment_context",
+      ineligibilityReason: "intent_expired" satisfies BookingDenialReason,
       resolvedEntitlement: "EXPIRED",
       isBookingFree: false,
       requiresPreBookingAction: true,
@@ -282,11 +245,10 @@ export function resolveBookingEligibility(
 
   const resolvedEntitlement = entitlement ?? getEntitlementFromIntent(intent);
 
-  // 2. محظور
   if (resolvedEntitlement === "BLOCKED") {
     return {
       canBook: false,
-      ineligibilityReason: "blocked_user",
+      ineligibilityReason: "blocked" satisfies BookingDenialReason,
       resolvedEntitlement,
       isBookingFree: false,
       requiresPreBookingAction: false,
@@ -294,11 +256,10 @@ export function resolveBookingEligibility(
     };
   }
 
-  // 3. منتهي الصلاحية
   if (resolvedEntitlement === "EXPIRED") {
     return {
       canBook: false,
-      ineligibilityReason: "expired_entitlement",
+      ineligibilityReason: "entitlement_expired" satisfies BookingDenialReason,
       resolvedEntitlement,
       isBookingFree: false,
       requiresPreBookingAction: false,
@@ -306,7 +267,6 @@ export function resolveBookingEligibility(
     };
   }
 
-  // 4. فحص: هل الفحص المرتبط قديم جداً؟
   if (
     intent.entryPoint === "assessment_result" &&
     intent.assessmentResult?.completedAt
@@ -315,13 +275,10 @@ export function resolveBookingEligibility(
       (Date.now() - new Date(intent.assessmentResult.completedAt).getTime()) /
       3600000;
 
-    if (
-      assessmentAgeHours >
-      ENTITLEMENT_CONFIG.maxAssessmentAgeForBookingHours
-    ) {
+    if (assessmentAgeHours > ENTITLEMENT_CONFIG.maxAssessmentAgeForBookingHours) {
       return {
         canBook: false,
-        ineligibilityReason: "assessment_too_old",
+        ineligibilityReason: "assessment_too_old" satisfies BookingDenialReason,
         resolvedEntitlement,
         isBookingFree: false,
         requiresPreBookingAction: true,
@@ -331,7 +288,6 @@ export function resolveBookingEligibility(
     }
   }
 
-  // 5. كل الفحوصات نجحت — يمكن الحجز
   const isFree =
     resolvedEntitlement === "FREE_CONSULTATION" ||
     resolvedEntitlement === "FOLLOW_UP";
@@ -351,13 +307,8 @@ export function resolveBookingEligibility(
 
 /**
  * UI Decision Helper.
- *
  * يحوّل نتائج canAccessConsultation + resolveBookingEligibility
- * إلى قرارات UI مباشرة وجاهزة للاستخدام في المكوّنات.
- *
- * @param intent — النية الحالية
- * @param entitlement — الاستحقاق (optional)
- * @returns AccessPolicyDecision جاهز للـ UI
+ * إلى قرارات UI مباشرة جاهزة.
  */
 export function getAccessPolicyDecision(
   intent: ConsultationIntent | null,
@@ -366,7 +317,6 @@ export function getAccessPolicyDecision(
   const accessCheck = canAccessConsultation(intent, entitlement);
   const eligibility = resolveBookingEligibility({ intent, entitlement });
 
-  // لا يمكن الوصول أصلاً
   if (!accessCheck.canAccess) {
     return {
       showBookingCTA: false,
@@ -374,12 +324,12 @@ export function getAccessPolicyDecision(
       showFreeBadge: false,
       showWarningBanner: true,
       warningBannerMessage: accessCheck.userMessage,
-      requiresFreshIntent: accessCheck.reason === "no_intent" ||
+      requiresFreshIntent:
+        accessCheck.reason === "no_intent" ||
         accessCheck.reason === "invalid_intent",
     };
   }
 
-  // يمكن الوصول لكن لا يمكن الحجز
   if (!eligibility.canBook) {
     const isExpiredAssessment =
       eligibility.ineligibilityReason === "assessment_too_old";
@@ -399,7 +349,6 @@ export function getAccessPolicyDecision(
     };
   }
 
-  // يمكن الوصول والحجز
   return {
     showBookingCTA: true,
     bookingCTAEnabled: true,
