@@ -4,12 +4,32 @@
  * Sprint 3.0d | Phase 2 — Experience Layer
  *
  * يحتوي على جميع النصوص السياقية لـ consultation journey.
- * لا يحتوي على business logic — نصوص فقط.
  *
- * الفصل بين النص واللوجيك يجعل الصفحة قابلة لـ:
- *   - تغيير النصوص بدون لمس ال component
- *   - الترجمة المستقبلية
- *   - A/B testing للنصوص
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * ARCHITECTURE BOUNDARY — هذا الملف هو Experience Layer فقط
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *
+ * ✅ مسموح داخل هذا الملف:
+ *   - text / labels / descriptions
+ *   - emotional copy
+ *   - contextual rendering decisions (copy فقط)
+ *   - static configuration objects (RESULT_KEY_COPY)
+ *
+ * ❌ ممنوع داخل هذا الملف:
+ *   - navigation / routing
+ *   - policy decisions (هل يُسمح بالحجز؟)
+ *   - permissions / entitlements
+ *   - business state (credits, payments)
+ *   - flow transitions
+ *
+ * إذا احتجت navigation أو policy → consultationBookingOrchestrator.ts
+ * إذا احتجت flow state     → consultationStateMachine.ts
+ * إذا احتجت entitlements   → Business Layer (Sprint 3.3+)
+ *
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *
+ * @future Sprint 3.2 — استبدل RESULT_KEY_COPY بـ RESULT_EXPERIENCE_CONFIG
+ * registry قابل للتهيئة من CMS أو i18n layer.
  */
 
 import type {
@@ -29,7 +49,7 @@ export interface EntryPointCopy {
   description: string;
   /** شارة badge تدل على نوع الرحلة */
   badge: string;
-  /** رسالة تعاطفية تظهر أسفل العنوان */
+  /** رسالة تعاطفية تظهر أسفل العنوان مباشرة */
   emotionalCue: string;
 }
 
@@ -39,7 +59,7 @@ export interface StepCopy {
 }
 
 export interface ResultSummaryCopy {
-  /** إكسسوري emoji لنوع التقييم */
+  /** اكسسوري emoji لنوع التقييم */
   icon: string;
   /** نص موجز: "تقييم أحمد" أو "تقييم ذاتي" */
   label: string;
@@ -48,12 +68,39 @@ export interface ResultSummaryCopy {
 }
 
 // ---------------------------------------------------------------------------
+// RESULT_KEY_COPY — المصدر الوحيد لنصوص نتائج التقييم
+// ---------------------------------------------------------------------------
+
+/**
+ * خريطة ثابتة تُحوّل result keys إلى نصوص قابلة للقراءة.
+ *
+ * ⚠️ هذا هو المصدر الوحيد لهذه النصوص — لا تضف نصوص result في أي ملف آخر.
+ *
+ * @future Sprint 3.2 — سيُستبدل هذا الـ const بـ RESULT_EXPERIENCE_CONFIG
+ * يدعم: severity-aware copy, i18n, CMS-driven content, clinical review workflow.
+ */
+export const RESULT_KEY_COPY: Record<string, string> = {
+  high_risk:
+    "أظهرت النتيجة مؤشرات تستحق متابعة منطقية مع متخصص",
+  moderate:
+    "أظهرت النتيجة بعض المؤشرات التي تستحق التقييم التخصصي",
+  low_risk:
+    "أظهرت النتيجة مؤشرات محدودة — الاستشارة تجيب على تساؤلاتك",
+  needs_evaluation:
+    "نتائجك تشير إلى ضرورة تقييم أكثر دقة من متخصص",
+};
+
+/** Fallback عند عدم وجود result key في الخريطة */
+export const RESULT_KEY_FALLBACK = (resultKey: string): string =>
+  `نتيجة التقييم: ${resultKey}`;
+
+// ---------------------------------------------------------------------------
 // resolveIntroCopy — النص الرئيسي
 // ---------------------------------------------------------------------------
 
 /**
  * يعيد النص الصحيح بناءً على intent.
- * يجب استدعاؤه في الـ component فقط — لا يحتوي على logic.
+ * يُستدعى في الـ component فقط — لا يحتوي على logic.
  */
 export function resolveIntroCopy(
   intent: ConsultationIntent | null
@@ -70,7 +117,7 @@ export function resolveIntroCopy(
           ? `الخطوة التالية: استشارة متخصصة لـ${name ? ` ${name}` : " طفلك"}`
           : `الخطوة التالية: استشارة تتناسب مع نتيجتك`,
         description: isChild
-          ? `بناءً على ما ظهر في التقييم، سنوجّهك إلى المتخصص الأنسب لحالة ${name ?? "طفلك"}، دون الحاجة لإعادة شرح كل شيء من البداية.`
+          ? `بناءً على ما ظهر في التقييم، سنوجّهك إلى المتخصص الأنسب لحالة ${name ?? "طفلك"}، دون الحاجة للرجوع لبداية الرحلة.`
           : `تقييمك تم — والآن سنختار معك المتخصص الأنسب بناءً على ما أظهرته إجاباتك. لا تحتاج لإعادة البداية.`,
         badge: "مسار سياقي — بعد التقييم",
         emotionalCue: isChild
@@ -118,25 +165,54 @@ export function resolveCtaLabel(
 // resolveSteps — خطوات الرحلة
 // ---------------------------------------------------------------------------
 
-export function resolveSteps(entryPoint: ConsultationEntryPoint | undefined): StepCopy[] {
+export function resolveSteps(
+  entryPoint: ConsultationEntryPoint | undefined
+): StepCopy[] {
   switch (entryPoint) {
     case "assessment_result":
       return [
-        { title: "مراجعة النتيجة", description: "سيرى المتخصص تقييمك قبل الجلسة." },
-        { title: "اختيار المتخصص", description: "تختار موعداً مناسباً لك." },
-        { title: "تأكيد الجلسة", description: "تصلك تفاصيل الجلسة فور التأكيد." },
+        {
+          title: "مراجعة النتيجة",
+          description: "سيرى المتخصص تقييمك قبل الجلسة.",
+        },
+        {
+          title: "اختيار المتخصص",
+          description: "تختار موعدًا مناسبًا لك.",
+        },
+        {
+          title: "تأكيد الجلسة",
+          description: "تصلك تفاصيل الجلسة فور التأكيد.",
+        },
       ];
     case "follow_up":
       return [
-        { title: "مراجعة سجلك", description: "سيطلع المتخصص على ملاحظات الجلسات السابقة." },
-        { title: "اختيار الموعد", description: "تحديد وقت مناسب لجلسة المتابعة." },
-        { title: "تأكيد الحجز", description: "تصلك تفاصيل الجلسة فوراً." },
+        {
+          title: "مراجعة سجلك",
+          description: "سيطلع المتخصص على ملاحظات الجلسات السابقة.",
+        },
+        {
+          title: "اختيار الموعد",
+          description: "تحديد وقت مناسب لجلسة المتابعة.",
+        },
+        {
+          title: "تأكيد الحجز",
+          description: "تصلك تفاصيل الجلسة فوراً.",
+        },
       ];
     default:
       return [
-        { title: "فهم احتياجاتك", description: "سنساعدك في تحديد أنسب تخصص لحالتك." },
-        { title: "اختيار المتخصص", description: "تختار المتخصص والوقت المناسب لك." },
-        { title: "تأكيد الجلسة", description: "تصلك تفاصيل الجلسة فور التأكيد." },
+        {
+          title: "فهم احتياجاتك",
+          description: "سنساعدك في تحديد أنسب تخصص لحالتك.",
+        },
+        {
+          title: "اختيار المتخصص",
+          description: "تختار المتخصص والوقت المناسب لك.",
+        },
+        {
+          title: "تأكيد الجلسة",
+          description: "تصلك تفاصيل الجلسة فور التأكيد.",
+        },
       ];
   }
 }
@@ -146,7 +222,7 @@ export function resolveSteps(entryPoint: ConsultationEntryPoint | undefined): St
 // ---------------------------------------------------------------------------
 
 /**
- * يعيد تلخيصاً مقروءاً من AssessmentResultPayload.
+ * يعيد تلخيصًا مقروءًا من AssessmentResultPayload.
  * يُعرض داخل ResultSummaryCard في صفحة intro.
  */
 export function resolveResultSummary(
@@ -160,28 +236,15 @@ export function resolveResultSummary(
     ? `تقييم ${result.subjectName ?? "الطفل"}`
     : `تقييمك الذاتي`;
 
-  // تفسير لغوي مبسط للـ result key
-  const resultDescription = resolveResultKeyDescription(result.resultKey);
+  // يقرأ من RESULT_KEY_COPY — المصدر الوحيد للنصوص
+  const resultDescription =
+    RESULT_KEY_COPY[result.resultKey] ?? RESULT_KEY_FALLBACK(result.resultKey);
 
   return { icon, label, resultDescription };
 }
 
-/**
- * يحوّل result key إلى نص بشري.
- * يجب توسيع هذه القائمة بناءً على result keys الفعلية في Sprint 3.1.
- */
-function resolveResultKeyDescription(resultKey: string): string {
-  const map: Record<string, string> = {
-    high_risk: "أظهرت النتيجة مؤشرات تستحق متابعة منطقية مع متخصص",
-    moderate: "أظهرت النتيجة بعض المؤشرات التي تستحق التقييم التخصصي",
-    low_risk: "أظهرت النتيجة مؤشرات محدودة — الاستشارة تجيب على تساؤلاتك",
-    needs_evaluation: "نتائجك تشير إلى ضرورة تقييم أكثر دقة من متخصص",
-  };
-  return map[resultKey] ?? `نتيجة التقييم: ${resultKey}`;
-}
-
 // ---------------------------------------------------------------------------
-// Static copy blocks (used when dynamic resolution is not needed)
+// Static copy blocks
 // ---------------------------------------------------------------------------
 
 const COPY_DIRECT_BOOKING: EntryPointCopy = {

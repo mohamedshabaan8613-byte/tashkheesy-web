@@ -3,156 +3,166 @@
  *
  * Sprint 3.0c | Phase 1 — Runtime Completion
  *
- * State Machine حتمية (deterministic) لرحلة الاستشارة.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * ARCHITECTURE BOUNDARY — هذا الملف هو Runtime Layer فقط
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  *
- * States:
- *   IDLE     → لا توجد نية نشطة
- *   INTRO    → المستخدم في شاشة intro
- *   BOOKING  → المستخدم في شاشة الحجز
- *   SUCCESS  → تم تأكيد الحجز
- *   EXITED   → غادر الرحلة
- *   RECOVERY → تمت استعادة الحالة بعد انقطاع
- *   ERROR    → حدث خطأ في إحدى الخطوات
+ * ✅ مسموح داخل هذا الملف:
+ *   - state transitions (IDLE → INTRO → BOOKING → …)
+ *   - transition guards (canTransition)
+ *   - phase resolution from URL or hydration
+ *   - recovery phase logic
  *
- * Transition Matrix:
- *   IDLE      → INTRO
- *   INTRO     → BOOKING, EXITED
- *   BOOKING   → SUCCESS, EXITED, ERROR, RECOVERY
- *   RECOVERY  → INTRO, BOOKING, EXITED
- *   SUCCESS   → IDLE (reset)
- *   EXITED    → IDLE (reset)
- *   ERROR     → RECOVERY, IDLE
+ * ❌ ممنوع داخل هذا الملف:
+ *   - copy / labels / text (→ consultationCopy.ts)
+ *   - routing decisions (→ consultationBookingOrchestrator.ts)
+ *   - entitlements / payments (→ Business Layer Sprint 3.3+)
+ *   - UX awareness (severity, emotional tone)
+ *   - analytics events
+ *
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  */
 
 import type {
   ConsultationFlowPhase,
   ConsultationIntent,
+  ConsultationNavigationState,
 } from "../types/consultationTypes";
-import { CONSULTATION_ROUTES } from "../types/consultationTypes";
-import type { HydrationResult } from "./consultationHydration";
 
 // ---------------------------------------------------------------------------
-// Extended Phase Type (adds RECOVERY not in the base type)
-// ---------------------------------------------------------------------------
-
-export type ExtendedFlowPhase = ConsultationFlowPhase | "RECOVERY";
-
-// ---------------------------------------------------------------------------
-// Transition Matrix
-// ---------------------------------------------------------------------------
-
-const TRANSITION_MATRIX: Record<ExtendedFlowPhase, ExtendedFlowPhase[]> = {
-  IDLE:     ["INTRO"],
-  INTRO:    ["BOOKING", "EXITED"],
-  BOOKING:  ["SUCCESS", "EXITED", "ERROR", "RECOVERY"],
-  RECOVERY: ["INTRO", "BOOKING", "EXITED"],
-  SUCCESS:  ["IDLE"],
-  EXITED:   ["IDLE"],
-  ERROR:    ["RECOVERY", "IDLE"],
-};
-
-// ---------------------------------------------------------------------------
-// canTransition
+// Valid Transitions Map
 // ---------------------------------------------------------------------------
 
 /**
- * يتحقق إذا كانت الانتقالة من `from` إلى `to` صالحة.
+ * خريطة كاملة لجميع transitions المسموح بها.
+ * أي transition غير موجود هنا → مرفوض.
+ */
+const VALID_TRANSITIONS: Record<ConsultationFlowPhase, ConsultationFlowPhase[]> =
+  {
+    IDLE: ["INTRO"],
+    INTRO: ["BOOKING", "EXITED"],
+    BOOKING: ["SUCCESS", "EXITED", "ERROR", "RECOVERY"],
+    SUCCESS: ["EXITED"],
+    EXITED: ["IDLE", "INTRO"],  // يسمح بإعادة بدء رحلة جديدة
+    RECOVERY: ["INTRO", "BOOKING", "EXITED"],
+    ERROR: ["RECOVERY", "IDLE"],
+  } as Record<ConsultationFlowPhase, ConsultationFlowPhase[]>;
+
+// ---------------------------------------------------------------------------
+// canTransition — هل هذا الانتقال مسموح؟
+// ---------------------------------------------------------------------------
+
+/**
+ * Guard — يتحقق إذا كان الانتقال من حالة إلى أخرى مسموحاً به.
+ *
+ * @example
+ * canTransition("INTRO", "BOOKING") // true
+ * canTransition("SUCCESS", "BOOKING") // false
  */
 export function canTransition(
-  from: ExtendedFlowPhase,
-  to: ExtendedFlowPhase
+  from: ConsultationFlowPhase,
+  to: ConsultationFlowPhase
 ): boolean {
-  return TRANSITION_MATRIX[from]?.includes(to) ?? false;
+  return VALID_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
 // ---------------------------------------------------------------------------
-// transition
+// transition — تنفيذ الانتقال بأمان
 // ---------------------------------------------------------------------------
 
 export type TransitionResult =
-  | { success: true; phase: ExtendedFlowPhase }
-  | { success: false; reason: string; current: ExtendedFlowPhase };
+  | { success: true; phase: ConsultationFlowPhase }
+  | { success: false; reason: string };
 
 /**
- * ينفّذ انتقالة آمنة من الحالة الحالية إلى الحالة الهدف.
- * يرفض الانتقالة إذا لم تكن موجودة في الـ matrix.
+ * ينفّذ الانتقال إذا كان مسموحاً، ويرفض مع السبب إذا لم يكن.
  */
 export function transition(
-  current: ExtendedFlowPhase,
-  target: ExtendedFlowPhase
+  current: ConsultationFlowPhase,
+  target: ConsultationFlowPhase
 ): TransitionResult {
-  if (!canTransition(current, target)) {
-    return {
-      success: false,
-      reason: `Illegal transition: ${current} → ${target}`,
-      current,
-    };
+  if (canTransition(current, target)) {
+    return { success: true, phase: target };
   }
-  return { success: true, phase: target };
+  return {
+    success: false,
+    reason: `Transition ${current} → ${target} is not allowed`,
+  };
 }
 
 // ---------------------------------------------------------------------------
-// getPhaseFromPath
+// getPhaseFromPath — استنتاج phase من URL
 // ---------------------------------------------------------------------------
 
 /**
- * يستنتج الـ phase من الـ URL الحالي.
- * يُستخدم عند hydration لتحديد موقع المستخدم في الرحلة.
+ * يستنتج ConsultationFlowPhase الحالية من pathname.
+ * يُستخدم عند mount أو hydration لمزامنة الـ state مع الـ URL.
  */
-export function getPhaseFromPath(pathname: string): ExtendedFlowPhase {
-  if (pathname.startsWith(CONSULTATION_ROUTES.BOOKING)) return "BOOKING";
-  if (pathname === CONSULTATION_ROUTES.SUCCESS) return "SUCCESS";
-  if (pathname.startsWith("/consultation")) return "INTRO";
-  return "IDLE";
+export function getPhaseFromPath(
+  pathname: string
+): ConsultationFlowPhase | null {
+  if (pathname.startsWith("/consultation/start")) return "INTRO";
+  if (pathname.startsWith("/consultation/booking")) return "BOOKING";
+  if (pathname.startsWith("/consultation/success")) return "SUCCESS";
+  return null;
 }
 
 // ---------------------------------------------------------------------------
-// getRecoveryPhase
+// getRecoveryPhase — phase الصحيحة بعد انقطاع
 // ---------------------------------------------------------------------------
 
 /**
- * يُحدد الـ phase الصحيحة عند recovery من HydrationResult.
+ * يحدد phase الصحيحة عند recovery (refresh / back / auth redirect).
  *
  * الأولوية:
- *   1. إذا كان الـ path يدل على BOOKING → RECOVERY (احتياطي)
- *   2. إذا كان wasRecovered → RECOVERY
- *   3. إذا كان session valid → INTRO
- *   4. غير ذلك → IDLE
+ *   1. إذا كان pathname يشير لـ BOOKING وlا intent → INTRO
+ *   2. إذا كان pathname يشير لـ phase معروفة → تلك الـ phase
+ *   3. إذا كانت hydration state تحتوي phase → تلك الـ phase
+ *   4. fallback → IDLE
  */
 export function getRecoveryPhase(
-  hydration: HydrationResult,
+  hydration: ConsultationNavigationState | null,
   pathname: string
-): ExtendedFlowPhase {
+): ConsultationFlowPhase {
   const pathPhase = getPhaseFromPath(pathname);
 
-  if (pathPhase === "BOOKING" && hydration.wasRecovered) {
-    return "RECOVERY";
+  // على صفحة booking بدون intent → أعده للـ intro
+  if (pathPhase === "BOOKING" && !hydration?.intentSource) {
+    return "INTRO";
   }
 
-  if (hydration.wasRecovered) {
-    return "RECOVERY";
-  }
-
-  if (hydration.intent && !hydration.needsRecovery) {
-    return pathPhase === "IDLE" ? "INTRO" : pathPhase;
-  }
+  if (pathPhase) return pathPhase;
+  if (hydration?.phase) return hydration.phase;
 
   return "IDLE";
 }
 
 // ---------------------------------------------------------------------------
-// resolveInitialPhase
+// resolveInitialPhase — الحالة الأولية عند تحميل الصفحة
 // ---------------------------------------------------------------------------
 
 /**
- * يُحدد الـ phase الأولية عند تحميل الصفحة لأول مرة.
- * يجمع بين: intent + path + hydration result.
+ * يحدد الـ phase الأولية عند mount بناءً على:
+ *   1. intent (هل هناك intent نشطة؟)
+ *   2. hydration (هل تم استعادة state سابق؟)
+ *   3. pathname الحالي
  */
 export function resolveInitialPhase(
   intent: ConsultationIntent | null,
-  hydration: HydrationResult,
+  hydration: ConsultationNavigationState | null,
   pathname: string
-): ExtendedFlowPhase {
+): ConsultationFlowPhase {
   if (!intent) return "IDLE";
-  return getRecoveryPhase(hydration, pathname);
+
+  // إذا كان هناك recovery → استعمل getRecoveryPhase
+  if (hydration?.wasRecovered) {
+    return getRecoveryPhase(hydration, pathname);
+  }
+
+  // استنتج من pathname
+  const pathPhase = getPhaseFromPath(pathname);
+  if (pathPhase) return pathPhase;
+
+  // intent موجودة لكن لا pathname معروف → INTRO
+  return "INTRO";
 }

@@ -9,6 +9,7 @@
  *   • إضافة ConsultationNavigationState لطبقة الـ recovery
  *   • إضافة ConsultationFlowTransition للـ state machine guards
  *   • تعليم intent.confirmed كـ @deprecated
+ *   • إضافة ResultSeverity type للتهيؤ لـ severity-aware UX (Sprint 3.1)
  *
  * المستخدمون:
  *   - ConsultationContext.tsx
@@ -54,7 +55,7 @@ export type ConsultationRoute =
  * من أين وصل المستخدم إلى شاشة الاستشارة?
  *
  * - assessment_result  : وصل مباشرة من نتيجة تقييم
- * - direct_booking     : ضغط “احجز استشارة” من nav أو landing
+ * - direct_booking     : ضغط "احجز استشارة" من nav أو landing
  * - follow_up          : لديه جلسة سابقة ويريد متابعة
  * - returning_user     : عاد للموقع وفتح consultation من dashboard
  */
@@ -63,6 +64,34 @@ export type ConsultationEntryPoint =
   | "direct_booking"
   | "follow_up"
   | "returning_user";
+
+// ---------------------------------------------------------------------------
+// ResultSeverity — خطورة نتيجة التقييم
+// ---------------------------------------------------------------------------
+
+/**
+ * مستوى خطورة نتيجة التقييم.
+ *
+ * يُستخدم مستقبلاً لتحديد UX مختلف حسب النتيجة:
+ *   - high_risk        → reassurance + urgency ("يجب التحرك الآن")
+ *   - moderate         → guidance-oriented ("خطوات واضحة للأمام")
+ *   - low_risk         → calming + educational ("أنت بخير — إليك ما تعرفه")
+ *   - needs_evaluation → inquiry ("نحتاج معلومات أكثر")
+ *
+ * ⚠️ ARCHITECTURE NOTE:
+ *   هذا النوع مُعدّ للـ Experience Layer فقط (consultationCopy.ts).
+ *   يجب ألا يُستخدم في:
+ *     - Runtime Layer (consultationStateMachine.ts)
+ *     - Orchestration Layer (consultationBookingOrchestrator.ts)
+ *     - Business Layer (entitlements / payments)
+ *
+ * @since Sprint 3.0e — severity-aware UX يُنفَّذ في Sprint 3.1
+ */
+export type ResultSeverity =
+  | "high_risk"
+  | "moderate"
+  | "low_risk"
+  | "needs_evaluation";
 
 // ---------------------------------------------------------------------------
 // Assessment Result Payload
@@ -77,6 +106,12 @@ export interface AssessmentResultPayload {
   subjectAge?: number;
   childId?: string;
   completedAt: string;
+  /**
+   * مستوى خطورة النتيجة — اختياري حتى يكتمل Sprint 3.1.
+   * عند توفره، يُستخدم في consultationCopy.ts لتحديد UX المناسب.
+   * @since Sprint 3.0e
+   */
+  severity?: ResultSeverity;
 }
 
 // ---------------------------------------------------------------------------
