@@ -24,6 +24,9 @@
  * - handleBooking الآن يبني ConsultationIntent كامل ويستدعي setIntent()
  * - التنقل عبر buildConsultationStartUrl() → /consultation/start
  * - إزالة أي navigate مباشر لـ /specialists أو /booking
+ *
+ * fix(deploy): rename useConsultation → useConsultationContext
+ * - الاسم الصحيح المُصدَّر من ConsultationContext.tsx هو useConsultationContext
  */
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -57,7 +60,7 @@ import {
 import { toast } from "sonner";
 import { upsertScreeningResultAnalytics } from "@/lib/screeningAnalytics";
 import { fetchRemoteScreeningResultBySessionId } from "@/lib/screeningResults";
-import { useConsultation } from "@/contexts/ConsultationContext";
+import { useConsultationContext } from "@/contexts/ConsultationContext";
 import {
   CONSULTATION_ROUTES,
   type ConsultationIntent,
@@ -373,7 +376,7 @@ interface ScreeningResultProps {
 
 export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
   const [, navigate] = useLocation();
-  const { setIntent } = useConsultation();
+  const { setIntent } = useConsultationContext();
   const urlSearchParams = new URLSearchParams(window.location.search);
   const urlPathType = urlSearchParams.get("pathType") ?? "learning";
 
@@ -1236,7 +1239,7 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
                 <div key={i} className="flex items-center gap-1.5">
                   <ItemIcon size={13} className="text-blue-200" />
                   <span
-                    className="text-xs text-blue-100"
+                    className="text-xs text-blue-200"
                     style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                   >
                     {item.text}
@@ -1247,7 +1250,6 @@ export default function ScreeningResult({ sessionId }: ScreeningResultProps) {
           </div>
         </div>
       </section>
-
     </div>
   );
 }
