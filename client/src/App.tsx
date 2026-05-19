@@ -4,6 +4,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ConsultationProvider } from "./contexts/ConsultationContext";
+import { ConsultationBookingProvider } from "./contexts/ConsultationBookingContext";
 import WhatsAppButton from "./components/WhatsAppButton";
 import PageSkeleton from "./components/PageSkeleton";
 import { Toaster } from "@/components/ui/sonner";
@@ -254,17 +255,24 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
           {/*
-           * ConsultationProvider — Sprint 3.0a | Issue #57
+           * ConsultationProvider — Sprint 3.0a
+           * ConsultationBookingProvider — Sprint 3.1 Priority 2
            *
-           * يجب أن يكون داخل AuthProvider لأن بعض صفحات consultation
-           * ستتحقق من حالة المصادقة قبل تنفيذ الحجز.
-           * يجب أن يحيط Router بالكامل حتى يتاح useConsultationFlow
-           * في كل Route بما فيها ScreeningResult وBooking.
+           * الترتيب مقصود:
+           *   ConsultationProvider   → intent + flow phase (WHY + WHERE)
+           *   ConsultationBookingProvider → booking session + lifecycle (HOW)
+           *
+           * ConsultationBookingProvider داخل ConsultationProvider لأن:
+           *   - booking يحتاج intent جاهز عند startBookingSession
+           *   - لكنه لا يقرأ ConsultationContext مباشرة (فصل كامل)
+           *   - التداخل في الشجرة ≠ التداخل في المنطق
            */}
           <ConsultationProvider>
-            <Router />
-            <WhatsAppButton />
-            <Toaster richColors position="top-center" />
+            <ConsultationBookingProvider>
+              <Router />
+              <WhatsAppButton />
+              <Toaster richColors position="top-center" />
+            </ConsultationBookingProvider>
           </ConsultationProvider>
         </AuthProvider>
       </ThemeProvider>
