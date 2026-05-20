@@ -38,21 +38,16 @@
  * 7. BOOKING_PHASE_ALIAS
  *    BookingPhase = الاسم الكنسي الرسمي.
  *    BookingLifecyclePhase محفوظ للتوافق مع الكود القائم.
+ *
+ * 8. ROUTES_SOURCE_OF_TRUTH (Sprint 3.3 Audit Fix C2)
+ *    CONSULTATION_ROUTES مُعرَّف حصرًا في:
+ *    client/src/constants/consultationRoutes.ts
+ *    لا تُعيد تعريفه هنا — استورده من مصدره الكنسي عند الحاجة.
  * ───────────────────────────────────────────────────────────────────────────
  */
 
 // ─── Lifecycle Future Marker ─────────────────────────────────────────────────
 export const LIFECYCLE_NOTE = "simplified_sprint_3.1" as const;
-
-// ─── Route Constants ────────────────────────────────────────────────────────
-export const CONSULTATION_ROUTES = {
-  START:           "/consultation/start",
-  BOOKING:         "/consultation/booking",
-  REVIEW:          "/consultation/review",
-  BOOKING_GENERIC: "/booking",
-} as const;
-
-export type ConsultationRoute = typeof CONSULTATION_ROUTES[keyof typeof CONSULTATION_ROUTES];
 
 // ─── Booking Phase ────────────────────────────────────────────────────────────
 /**
@@ -82,11 +77,8 @@ export type BookingPhase =
  */
 export type BookingLifecyclePhase = BookingPhase;
 
-/**
- * @deprecated استخدم BookingPhase.
- * محفوظ للتوافق — نفس النوع.
- */
-export type BookingLifecyclePhaseAlias = BookingPhase;
+// NOTE: BookingLifecyclePhaseAlias أُزيل — كان @deprecated بدون consumers.
+// تاريخ الحذف: Sprint 3.3 Audit Fix C2.
 
 export const RECOVERABLE_PHASES: BookingPhase[] = [
   "SPECIALIST_SELECTION",
@@ -183,7 +175,7 @@ export type BookingInitializationResult =
   | {
       success: true;
       bookingSessionId: string;
-      nextRoute: ConsultationRoute;
+      nextRoute: string;
       entitlementType: BookingEntitlementType;
       recoveryState?: BookingRecoveryState;
     }
