@@ -13,12 +13,18 @@
  * الفرق عن /booking:
  *   /booking           → Generic, لا context، للزيارات المباشرة
  *   /consultation/booking → Contextual، مربوط بـ ConsultationIntent
+ *
+ * Sprint 3.3 Phase 2 Fix:
+ *   - نقل import لـ CONSULTATION_ROUTES من types/consultationTypes (legacy)
+ *     إلى constants/consultationRoutes (canonical).
+ *   - السبب: النسخة القديمة لا تحتوي على REVIEW key.
+ *   - لا تغيير في السلوك — guard logic محافظ عليه بالكامل.
  */
 
 import { lazy, Suspense, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useConsultationContext } from "../../contexts/ConsultationContext";
-import { CONSULTATION_ROUTES } from "../../types/consultationTypes";
+import { CONSULTATION_ROUTES } from "../../constants/consultationRoutes";
 import { isIntentStillValid } from "../../lib/consultationHydration";
 import PageSkeleton from "../PageSkeleton";
 
@@ -35,7 +41,7 @@ export default function ConsultationBookingPage() {
   // ── Guard: إذا لا يوجد intent صالح، أعد للـ generic booking
   useEffect(() => {
     if (!isIntentStillValid(intent)) {
-      setLocation(CONSULTATION_ROUTES.BOOKING_GENERIC, { replace: true });
+      setLocation(CONSULTATION_ROUTES.BOOKING, { replace: true });
     }
   }, [intent, setLocation]);
 
