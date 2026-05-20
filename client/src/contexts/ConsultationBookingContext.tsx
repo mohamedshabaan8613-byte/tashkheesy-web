@@ -261,7 +261,7 @@ interface ConsultationBookingContextValue {
    * يمكن استدعاؤها من الـ UI مباشرة.
    *
    * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
-   */
+    *
    * transitionTo — الانتقال إلى phase جديدة.
    *
    * TRANSITION_NAMING_RULE:
