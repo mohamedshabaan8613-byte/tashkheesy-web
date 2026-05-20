@@ -1,4 +1,5 @@
 /**
+ * ConsultationBookingContext.tsx — Sprint 3.3 PHASE 1 (Fix N2 docs)
  * ConsultationBookingContext.tsx
  *
  * Pre-Sprint 3.3 — Stabilization Phase
@@ -30,6 +31,76 @@
  *   السبب: advancePhase("SPECIALIST_SELECTION") يصف الحدث السابق (ambiguous).
  *           transitionTo("SLOT_SELECTION") يصف الحالة الناتجة (deterministic).
  *
+ * ─── Sprint 3.3 Changes ──────────────────────────────────────────────────────
+ *
+ * ADDED: transitionTo() — المسار الوحيد لتغيير الـ lifecycle phase.
+ *   - يُصدر domain event BOOKING_PHASE_TRANSITIONED عند كل transition ناجح.
+ *   - الـ UI يستدعي orchestrator الذي يستدعي transitionTo().
+ *   - لا تستدعي transitionTo() مباشرة من الـ UI.
+ *
+ * PRESERVED: advancePhase() — محفوظ للتوافق مع الكود القائم.
+ *   - سيُزال في Sprint 3.4 بعد ترحيل جميع المستدعيين إلى transitionTo().
+ *
+ * ADDED: hydrateOnce guard — يمنع double-recovery في React StrictMode.
+ *
+ * sourceIntentId — immutable linkage:
+ *   startBookingSession يقبل consultationIntentId ويُخزنه في sourceIntentId.
+ *   المعرفان identicals في v1 — sourceIntentId هو الاسم الكنسي.
+ *
+ * الفرق المعماري:
+ *   ConsultationContext          → WHY + WHERE (لماذا + من أين)
+ *   ConsultationBookingContext   → HOW         (كيف + تتبع الحجز)
+ *
+ * ─── Fix N2: توضيح الفرق بين PHASE mutations و PAYLOAD mutations ───────────
+ *
+ * هذا الـ context يحتوي نوعين من الـ mutations — وهما مختلفان تمامًا:
+ *
+ * ── النوع الأول: PHASE mutations ────────────────────────────────────────────
+ *
+ *   الدوال: transitionTo() — وهي المصدر الوحيد والكامل لهذا النوع.
+ *
+ *   ماذا تفعل:
+ *     - تُغيّر bookingFlowPhase في الـ session
+ *     - تُغيّر bookingStatus
+ *     - تُصدر BOOKING_PHASE_TRANSITIONED domain event
+ *     - تتحقق من صحة الـ transition عبر isValidTransition()
+ *     - تحفظ الـ session بالـ repository
+ *
+ *   قاعدة الاستخدام:
+ *     transitionTo() لا تُستدعى من الـ UI مباشرة.
+ *     المسار الصحيح: UI → orchestrator → transitionTo()
+ *
+ *   لماذا هذا مهم:
+ *     PHASE mutations هي التي تُنتج domain events.
+ *     إذا حدثت خارج transitionTo() → لا domain event → recovery corruption.
+ *
+ * ── النوع الثاني: PAYLOAD mutations ─────────────────────────────────────────
+ *
+ *   الدوال: selectSpecialist() + selectSlot()
+ *
+ *   ماذا تفعل:
+ *     - تُعدّل payload fields فقط: selectedSpecialistId, selectedSlotId
+ *     - لا تُغيّر bookingFlowPhase
+ *     - لا تُصدر domain event (هذا مقصود)
+ *     - تحفظ الـ session بالـ repository مباشرة
+ *
+ *   قاعدة الاستخدام:
+ *     يمكن استدعاؤها من الـ UI مباشرة.
+ *     لا تمر عبر transitionTo() لأنها لا تُغيّر lifecycle phase.
+ *
+ *   لماذا لا تمر عبر transitionTo():
+ *     transitionTo() مصمم لتغيير الـ phase + إصدار domain event.
+ *     اختيار الأخصائي أو الموعد لا يُشكّل phase transition في الـ lifecycle.
+ *     هو تحديث لبيانات الحجز فقط داخل نفس الـ phase.
+ *
+ * ── الخلاصة ─────────────────────────────────────────────────────────────────
+ *
+ *   transitionTo() = مصدر وحيد لتغيير lifecycle phase
+ *   selectSpecialist/selectSlot = payload mutations فقط، لا تغير الـ phase
+ *
+ *   إذا احتجت لتغيير phase + payload في نفس الوقت:
+ *     1. استدعي selectSpecialist() أو selectSlot() أولاً
+ *     2. ثم استدعي transitionTo() عبر orchestrator
  * ─── sourceIntentId Migration ──────────────────────────────────────────────
  *   sourceIntentId هو الحقل الكنسي الرسمي (immutable linkage).
  *   consultationIntentId محفوظ كـ readonly alias في النوع فقط.
@@ -79,6 +150,15 @@ import {
   isValidTransition,
 } from "../types/consultationBookingTypes";
 import { consultationBookingRepository } from "../repositories/ConsultationBookingRepository";
+import {
+  bookingEventBus,
+  createBookingEvent,
+} from "../types/bookingDomainEvents";
+import type {
+  BookingPhaseTransitionedEvent,
+  BookingSessionCreatedEvent,
+  BookingRecoveredEvent,
+} from "../types/bookingDomainEvents";
 
 // ─── Expiration Poll Interval ─────────────────────────────────────────────────
 /** كل 60 ثانية — يكفي لأن TTL الجلسة هو 2 ساعة */
@@ -155,7 +235,14 @@ interface ConsultationBookingContextValue {
   }): ConsultationBookingSession;
 
   /**
-   * transitionTo — الانتقال إلى phase جديدة.
+   * transitionTo() — PHASE mutation.
+   *
+   * المصدر الوحيد لتغيير lifecycle phase في الـ session.
+   *
+   * RULE 2: الـ UI لا يستدعي هذا مباشرة.
+   *         يستدعيه orchestrator بعد validation + persistence.
+   *
+   * يُصدر BOOKING_PHASE_TRANSITIONED domain event عند كل transition ناجح.
    *
    * TRANSITION_NAMING_RULE:
    *   الاسم يصف الحالة الناتجة وليس الحدث السابق.
@@ -163,12 +250,38 @@ interface ConsultationBookingContextValue {
    *   transitionTo("REVIEW")          ← بعد اختيار slot ✅
    *   transitionTo("RESCHEDULED")     ← من CONFIRMED عند إعادة الجدولة ✅
    *
+   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
+   *
    * @returns true إذا نجح الانتقال، false إذا كان invalid
    */
-  transitionTo(nextPhase: BookingPhase): boolean;
+  transitionTo(to: BookingPhase, triggeredBy?: "orchestrator" | "recovery" | "expiration"): boolean;
 
+  /**
+   * @deprecated استخدم transitionTo() بدلاً منه.
+   * محفوظ للتوافق مع الكود القائم — سيُزال في Sprint 3.4.
+   */
+  advancePhase(to: BookingPhase): boolean;
+
+  /**
+   * selectSpecialist() — PAYLOAD mutation.
+   *
+   * تُعدّل selectedSpecialistId فقط — لا تُغيّر lifecycle phase.
+   * يمكن استدعاؤها من الـ UI مباشرة.
+   *
+   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
+   */
   selectSpecialist(specialistId: string): void;
+
+  /**
+   * selectSlot() — PAYLOAD mutation.
+   *
+   * تُعدّل selectedSlotId فقط — لا تُغيّر lifecycle phase.
+   * يمكن استدعاؤها من الـ UI مباشرة.
+   *
+   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
+   */
   selectSlot(slotId: string): void;
+
   cancelBooking(reason?: BookingRecoveryReason): void;
   expireBooking(reason: BookingRecoveryReason): void;
   recoverSession(): ConsultationBookingSession | null;
@@ -195,7 +308,10 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const sessionRef = useRef<ConsultationBookingSession | null>(null);
   sessionRef.current = state.session;
 
-  // hydrateOnce guard: يمنع double-recovery في React StrictMode
+  /**
+   * hydrateOnce guard — Sprint 3.1 hardening
+   * يمنع double-recovery في React StrictMode.
+   */
   const hydratedRef = useRef(false);
 
   // ── Recovery عند mount — مرة واحدة فقط ─────────────────────────────────
@@ -225,6 +341,18 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       };
       consultationBookingRepository.save(updatedSession);
       dispatch({ type: "SESSION_RECOVERED", session: updatedSession });
+
+      // Domain event: BOOKING_RECOVERED
+      const recoveryEvent: BookingRecoveredEvent = createBookingEvent(
+        "BOOKING_RECOVERED",
+        updatedSession.sessionId,
+        updatedSession.sourceIntentId,
+        {
+          recoveredPhase: updatedSession.bookingFlowPhase,
+          recoveredAt: updatedSession.recoveryState.recoveredAt ?? new Date().toISOString(),
+        },
+      );
+      bookingEventBus.publish(recoveryEvent);
     } else {
       if (recovered && isSessionExpired(recovered)) {
         consultationBookingRepository.invalidate(recovered.sessionId, "mount_ttl_check");
@@ -277,41 +405,86 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       consultationBookingRepository.save(newSession);
       consultationBookingRepository.setActive(newSession.sessionId);
       dispatch({ type: "SESSION_STARTED", session: newSession });
+
+      // Domain event: BOOKING_SESSION_CREATED
+      const createdEvent: BookingSessionCreatedEvent = createBookingEvent(
+        "BOOKING_SESSION_CREATED",
+        newSession.sessionId,
+        newSession.sourceIntentId,
+        {
+          entryPoint: params.entryPoint,
+          entitlementType: params.entitlementType,
+          assessmentSessionId: params.assessmentSessionId,
+        },
+      );
+      bookingEventBus.publish(createdEvent);
+
       return newSession;
     },
-    []
+    [],
   );
 
-  // ── transitionTo — deterministic workflow transition ─────────────────────
+  // ── transitionTo() — PHASE mutation ─────────────────────────────────────
   //
-  // TRANSITION_NAMING_RULE (Rule 5):
-  //   transitionTo("SLOT_SELECTION")  → نحن الآن في SLOT_SELECTION ✅
-  //   (advancePhase حُذف نهائيًا — لا alias، لا deprecated)
-  const transitionTo = useCallback((nextPhase: BookingPhase): boolean => {
-    const current = sessionRef.current;
-    if (!current) return false;
+  // المصدر الوحيد لتغيير lifecycle phase.
+  // يُصدر BOOKING_PHASE_TRANSITIONED domain event.
+  // لا يُستدعى من الـ UI مباشرة — يمر عبر orchestrator.
+  //
+  // انظر Fix N2 في أعلى الملف.
+  //
+  const transitionTo = useCallback(
+    (
+      to: BookingPhase,
+      triggeredBy: "orchestrator" | "recovery" | "expiration" = "orchestrator",
+    ): boolean => {
+      const current = sessionRef.current;
+      if (!current) return false;
 
-    if (!isValidTransition(current.bookingFlowPhase, nextPhase)) {
-      console.warn(
-        `[BookingCtx] Invalid transition: ${current.bookingFlowPhase} → ${nextPhase}. ` +
-        `Check ALLOWED_TRANSITIONS in consultationBookingTypes.ts`
+      const from = current.bookingFlowPhase;
+
+      if (!isValidTransition(from, to)) {
+        console.warn(`[BookingCtx] Invalid transition: ${from} → ${to}`);
+        return false;
+      }
+
+      const updated: ConsultationBookingSession = {
+        ...current,
+        bookingFlowPhase: to,
+        bookingStatus: to,
+        lastActivityAt: new Date().toISOString(),
+      };
+
+      consultationBookingRepository.save(updated);
+      dispatch({ type: "PHASE_TRANSITIONED", phase: to, session: updated });
+
+      // Domain event: BOOKING_PHASE_TRANSITIONED
+      const transitionEvent: BookingPhaseTransitionedEvent = createBookingEvent(
+        "BOOKING_PHASE_TRANSITIONED",
+        current.sessionId,
+        current.sourceIntentId,
+        { fromPhase: from, toPhase: to, triggeredBy },
       );
-      return false;
-    }
+      bookingEventBus.publish(transitionEvent);
 
-    const updated: ConsultationBookingSession = {
-      ...current,
-      bookingFlowPhase: nextPhase,
-      bookingStatus:    nextPhase,
-      lastActivityAt:   new Date().toISOString(),
-    };
+      return true;
+    },
+    [],
+  );
 
-    consultationBookingRepository.save(updated);
-    dispatch({ type: "PHASE_TRANSITIONED", phase: nextPhase, session: updated });
-    return true;
-  }, []);
+  // ── advancePhase — @deprecated: delegates to transitionTo ────────────────
+  const advancePhase = useCallback(
+    (to: BookingPhase): boolean => transitionTo(to, "orchestrator"),
+    [transitionTo],
+  );
 
-  // ── selectSpecialist ──────────────────────────────────────────────────────
+  // ── selectSpecialist — PAYLOAD mutation ──────────────────────────────────
+  //
+  // تُعدّل selectedSpecialistId فقط.
+  // لا تُغيّر bookingFlowPhase — لا تمر عبر transitionTo().
+  // يمكن استدعاؤها من الـ UI مباشرة.
+  //
+  // انظر Fix N2 في أعلى الملف.
+  //
   const selectSpecialist = useCallback((specialistId: string): void => {
     const current = sessionRef.current;
     if (!current) return;
@@ -324,7 +497,14 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     dispatch({ type: "SPECIALIST_SELECTED", specialistId, session: updated });
   }, []);
 
-  // ── selectSlot ────────────────────────────────────────────────────────────
+  // ── selectSlot — PAYLOAD mutation ────────────────────────────────────────
+  //
+  // تُعدّل selectedSlotId فقط.
+  // لا تُغيّر bookingFlowPhase — لا تمر عبر transitionTo().
+  // يمكن استدعاؤها من الـ UI مباشرة.
+  //
+  // انظر Fix N2 في أعلى الملف.
+  //
   const selectSlot = useCallback((slotId: string): void => {
     const current = sessionRef.current;
     if (!current) return;
@@ -431,6 +611,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     ownershipToken:   state.session?.sessionId ?? null,
     startBookingSession,
     transitionTo,
+    advancePhase,
     selectSpecialist,
     selectSlot,
     cancelBooking,
