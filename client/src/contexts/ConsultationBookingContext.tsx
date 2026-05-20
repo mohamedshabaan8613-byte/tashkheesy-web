@@ -120,6 +120,17 @@
  *     useConsultation()
  *     import ... from ConsultationContext
  *   الفصل يجب أن يكون كاملاً على مستوى الكود.
+ *
+ * ─── Audit Fixes (Sprint 3.3 Audit) ────────────────────────────────────────
+ *
+ * Fix C3: SESSION_TERMINATED يُصفَّر isRecovering
+ *   المشكلة: reducer كان يحتفظ بـ isRecovering من state السابق عند termination.
+ *   الخطر: إذا انتهت الجلسة أثناء recovery → isRecovering يبقى true → infinite skeleton.
+ *   الحل: SESSION_TERMINATED يُعيد { session: null, hasActiveSession: false, isRecovering: false }
+ *
+ * Fix M1: startBookingSession() guard ضد الجلسات المتعددة
+ *   المشكلة: استدعاء مزدوج (double-click) يُنشئ جلستين — الأولى orphan.
+ *   الحل: إذا توجد جلسة نشطة غير منتهية، لا تُنشئ جلسة جديدة — أعد الموجودة.
  */
 
 import {
@@ -199,7 +210,9 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
     case "SLOT_SELECTED":
       return { ...state, session: action.session };
     case "SESSION_TERMINATED":
-      return { ...state, session: null, hasActiveSession: false };
+      // Fix C3: isRecovering يُصفَّر صراحةً — يمنع infinite skeleton
+      // إذا انتهت الجلسة أثناء recovery (edge case)، الـ UI لا يبقى في skeleton إلى الأبد.
+      return { session: null, hasActiveSession: false, isRecovering: false };
     case "RECOVERY_STARTED":
       return { ...state, isRecovering: true };
     case "RECOVERY_FAILED":
@@ -380,8 +393,20 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   }, []);
 
   // ── startBookingSession ──────────────────────────────────────────────────
+  //
+  // Fix M1: Guard ضد إنشاء جلسات متعددة (double-click / fast re-render).
+  //   إذا توجد جلسة نشطة غير منتهية في نفس الـ phase → أعدها بدون إنشاء جديدة.
+  //   هذا يمنع session orphan ويحافظ على consistency.
+  //
   const startBookingSession = useCallback(
     (params: Parameters<ConsultationBookingContextValue["startBookingSession"]>[0]): ConsultationBookingSession => {
+      // Fix M1: تحقق من جلسة نشطة موجودة
+      const existing = sessionRef.current;
+      if (existing && !isSessionExpired(existing) && !TERMINAL_PHASES.includes(existing.bookingFlowPhase)) {
+        // جلسة نشطة موجودة — أعدها بدون إنشاء جديدة
+        return existing;
+      }
+
       const now = new Date().toISOString();
 
       // sourceIntentId = الرابط الثابت مع ConsultationIntent (Rule 4)

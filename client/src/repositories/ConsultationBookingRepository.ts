@@ -8,6 +8,9 @@
  * - setActive() / getActiveId() / loadActive() / clearActive()
  * - invalidate() تستخدم BookingRecoveryReason taxonomy
  * - loadLatest() تعتمد activeBookingSessionId أولاً
+ *
+ * Sprint 3.3 Safety Audit — Phase 1:
+ * - invalidate(): JSON.parse محاط بـ try/catch لضمان سلامة corrupted payloads
  */
 
 import type {
@@ -93,6 +96,10 @@ class SessionStorageBookingRepository implements ConsultationBookingRepository {
   /**
    * يُبطل الجلسة ويحتفظ بسجل السبب (BookingRecoveryReason) للـ audit.
    * يتقبل taxonomy موحد بدل string حر.
+   *
+   * Sprint 3.3 Phase 1 Fix:
+   *   JSON.parse محاط بـ try/catch منفصل.
+   *   Corrupted payload → active pointer يُمسح فورًا، ولا crash.
    */
   invalidate(sessionId: string, reason: BookingRecoveryReason): void {
     try {
@@ -100,7 +107,26 @@ class SessionStorageBookingRepository implements ConsultationBookingRepository {
       const raw = sessionStorage.getItem(key);
 
       if (raw) {
-        const session: ConsultationBookingSession = JSON.parse(raw);
+        // ── Sprint 3.3 Phase 1: حماية JSON.parse من corrupted payloads ──────
+        let session: ConsultationBookingSession;
+        try {
+          session = JSON.parse(raw);
+        } catch {
+          // Payload فاسد — امسح المؤشر النشط وابتعد بأمان.
+          // لا تترك active pointer يشير لجلسة لا يمكن قراءتها.
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "[BookingRepo] invalidate: corrupted payload for",
+              sessionId,
+              "— clearing active pointer",
+            );
+          }
+          if (this.getActiveId() === sessionId) {
+            this.clearActive();
+          }
+          return;
+        }
+
         const invalidated: ConsultationBookingSession = {
           ...session,
           bookingFlowPhase: "EXPIRED",
