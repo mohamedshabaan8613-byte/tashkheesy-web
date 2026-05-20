@@ -300,7 +300,6 @@ export interface ConsultationBookingRepository {
  *
  * Sprint 3.3: يُستخدم من orchestrator للتحقق قبل transitionTo().
  */
-export const ALLOWED_TRANSITIONS: Readonly<Partial<Record<BookingLifecyclePhase, BookingLifecyclePhase[]>>> = {
 // ─── Lifecycle Transition Validation ─────────────────────────────────────────
 /**
  * ALLOWED_TRANSITIONS — خريطة الانتقالات الصحيحة بين phases.
