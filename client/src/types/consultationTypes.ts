@@ -5,7 +5,7 @@
  *
  * تغييرات هذا الإصدار:
  *   • فصل ConsultationFlowPhase (حالة الرحلة الداخلية) عن ConsultationIntent (سياق الدخول)
- *   • إضافة CONSULTATION_ROUTES registry للقضاء على hardcoded routes
+ *   • CONSULTATION_ROUTES: معاد تصديره من constants/consultationRoutes — لا تعريف محلي
  *   • إضافة ConsultationNavigationState لطبقة الـ recovery
  *   • إضافة ConsultationFlowTransition للـ state machine guards
  *   • تعليم intent.confirmed كـ @deprecated
@@ -26,26 +26,23 @@ import type { PathType, AssessmentMode } from "../lib/assessmentTypes";
 // ---------------------------------------------------------------------------
 
 /**
- * Route Registry لكل consultation routes.
+ * @deprecated — استخدم المصدر الرسمي:
+ *   import { CONSULTATION_ROUTES } from "../constants/consultationRoutes";
  *
- * أي تغيير في مسار يجب أن يتم هنا فقط — وينعكس تلقائياً على كل الـ hook، context،
- * والـ URL builders.
+ * هذا re-export مؤقت لضمان التوافق مع المستهلكين الحاليين.
+ * سيُحذف هذا الـ re-export في Sprint 3.4 بعد نقل جميع المستهلكين.
  *
- * ⚠️ يجب أن تتطابق هذه القيم مع Routes المعرفة في App.tsx
+ * Sprint 3.3 Phase 2 Fix:
+ *   التعريف المحلي السابق (missing REVIEW) حُذف واستُبدل بـ re-export.
+ * كل مستهلك يستورد من هنا سيحصل تلقائيًا على REVIEW.
  */
-export const CONSULTATION_ROUTES = {
-  /** شاشة intro السياقي بعد التقييم أو الدخول المباشر */
-  START: "/consultation/start",
-  /** صفحة الحجز السياقي (مستقبل — Sprint 3.0c) */
-  BOOKING: "/consultation/booking",
-  /** صفحة الحجز العام (generic fallback) */
-  BOOKING_GENERIC: "/booking",
-  /** صفحة نجاح الحجز (مستقبل — Sprint 3.1) */
-  SUCCESS: "/consultation/success",
-} as const;
+export { CONSULTATION_ROUTES } from "../constants/consultationRoutes";
 
-export type ConsultationRoute =
-  (typeof CONSULTATION_ROUTES)[keyof typeof CONSULTATION_ROUTES];
+/**
+ * @deprecated — استخدم:
+ *   import type { ConsultationRoute } from "../constants/consultationRoutes";
+ */
+export type { ConsultationRoute } from "../constants/consultationRoutes";
 
 // ---------------------------------------------------------------------------
 // Entry Point — من أين جاء المستخدم?
@@ -72,7 +69,7 @@ export type ConsultationEntryPoint =
 /**
  * مستوى خطورة نتيجة التقييم.
  *
- * يُستخدم مستقبلاً لتحديد UX مختلف حسب النتيجة:
+ * يُستخدم مستقبلًا لتحديد UX مختلف حسب النتيجة:
  *   - high_risk        → reassurance + urgency ("يجب التحرك الآن")
  *   - moderate         → guidance-oriented ("خطوات واضحة للأمام")
  *   - low_risk         → calming + educational ("أنت بخير — إليك ما تعرفه")
@@ -80,12 +77,12 @@ export type ConsultationEntryPoint =
  *
  * ⚠️ ARCHITECTURE NOTE:
  *   هذا النوع مُعدّ للـ Experience Layer فقط (consultationCopy.ts).
- *   يجب ألا يُستخدم في:
+ *   يجب ألاّ يُستخدم في:
  *     - Runtime Layer (consultationStateMachine.ts)
  *     - Orchestration Layer (consultationBookingOrchestrator.ts)
  *     - Business Layer (entitlements / payments)
  *
- * @since Sprint 3.0e — severity-aware UX يُنفَّذ في Sprint 3.1
+ * @since Sprint 3.0e — severity-aware UX يُنفّذ في Sprint 3.1
  */
 export type ResultSeverity =
   | "high_risk"
@@ -139,7 +136,7 @@ export interface ConsultationIntent {
 
   /**
    * @deprecated — لا تستخدم هذا الحقل لتحديد حالة الرحلة.
-   * بقي مؤقتاً للتوافق مع sessionStorage القديم فقط.
+   * بقي مؤقتًا للتوافق مع sessionStorage القديم فقط.
    * حالة الرحلة من الآن تعيش داخل useConsultationFlow بواسطة:
    * @see ConsultationFlowPhase
    */
@@ -174,7 +171,7 @@ export type ConsultationFlowPhase =
 
 /**
  * @deprecated — استخدم ConsultationFlowPhase بدلاً من هذا.
- * محتفظ به مؤقتاً لتجنب breaking changes.
+ * محتفظ به مؤقتًا لتجنب breaking changes.
  */
 export type ConsultationFlowState =
   | "idle"
@@ -215,7 +212,7 @@ export interface ConsultationNavigationState {
   intentSource: "session" | "url" | "fresh" | "none";
 
   /**
-   * هل تم استعادة الحالة بعد انقطاع مثل refresh أو redirect؟
+   * هل تم استعادة الحالة بعد انقطاع مثل refresh أو redirect?
    */
   wasRecovered: boolean;
 
