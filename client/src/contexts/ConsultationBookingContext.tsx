@@ -1,17 +1,35 @@
 /**
  * ConsultationBookingContext.tsx — Sprint 3.3 PHASE 1 (Fix N2 docs)
+ * ConsultationBookingContext.tsx
  *
- * Context مستقل تمامًا عن ConsultationContext.
+ * Pre-Sprint 3.3 — Stabilization Phase
  *
- * ❌❌❌ تحذير صريح ❌❌❌
- * لا تُضف داخل هذا الملف:
- *   useConsultationContext()
- *   useConsultation()
- *   import ... from ConsultationContext
+ * ─── Runtime Coordinator Contract ──────────────────────────────────────────
  *
- * الفصل يجب أن يكون كاملاً على مستوى الكود.
- * إذا احتجت بيانات consultation → مرّرها عبر startBookingSession() params.
- * إذا احتجت intent لاحقًا → استخدم ConsultationBookingOrchestrator.
+ * ConsultationBookingProvider هو المنسق الوحيد لـ booking runtime:
+ *
+ * ✅ يملك Provider:
+ *   - hydration lifecycle (مرة واحدة فقط — hydrateOnce guard)
+ *   - runtime safety validation (runtimeSafetyCheck)
+ *   - active booking recovery (recovery on mount)
+ *   - expiration monitoring (polling كل 60 ثانية)
+ *   - ownership state (ownershipToken)
+ *   - transition dispatching (transitionTo)
+ *   - booking runtime cache (sessionRef)
+ *
+ * ❌ يبقى خارج Provider:
+ *   - navigation
+ *   - UI rendering
+ *   - denial presentation
+ *   - analytics
+ *   - emotional copy
+ *   - toasts
+ *
+ * ─── advancePhase — محذوف نهائيًا ─────────────────────────────────────────
+ *   advancePhase() أُزيل كليًا — لم يعد موجودًا كـ alias أو deprecated.
+ *   استخدم transitionTo(nextPhase) حصرًا.
+ *   السبب: advancePhase("SPECIALIST_SELECTION") يصف الحدث السابق (ambiguous).
+ *           transitionTo("SLOT_SELECTION") يصف الحالة الناتجة (deterministic).
  *
  * ─── Sprint 3.3 Changes ──────────────────────────────────────────────────────
  *
@@ -83,6 +101,25 @@
  *   إذا احتجت لتغيير phase + payload في نفس الوقت:
  *     1. استدعي selectSpecialist() أو selectSlot() أولاً
  *     2. ثم استدعي transitionTo() عبر orchestrator
+ * ─── sourceIntentId Migration ──────────────────────────────────────────────
+ *   sourceIntentId هو الحقل الكنسي الرسمي (immutable linkage).
+ *   consultationIntentId محفوظ كـ readonly alias في النوع فقط.
+ *   جميع العمليات الداخلية تستخدم sourceIntentId حصرًا.
+ *
+ * ─── hydrateOnce Guard ──────────────────────────────────────────────────────
+ *   useRef(false) يمنع double-recovery في React StrictMode.
+ *   بدونه: StrictMode يُشغّل useEffect مرتين → recovery مزدوج.
+ *
+ * ─── الفصل المعماري ────────────────────────────────────────────────────────
+ *   ConsultationContext          → WHY + WHERE (لماذا + من أين)
+ *   ConsultationBookingContext   → HOW         (كيف + runtime + lifecycle)
+ *
+ * ❌❌❌ تحذير صريح ❌❌❌
+ *   لا تُضف داخل هذا الملف:
+ *     useConsultationContext()
+ *     useConsultation()
+ *     import ... from ConsultationContext
+ *   الفصل يجب أن يكون كاملاً على مستوى الكود.
  */
 
 import {
@@ -97,10 +134,11 @@ import {
 import type {
   BookingEntitlementType,
   BookingEntryPoint,
-  BookingLifecyclePhase,
+  BookingPhase,
   BookingRecoveryReason,
   BookingRecoveryState,
   ConsultationBookingSession,
+  RuntimeSafetyResult,
   SpecialistRecommendation,
 } from "../types/consultationBookingTypes";
 import {
@@ -122,7 +160,11 @@ import type {
   BookingRecoveredEvent,
 } from "../types/bookingDomainEvents";
 
-// ─── State ────────────────────────────────────────────────────────────────
+// ─── Expiration Poll Interval ─────────────────────────────────────────────────
+/** كل 60 ثانية — يكفي لأن TTL الجلسة هو 2 ساعة */
+const EXPIRATION_POLL_MS = 60_000;
+
+// ─── State ────────────────────────────────────────────────────────────────────
 interface BookingState {
   session: ConsultationBookingSession | null;
   isRecovering: boolean;
@@ -135,14 +177,14 @@ const initialState: BookingState = {
   hasActiveSession: false,
 };
 
-// ─── Actions ──────────────────────────────────────────────────────────────
+// ─── Actions ──────────────────────────────────────────────────────────────────
 type BookingAction =
   | { type: "SESSION_STARTED";     session: ConsultationBookingSession }
   | { type: "SESSION_RECOVERED";   session: ConsultationBookingSession }
-  | { type: "PHASE_ADVANCED";      phase: BookingLifecyclePhase; session: ConsultationBookingSession }
+  | { type: "PHASE_TRANSITIONED";  phase: BookingPhase; session: ConsultationBookingSession }
   | { type: "SPECIALIST_SELECTED"; specialistId: string; session: ConsultationBookingSession }
   | { type: "SLOT_SELECTED";       slotId: string; session: ConsultationBookingSession }
-  | { type: "SESSION_TERMINATED"; reason: "CANCELLED" | "EXPIRED" | "ABANDONED" }
+  | { type: "SESSION_TERMINATED";  reason: "CANCELLED" | "EXPIRED" | "ABANDONED" }
   | { type: "RECOVERY_STARTED" }
   | { type: "RECOVERY_FAILED" }
   | { type: "SESSION_CLEARED" };
@@ -152,7 +194,7 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
     case "SESSION_STARTED":
     case "SESSION_RECOVERED":
       return { session: action.session, isRecovering: false, hasActiveSession: true };
-    case "PHASE_ADVANCED":
+    case "PHASE_TRANSITIONED":
     case "SPECIALIST_SELECTED":
     case "SLOT_SELECTED":
       return { ...state, session: action.session };
@@ -169,12 +211,20 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
   }
 }
 
-// ─── Context Shape ────────────────────────────────────────────────────────
+// ─── Context Shape ────────────────────────────────────────────────────────────
 interface ConsultationBookingContextValue {
   session: ConsultationBookingSession | null;
-  currentPhase: BookingLifecyclePhase | null;
+  currentPhase: BookingPhase | null;
   isRecovering: boolean;
   hasActiveSession: boolean;
+
+  /**
+   * ownershipToken — sessionId الجلسة النشطة.
+   *
+   * للصفحات التي تحتاج التحقق من ownership بدون قراءة session كاملة.
+   * null إذا لم تكن هناك جلسة نشطة.
+   */
+  ownershipToken: string | null;
 
   startBookingSession(params: {
     consultationIntentId: string;
@@ -212,6 +262,18 @@ interface ConsultationBookingContextValue {
    *
    * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
    */
+   * transitionTo — الانتقال إلى phase جديدة.
+   *
+   * TRANSITION_NAMING_RULE:
+   *   الاسم يصف الحالة الناتجة وليس الحدث السابق.
+   *   transitionTo("SLOT_SELECTION")  ← بعد اختيار specialist ✅
+   *   transitionTo("REVIEW")          ← بعد اختيار slot ✅
+   *   transitionTo("RESCHEDULED")     ← من CONFIRMED عند إعادة الجدولة ✅
+   *
+   * @returns true إذا نجح الانتقال، false إذا كان invalid
+   */
+  transitionTo(nextPhase: BookingPhase): boolean;
+
   selectSpecialist(specialistId: string): void;
 
   /**
@@ -228,14 +290,25 @@ interface ConsultationBookingContextValue {
   expireBooking(reason: BookingRecoveryReason): void;
   recoverSession(): ConsultationBookingSession | null;
   isSessionRecoverable(): boolean;
+
+  /**
+   * runtimeSafetyCheck — تحقق من صحة الجلسة الحالية.
+   *
+   * PROVIDER_RUNTIME_CONSOLIDATION:
+   *   هذه الدالة داخل Provider — لا تُعيد تنفيذها في الصفحات.
+   *   تستخدمها الصفحات للتحقق قبل أي عملية حساسة.
+   */
+  runtimeSafetyCheck(): RuntimeSafetyResult;
 }
 
 const ConsultationBookingContext =
   createContext<ConsultationBookingContextValue | null>(null);
 
-// ─── Provider ─────────────────────────────────────────────────────────────
+// ─── Provider ─────────────────────────────────────────────────────────────────
 export function ConsultationBookingProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(bookingReducer, initialState);
+
+  // sessionRef: يُتيح للـ callbacks قراءة الجلسة الحالية دون إعادة إنشائها
   const sessionRef = useRef<ConsultationBookingSession | null>(null);
   sessionRef.current = state.session;
 
@@ -246,6 +319,10 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const hydratedRef = useRef(false);
 
   // ── Recovery عند mount ──────────────────────────────────
+  // hydrateOnce guard: يمنع double-recovery في React StrictMode
+  const hydratedRef = useRef(false);
+
+  // ── Recovery عند mount — مرة واحدة فقط ─────────────────────────────────
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
@@ -258,13 +335,14 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       !isSessionExpired(recovered) &&
       RECOVERABLE_PHASES.includes(recovered.bookingFlowPhase)
     ) {
+      const now = new Date().toISOString();
       const updatedSession: ConsultationBookingSession = {
         ...recovered,
-        lastActivityAt: new Date().toISOString(),
+        lastActivityAt: now,
         recoveryState: {
           status: "recovered",
           reason: "page_refresh",
-          recoveredAt: new Date().toISOString(),
+          recoveredAt: now,
           recoveredPhase: recovered.bookingFlowPhase,
           auditNote: `auto-recovered on mount from phase: ${recovered.bookingFlowPhase}`,
         },
@@ -291,9 +369,27 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     }
   }, []);
 
-  // ── startBookingSession ──────────────────────────────
+  // ── Expiration Polling — Provider-level Single Source ───────────────────
+  //
+  // PROVIDER_RUNTIME_CONSOLIDATION:
+  //   Polling يعيش هنا فقط — ليس في الصفحات ولا في hooks.
+  //   الصفحات لا تحتاج إنشاء polling خاص بها.
+  useEffect(() => {
+    const poll = setInterval(() => {
+      const current = sessionRef.current;
+      if (!current) return;
+      if (isSessionExpired(current)) {
+        consultationBookingRepository.invalidate(current.sessionId, "expiration_poll");
+        dispatch({ type: "SESSION_TERMINATED", reason: "EXPIRED" });
+      }
+    }, EXPIRATION_POLL_MS);
+
+    return () => clearInterval(poll);
+  }, []);
+
+  // ── startBookingSession ──────────────────────────────────────────────────
   const startBookingSession = useCallback(
-    (params: Parameters<ConsultationBookingContextValue["startBookingSession"]>[0]) => {
+    (params: Parameters<ConsultationBookingContextValue["startBookingSession"]>[0]): ConsultationBookingSession => {
       const now = new Date().toISOString();
       const sessionId = generateBookingSessionId();
 
@@ -311,6 +407,21 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
         entryPoint: params.entryPoint,
         assessmentSessionId: params.assessmentSessionId,
         entitlementType: params.entitlementType,
+
+      // sourceIntentId = الرابط الثابت مع ConsultationIntent (Rule 4)
+      const newSession: ConsultationBookingSession = {
+        sessionId:            generateBookingSessionId(),
+        sourceIntentId:       params.consultationIntentId,
+        consultationIntentId: params.consultationIntentId, // readonly alias
+        bookingFlowPhase:     "CREATED",
+        bookingStatus:        "CREATED",
+        lifecycleVersion:     "v1",
+        createdAt:            now,
+        lastActivityAt:       now,
+        expiresAt:            calculateBookingExpiry(),
+        entryPoint:           params.entryPoint,
+        assessmentSessionId:  params.assessmentSessionId,
+        entitlementType:      params.entitlementType,
         specialistRecommendation: params.specialistRecommendation,
         recoveryState: { status: "fresh" },
       };
@@ -368,7 +479,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       };
 
       consultationBookingRepository.save(updated);
-      dispatch({ type: "PHASE_ADVANCED", phase: to, session: updated });
+      dispatch({ type: "PHASE_TRANSITIONED", phase: to, session: updated });
 
       // Domain event: BOOKING_PHASE_TRANSITIONED
       const transitionEvent: BookingPhaseTransitionedEvent = createBookingEvent(
@@ -401,7 +512,11 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const selectSpecialist = useCallback((specialistId: string): void => {
     const current = sessionRef.current;
     if (!current) return;
-    const updated = { ...current, selectedSpecialistId: specialistId, lastActivityAt: new Date().toISOString() };
+    const updated: ConsultationBookingSession = {
+      ...current,
+      selectedSpecialistId: specialistId,
+      lastActivityAt:       new Date().toISOString(),
+    };
     consultationBookingRepository.save(updated);
     dispatch({ type: "SPECIALIST_SELECTED", specialistId, session: updated });
   }, []);
@@ -417,12 +532,16 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const selectSlot = useCallback((slotId: string): void => {
     const current = sessionRef.current;
     if (!current) return;
-    const updated = { ...current, selectedSlotId: slotId, lastActivityAt: new Date().toISOString() };
+    const updated: ConsultationBookingSession = {
+      ...current,
+      selectedSlotId: slotId,
+      lastActivityAt: new Date().toISOString(),
+    };
     consultationBookingRepository.save(updated);
     dispatch({ type: "SLOT_SELECTED", slotId, session: updated });
   }, []);
 
-  // ── cancelBooking ────────────────────────────────────
+  // ── cancelBooking ─────────────────────────────────────────────────────────
   const cancelBooking = useCallback((reason: BookingRecoveryReason = "user_cancelled"): void => {
     const current = sessionRef.current;
     if (!current) return;
@@ -430,7 +549,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     dispatch({ type: "SESSION_TERMINATED", reason: "CANCELLED" });
   }, []);
 
-  // ── expireBooking ────────────────────────────────────
+  // ── expireBooking ─────────────────────────────────────────────────────────
   const expireBooking = useCallback((reason: BookingRecoveryReason): void => {
     const current = sessionRef.current;
     if (!current) return;
@@ -438,7 +557,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     dispatch({ type: "SESSION_TERMINATED", reason: "EXPIRED" });
   }, []);
 
-  // ── recoverSession ───────────────────────────────────
+  // ── recoverSession ────────────────────────────────────────────────────────
   const recoverSession = useCallback((): ConsultationBookingSession | null => {
     const active = consultationBookingRepository.loadActive();
     if (!active || isSessionExpired(active)) return null;
@@ -446,18 +565,74 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     return active;
   }, []);
 
-  // ── isSessionRecoverable ─────────────────────────────
+  // ── isSessionRecoverable ──────────────────────────────────────────────────
   const isSessionRecoverable = useCallback((): boolean => {
     const active = consultationBookingRepository.loadActive();
     if (!active || isSessionExpired(active)) return false;
     return RECOVERABLE_PHASES.includes(active.bookingFlowPhase);
   }, []);
 
+  // ── runtimeSafetyCheck — Provider Single Source ───────────────────────────
+  //
+  // PROVIDER_RUNTIME_CONSOLIDATION:
+  //   لا تُعيد بناء هذا الـ check في الصفحات — استدعِه من الـ context.
+  //
+  //   يتحقق من:
+  //     1. وجود جلسة نشطة
+  //     2. أن الجلسة لم تنتهِ صلاحيتها (TTL)
+  //     3. تناسق sessionId مع repository
+  const runtimeSafetyCheck = useCallback((): RuntimeSafetyResult => {
+    const current = sessionRef.current;
+
+    if (!current) {
+      return {
+        status: "missing",
+        currentPhase: null,
+        diagnosticNote: "No active booking session in context",
+      };
+    }
+
+    if (isSessionExpired(current)) {
+      return {
+        status: "expired",
+        currentPhase: current.bookingFlowPhase,
+        diagnosticNote: `Session ${current.sessionId} expired at ${current.expiresAt}`,
+      };
+    }
+
+    const repoSession = consultationBookingRepository.load(current.sessionId);
+    if (!repoSession) {
+      return {
+        status: "corrupt",
+        currentPhase: current.bookingFlowPhase,
+        diagnosticNote:
+          `Session ${current.sessionId} exists in context but not in repository — possible corruption`,
+      };
+    }
+
+    if (repoSession.bookingFlowPhase !== current.bookingFlowPhase) {
+      return {
+        status: "corrupt",
+        currentPhase: current.bookingFlowPhase,
+        diagnosticNote:
+          `Phase mismatch: context=${current.bookingFlowPhase}, ` +
+          `repository=${repoSession.bookingFlowPhase}`,
+      };
+    }
+
+    return {
+      status: "valid",
+      currentPhase: current.bookingFlowPhase,
+      diagnosticNote: `Session ${current.sessionId} is valid at phase ${current.bookingFlowPhase}`,
+    };
+  }, []);
+
   const value: ConsultationBookingContextValue = {
-    session: state.session,
-    currentPhase: state.session?.bookingFlowPhase ?? null,
-    isRecovering: state.isRecovering,
+    session:          state.session,
+    currentPhase:     state.session?.bookingFlowPhase ?? null,
+    isRecovering:     state.isRecovering,
     hasActiveSession: state.hasActiveSession,
+    ownershipToken:   state.session?.sessionId ?? null,
     startBookingSession,
     transitionTo,
     advancePhase,
@@ -467,6 +642,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     expireBooking,
     recoverSession,
     isSessionRecoverable,
+    runtimeSafetyCheck,
   };
 
   return (
@@ -476,13 +652,13 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   );
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 export function useConsultationBooking(): ConsultationBookingContextValue {
   const ctx = useContext(ConsultationBookingContext);
   if (!ctx) {
     throw new Error(
       "useConsultationBooking must be used within ConsultationBookingProvider. " +
-      "Do NOT import ConsultationContext inside this hook.",
+      "Wrap your component tree with <ConsultationBookingProvider>."
     );
   }
   return ctx;

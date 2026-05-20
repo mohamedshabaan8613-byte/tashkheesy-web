@@ -256,6 +256,7 @@ function Router() {
         <Route path={CONSULTATION_ROUTES.START}   component={ConsultationIntroNoIndex} />
         <Route path={CONSULTATION_ROUTES.BOOKING} component={ConsultationBookingNoIndex} />
         <Route path={CONSULTATION_ROUTES.REVIEW}  component={BookingReviewNoIndex} />
+        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0+) ────────────────────── */}
 
         {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────── */}
         <Route path="/login"   component={Login} />
@@ -315,6 +316,34 @@ function App() {
            * PERSISTENCE (Sprint 3.3 Phase 2):
            *   Supabase layer سيكون authoritative source of truth.
            *   Runtime context يصبح cache + orchestration layer.
+           * ─── Provider Tree — Runtime Coordinator Architecture ──────────
+           *
+           * الترتيب محدد ومقصود:
+           *
+           *   ConsultationProvider
+           *     → WHY + WHERE: intent + flow phase
+           *     → يُحدد سبب الحجز ومصدره (تقييم / مباشر / إحالة)
+           *
+           *   ConsultationBookingProvider
+           *     → HOW: booking session + lifecycle + runtime
+           *     → Runtime Coordinator الوحيد للـ booking workflow:
+           *         • hydration lifecycle (hydrateOnce guard)
+           *         • runtime safety validation (runtimeSafetyCheck)
+           *         • active booking recovery (recovery on mount)
+           *         • expiration monitoring (polling 60s)
+           *         • ownership state (ownershipToken)
+           *         • transition dispatching (transitionTo)
+           *         • booking runtime cache (sessionRef)
+           *
+           * ISOLATION RULE:
+           *   ConsultationBookingProvider لا يقرأ ConsultationContext مباشرة.
+           *   التداخل في الشجرة ≠ التداخل في المنطق.
+           *   البيانات تُمرر عبر startBookingSession() params فقط.
+           *
+           * MUTATION RULE:
+           *   لا توجد صفحة تُعدِّل booking phase مباشرة.
+           *   جميع الانتقالات تمر عبر transitionTo() في Provider.
+           * ────────────────────────────────────────────────────────────────
            */}
           <ConsultationProvider>
             <ConsultationBookingProvider>
