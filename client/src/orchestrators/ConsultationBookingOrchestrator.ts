@@ -26,17 +26,17 @@
  *   UI → useConsultationBookingAdapter() hook → orchestrator → BookingContext → Repository
  */
 
+import { CONSULTATION_ROUTES } from "../constants/consultationRoutes";
+import type { ConsultationRoute } from "../constants/consultationRoutes";
 import type {
   BookingDenialReason,
   BookingEntitlementType,
   BookingEntryPoint,
   BookingInitializationResult,
   ConsultationBookingSession,
-  ConsultationRoute,
   RecoveryAction,
   SpecialistRecommendation,
 } from "../types/consultationBookingTypes";
-import { CONSULTATION_ROUTES } from "../types/consultationBookingTypes";
 
 // ─── Input Types ──────────────────────────────────────────────────────────────
 
