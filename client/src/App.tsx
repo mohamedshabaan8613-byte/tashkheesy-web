@@ -5,6 +5,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ConsultationProvider } from "./contexts/ConsultationContext";
 import { ConsultationBookingProvider } from "./contexts/ConsultationBookingContext";
+import { CONSULTATION_ROUTES } from "./constants/consultationRoutes";
 import WhatsAppButton from "./components/WhatsAppButton";
 import PageSkeleton from "./components/PageSkeleton";
 import { Toaster } from "@/components/ui/sonner";
@@ -176,7 +177,7 @@ function ConsultationIntroNoIndex() {
 
 /**
  * ConsultationBookingNoIndex — Sprint 3.0c
- * Route: /consultation/booking
+ * Route: CONSULTATION_ROUTES.BOOKING
  */
 function ConsultationBookingNoIndex() {
   return (
@@ -187,8 +188,10 @@ function ConsultationBookingNoIndex() {
 }
 
 /**
- * BookingReviewNoIndex — Sprint 3.3 PHASE 1
- * Route: /consultation/review
+ * BookingReviewNoIndex — Sprint 3.3 PHASE 1 (Fix N4)
+ * Route: CONSULTATION_ROUTES.REVIEW
+ *
+ * Fix N4: Route يستخدم CONSULTATION_ROUTES.REVIEW وليس string مباشرة.
  *
  * UX boundary — الصفحة قبل persistence commit.
  * الـ UI يعرض فقط — لا تأكيد، لا Supabase write، لا transitionTo() مباشر.
@@ -234,21 +237,25 @@ function Router() {
         <Route path="/choose-child-path/:childId" component={ChooseChildPathWrapper} />
         <Route path="/specialists"                component={SpecialistsMatchNoIndex} />
 
-        {/* ─── صفحات الاستشارة السياقية (Sprint 3.0 → 3.3) ───────────────── */}
-        <Route path="/consultation/start"   component={ConsultationIntroNoIndex} />
-        <Route path="/consultation/booking" component={ConsultationBookingNoIndex} />
         {/*
-         * /consultation/review — Sprint 3.3 PHASE 1
+         * ─── صفحات الاستشارة السياقية (Sprint 3.0 → 3.3) ───────────────────
          *
-         * ARCHITECTURE CONTRACT:
-         *   UI: عرض ملخص فقط — لا تأكيد مباشر
-         *   Persistence: Phase 2 (Supabase layer — لم تُبنَ بعد)
-         *   Confirmation: Phase 4 (transactional — بعد reservation + persistence)
+         * Fix N4: جميع المسارات تستخدم CONSULTATION_ROUTES.
+         * لا توجد strings مباشرة هنا.
+         *
+         * ARCHITECTURE CONTRACT (Sprint 3.3):
+         *   START   → ConsultationIntroPage  (نقطة دخول الـ funnel)
+         *   BOOKING → ConsultationBookingPage (اختيار الأخصائي والموعد)
+         *   REVIEW  → BookingReviewPage       (UX boundary — عرض فقط)
          *
          * ISOLATION RULE: BookingReviewPage لا تستورد ConsultationContext.
          * MUTATION RULE:  لا transitionTo() من الـ UI مباشرة.
+         * SOURCE OF TRUTH: runtime session من useConsultationBooking() فقط.
+         *                   URL = navigation concern فقط.
          */}
-        <Route path="/consultation/review"  component={BookingReviewNoIndex} />
+        <Route path={CONSULTATION_ROUTES.START}   component={ConsultationIntroNoIndex} />
+        <Route path={CONSULTATION_ROUTES.BOOKING} component={ConsultationBookingNoIndex} />
+        <Route path={CONSULTATION_ROUTES.REVIEW}  component={BookingReviewNoIndex} />
 
         {/* ─── صفحات المصادقة (Sprint 1B) ────────────────────────────────── */}
         <Route path="/login"   component={Login} />

@@ -1,5 +1,5 @@
 /**
- * ConsultationBookingContext.tsx — Sprint 3.3 PHASE 1 (updated)
+ * ConsultationBookingContext.tsx — Sprint 3.3 PHASE 1 (Fix N2 docs)
  *
  * Context مستقل تمامًا عن ConsultationContext.
  *
@@ -32,6 +32,57 @@
  * الفرق المعماري:
  *   ConsultationContext          → WHY + WHERE (لماذا + من أين)
  *   ConsultationBookingContext   → HOW         (كيف + تتبع الحجز)
+ *
+ * ─── Fix N2: توضيح الفرق بين PHASE mutations و PAYLOAD mutations ───────────
+ *
+ * هذا الـ context يحتوي نوعين من الـ mutations — وهما مختلفان تمامًا:
+ *
+ * ── النوع الأول: PHASE mutations ────────────────────────────────────────────
+ *
+ *   الدوال: transitionTo() — وهي المصدر الوحيد والكامل لهذا النوع.
+ *
+ *   ماذا تفعل:
+ *     - تُغيّر bookingFlowPhase في الـ session
+ *     - تُغيّر bookingStatus
+ *     - تُصدر BOOKING_PHASE_TRANSITIONED domain event
+ *     - تتحقق من صحة الـ transition عبر isValidTransition()
+ *     - تحفظ الـ session بالـ repository
+ *
+ *   قاعدة الاستخدام:
+ *     transitionTo() لا تُستدعى من الـ UI مباشرة.
+ *     المسار الصحيح: UI → orchestrator → transitionTo()
+ *
+ *   لماذا هذا مهم:
+ *     PHASE mutations هي التي تُنتج domain events.
+ *     إذا حدثت خارج transitionTo() → لا domain event → recovery corruption.
+ *
+ * ── النوع الثاني: PAYLOAD mutations ─────────────────────────────────────────
+ *
+ *   الدوال: selectSpecialist() + selectSlot()
+ *
+ *   ماذا تفعل:
+ *     - تُعدّل payload fields فقط: selectedSpecialistId, selectedSlotId
+ *     - لا تُغيّر bookingFlowPhase
+ *     - لا تُصدر domain event (هذا مقصود)
+ *     - تحفظ الـ session بالـ repository مباشرة
+ *
+ *   قاعدة الاستخدام:
+ *     يمكن استدعاؤها من الـ UI مباشرة.
+ *     لا تمر عبر transitionTo() لأنها لا تُغيّر lifecycle phase.
+ *
+ *   لماذا لا تمر عبر transitionTo():
+ *     transitionTo() مصمم لتغيير الـ phase + إصدار domain event.
+ *     اختيار الأخصائي أو الموعد لا يُشكّل phase transition في الـ lifecycle.
+ *     هو تحديث لبيانات الحجز فقط داخل نفس الـ phase.
+ *
+ * ── الخلاصة ─────────────────────────────────────────────────────────────────
+ *
+ *   transitionTo() = مصدر وحيد لتغيير lifecycle phase
+ *   selectSpecialist/selectSlot = payload mutations فقط، لا تغير الـ phase
+ *
+ *   إذا احتجت لتغيير phase + payload في نفس الوقت:
+ *     1. استدعي selectSpecialist() أو selectSlot() أولاً
+ *     2. ثم استدعي transitionTo() عبر orchestrator
  */
 
 import {
@@ -134,12 +185,16 @@ interface ConsultationBookingContextValue {
   }): ConsultationBookingSession;
 
   /**
-   * transitionTo() — Sprint 3.3: المسار الوحيد لتغيير الـ lifecycle phase.
+   * transitionTo() — PHASE mutation.
+   *
+   * المصدر الوحيد لتغيير lifecycle phase في الـ session.
    *
    * RULE 2: الـ UI لا يستدعي هذا مباشرة.
    *         يستدعيه orchestrator بعد validation + persistence.
    *
-   * يُصدر BOOKING_PHASE_TRANSITIONED event عند كل transition ناجح.
+   * يُصدر BOOKING_PHASE_TRANSITIONED domain event عند كل transition ناجح.
+   *
+   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
    */
   transitionTo(to: BookingLifecyclePhase, triggeredBy?: "orchestrator" | "recovery" | "expiration"): boolean;
 
@@ -149,8 +204,26 @@ interface ConsultationBookingContextValue {
    */
   advancePhase(to: BookingLifecyclePhase): boolean;
 
+  /**
+   * selectSpecialist() — PAYLOAD mutation.
+   *
+   * تُعدّل selectedSpecialistId فقط — لا تُغيّر lifecycle phase.
+   * يمكن استدعاؤها من الـ UI مباشرة.
+   *
+   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
+   */
   selectSpecialist(specialistId: string): void;
+
+  /**
+   * selectSlot() — PAYLOAD mutation.
+   *
+   * تُعدّل selectedSlotId فقط — لا تُغيّر lifecycle phase.
+   * يمكن استدعاؤها من الـ UI مباشرة.
+   *
+   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
+   */
   selectSlot(slotId: string): void;
+
   cancelBooking(reason?: BookingRecoveryReason): void;
   expireBooking(reason: BookingRecoveryReason): void;
   recoverSession(): ConsultationBookingSession | null;
@@ -264,7 +337,14 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     [],
   );
 
-  // ── transitionTo() — Sprint 3.3: canonical mutation path ────────────────
+  // ── transitionTo() — PHASE mutation ─────────────────────────────────────
+  //
+  // المصدر الوحيد لتغيير lifecycle phase.
+  // يُصدر BOOKING_PHASE_TRANSITIONED domain event.
+  // لا يُستدعى من الـ UI مباشرة — يمر عبر orchestrator.
+  //
+  // انظر Fix N2 في أعلى الملف.
+  //
   const transitionTo = useCallback(
     (
       to: BookingLifecyclePhase,
@@ -310,7 +390,14 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     [transitionTo],
   );
 
-  // ── selectSpecialist ─────────────────────────────────
+  // ── selectSpecialist — PAYLOAD mutation ──────────────────────────────────
+  //
+  // تُعدّل selectedSpecialistId فقط.
+  // لا تُغيّر bookingFlowPhase — لا تمر عبر transitionTo().
+  // يمكن استدعاؤها من الـ UI مباشرة.
+  //
+  // انظر Fix N2 في أعلى الملف.
+  //
   const selectSpecialist = useCallback((specialistId: string): void => {
     const current = sessionRef.current;
     if (!current) return;
@@ -319,7 +406,14 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     dispatch({ type: "SPECIALIST_SELECTED", specialistId, session: updated });
   }, []);
 
-  // ── selectSlot ───────────────────────────────────────
+  // ── selectSlot — PAYLOAD mutation ────────────────────────────────────────
+  //
+  // تُعدّل selectedSlotId فقط.
+  // لا تُغيّر bookingFlowPhase — لا تمر عبر transitionTo().
+  // يمكن استدعاؤها من الـ UI مباشرة.
+  //
+  // انظر Fix N2 في أعلى الملف.
+  //
   const selectSlot = useCallback((slotId: string): void => {
     const current = sessionRef.current;
     if (!current) return;

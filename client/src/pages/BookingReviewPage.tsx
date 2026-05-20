@@ -1,5 +1,5 @@
 /**
- * BookingReviewPage.tsx — Sprint 3.3 PHASE 1
+ * BookingReviewPage.tsx — Sprint 3.3 PHASE 1 (Fix N3 + N4)
  *
  * UX completion boundary before persistence commit.
  *
@@ -20,16 +20,39 @@
  *   يستدعي orchestrator الذي يضمن الشروط أولاً.
  *
  * ────────────────────────────────────────────────────────────────────
+ * Fix N3 — Orphan Guard (Sprint 3.3 review)
+ * ────────────────────────────────────────────────────────────────────
+ *
+ * الإضافة: isSessionExpired() check في redirect useEffect.
+ *
+ * المشكلة السابقة:
+ *   الصفحة كانت تعرض UI لـ session منتهية الصلاحية ما دام
+ *   session موجود في memory — SessionExpiryNotice تعرض
+ *   "انتهت المهلة" كـ UI فقط دون إبطال الـ session أو redirect.
+ *
+ * الحل:
+ *   إذا كانت session منتهية → expireBooking() + redirect فوري
+ *   قبل أي render للمحتوى الحقيقي.
+ *
+ * ────────────────────────────────────────────────────────────────────
+ * Fix N4 — No Hardcoded Routes (Sprint 3.3 review)
+ * ────────────────────────────────────────────────────────────────────
+ *
+ * جميع navigate() تستخدم CONSULTATION_ROUTES.
+ * لا توجد strings مباشرة مثل "/consultation/start" في هذا الملف.
+ *
+ * ────────────────────────────────────────────────────────────────────
  * ما تفعله هذه الصفحة:
  *   ✅ عرض ملخص الحجز (الأخصائي + الموعد + الاستحقاق)
  *   ✅ إتاحة التعديل (العودة لاختيار الأخصائي أو الموعد)
- *   ✅ hydration-safe + recovery-safe
+ *   ✅ hydration-safe + recovery-safe + expiry-safe
  *   ✅ تصدر BOOKING_REVIEW_REACHED event عند الوصول
  *
  * ما لا تفعله:
  *   ❌ لا تؤكد الحجز مباشرة
  *   ❌ لا تكتب في Supabase
  *   ❌ لا تستدعي transitionTo() مباشرة
+ *   ❌ لا تقرأ من URL params (URL = navigation concern فقط)
  * ────────────────────────────────────────────────────────────────────
  */
 
@@ -37,12 +60,20 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useConsultationBooking } from "../contexts/ConsultationBookingContext";
 import { bookingEventBus, createBookingEvent } from "../types/bookingDomainEvents";
+import { isSessionExpired } from "../types/consultationBookingTypes";
+import { CONSULTATION_ROUTES } from "../constants/consultationRoutes";
 import type { BookingReviewReachedEvent } from "../types/bookingDomainEvents";
 
 // ─── BookingReviewPage ────────────────────────────────────────────────────────
 export default function BookingReviewPage() {
-  const { session, currentPhase, hasActiveSession, isRecovering, cancelBooking } =
-    useConsultationBooking();
+  const {
+    session,
+    currentPhase,
+    hasActiveSession,
+    isRecovering,
+    cancelBooking,
+    expireBooking,
+  } = useConsultationBooking();
   const [, navigate] = useLocation();
 
   const reviewEventFiredRef = useRef(false);
@@ -76,21 +107,36 @@ export default function BookingReviewPage() {
     bookingEventBus.publish(event);
   }, [isValidForReview, session]);
 
-  // ── Redirect: إذا لم يكن هناك session صالح ───────────────────────────────
+  // ── Redirect + Expiry Guard (Fix N3) ─────────────────────────────────────
+  //
+  // الترتيب مهم:
+  //   1. isRecovering → انتظر (لا redirect أثناء hydration)
+  //   2. session منتهية → expireBooking() + redirect فوري
+  //   3. لا session → redirect لـ START
+  //   4. specialist/slot ناقص → redirect لـ BOOKING
+  //
   useEffect(() => {
     if (isRecovering) return;
+
+    // Fix N3: فحص انتهاء صلاحية الـ session قبل أي render
+    if (session && isSessionExpired(session)) {
+      expireBooking("session_ttl_exceeded");
+      navigate(CONSULTATION_ROUTES.START, { replace: true });
+      return;
+    }
+
     if (!hasActiveSession || !session) {
-      navigate("/consultation/start", { replace: true });
+      navigate(CONSULTATION_ROUTES.START, { replace: true });
       return;
     }
     if (!session.selectedSpecialistId) {
-      navigate("/consultation/booking", { replace: true });
+      navigate(CONSULTATION_ROUTES.BOOKING, { replace: true });
       return;
     }
     if (!session.selectedSlotId) {
-      navigate("/consultation/booking", { replace: true });
+      navigate(CONSULTATION_ROUTES.BOOKING, { replace: true });
     }
-  }, [isRecovering, hasActiveSession, session, navigate]);
+  }, [isRecovering, hasActiveSession, session, navigate, expireBooking]);
 
   // ── Loading state ─────────────────────────────────────────────────────────
   if (isRecovering) {
@@ -103,16 +149,16 @@ export default function BookingReviewPage() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleEditSpecialist = () => {
-    navigate("/consultation/booking");
+    navigate(CONSULTATION_ROUTES.BOOKING);
   };
 
   const handleEditSlot = () => {
-    navigate("/consultation/booking");
+    navigate(CONSULTATION_ROUTES.BOOKING);
   };
 
   const handleCancel = () => {
     cancelBooking("user_cancelled");
-    navigate("/consultation/start", { replace: true });
+    navigate(CONSULTATION_ROUTES.START, { replace: true });
   };
 
   /**
