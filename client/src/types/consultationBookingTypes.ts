@@ -10,35 +10,42 @@
  *   These types mirror the Supabase DB schema exactly.
  *   Runtime state machine types remain in consultationTypes.ts.
  *   Do NOT mix UI state with persistence types.
+ *
+ * ─── SPRINT 3.4 NOTE ────────────────────────────────────────────────────────
+ * The bottom section of this file preserves the runtime session types and
+ * utility functions that were present before Sprint 3.4. These are required
+ * by 6 consumer files across the codebase. They will be extracted to a
+ * dedicated file (consultationBookingSessionTypes.ts) in Sprint 3.5.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 
-// ---------------------------------------------------------------------------
-// Enums — DB-level status values
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// SECTION A — DB Persistence Types (Sprint 3.4 additions)
+// ===========================================================================
 
 /** Status progression for a consultation booking */
 export type ConsultationStatus =
-  | "DRAFT"           // intent created, not yet booked
-  | "SLOT_SELECTED"   // specialist + slot chosen
-  | "CONFIRMING"      // confirmation in progress
-  | "CONFIRMED"       // transactional entity — persisted
-  | "CONFIRMATION_FAILED" // confirmation attempt failed
-  | "CANCELLING"      // cancellation in progress
-  | "CANCELLED"       // cancelled, audit trail preserved
+  | "DRAFT"
+  | "SLOT_SELECTED"
+  | "CONFIRMING"
+  | "CONFIRMED"
+  | "CONFIRMATION_FAILED"
+  | "CANCELLING"
+  | "CANCELLED"
   | "CANCELLATION_FAILED"
   | "RESCHEDULE_REQUESTED"
   | "RESCHEDULE_IN_PROGRESS"
-  | "RESCHEDULED"     // slot changed, same booking entity
-  | "EXPIRED"         // TTL exceeded without confirmation
-  | "COMPLETED";      // consultation took place
+  | "RESCHEDULED"
+  | "EXPIRED"
+  | "COMPLETED";
 
 /** Reservation lifecycle for slot ownership */
 export type ReservationStatus =
-  | "PENDING"    // reservation initiated
-  | "RESERVED"   // slot locked for this user
-  | "CONFIRMED"  // booking confirmed — slot permanently assigned
-  | "RELEASED"   // slot released (cancel/reschedule)
-  | "EXPIRED";   // TTL exceeded without confirmation
+  | "PENDING"
+  | "RESERVED"
+  | "CONFIRMED"
+  | "RELEASED"
+  | "EXPIRED";
 
 /** Booking lifecycle phases — runtime state machine */
 export type BookingFlowPhase =
@@ -57,13 +64,8 @@ export type BookingFlowPhase =
   | "EXPIRED"
   | "SESSION_TERMINATED";
 
-// ---------------------------------------------------------------------------
-// DB Record Types — mirror Supabase table columns exactly
-// ---------------------------------------------------------------------------
-
 /**
  * ConsultationRecord — mirrors `consultations` table
- * Primary transactional entity after confirmation.
  */
 export interface ConsultationRecord {
   id: string;
@@ -73,36 +75,35 @@ export interface ConsultationRecord {
   reservation_status: ReservationStatus | null;
   specialist_id: string | null;
   slot_id: string | null;
-  created_at: string;        // ISO 8601
-  updated_at: string;        // ISO 8601
-  expires_at: string | null; // ISO 8601 — TTL for reservation
+  created_at: string;
+  updated_at: string;
+  expires_at: string | null;
   confirmed_at: string | null;
   cancelled_at: string | null;
-  rescheduled_from: string | null; // previous slot_id for audit
-  is_free_consultation: boolean;   // one-free-consultation policy
+  rescheduled_from: string | null;
+  is_free_consultation: boolean;
   cancellation_reason: string | null;
-  reschedule_count: number;        // audit: how many times rescheduled
-  ownership_token: string | null;  // multi-tab safety
+  reschedule_count: number;
+  ownership_token: string | null;
 }
 
 /**
  * SlotReservationRecord — mirrors `slot_reservations` table
- * Separate from booking — prevents double-booking at DB level.
  */
 export interface SlotReservationRecord {
   id: string;
   slot_id: string;
   user_id: string;
-  consultation_id: string | null; // null until booking confirmed
+  consultation_id: string | null;
   status: ReservationStatus;
-  reserved_until: string;  // ISO 8601 — TTL
+  reserved_until: string;
   released_at: string | null;
   created_at: string;
 }
 
 /**
  * ConsultationEventRecord — mirrors `consultation_events` table
- * Append-only audit log. Never update, only insert.
+ * Append-only audit log.
  */
 export interface ConsultationEventRecord {
   id: string;
@@ -111,10 +112,6 @@ export interface ConsultationEventRecord {
   payload: Record<string, unknown>;
   created_at: string;
 }
-
-// ---------------------------------------------------------------------------
-// Audit Event Types — all trackable mutations
-// ---------------------------------------------------------------------------
 
 export type ConsultationAuditEventType =
   | "BOOKING_STARTED"
@@ -136,19 +133,13 @@ export type ConsultationAuditEventType =
   | "NOTIFICATION_SENT"
   | "NOTIFICATION_FAILED";
 
-// ---------------------------------------------------------------------------
-// Service Input/Output DTOs
-// ---------------------------------------------------------------------------
-
-/** Input for reserving a slot */
 export interface ReserveSlotInput {
   slotId: string;
   userId: string;
   consultationId?: string;
-  ttlMinutes?: number; // default: 15
+  ttlMinutes?: number;
 }
 
-/** Input for confirming a booking */
 export interface ConfirmBookingInput {
   consultationId: string;
   userId: string;
@@ -156,14 +147,12 @@ export interface ConfirmBookingInput {
   ownershipToken: string;
 }
 
-/** Input for cancelling a booking */
 export interface CancelBookingInput {
   consultationId: string;
   userId: string;
   reason?: string;
 }
 
-/** Input for rescheduling a booking */
 export interface RescheduleBookingInput {
   consultationId: string;
   userId: string;
@@ -171,7 +160,6 @@ export interface RescheduleBookingInput {
   currentReservationId: string;
 }
 
-/** Result of eligibility check */
 export interface EligibilityResult {
   eligible: boolean;
   reason: EligibilityDenialReason | null;
@@ -185,7 +173,6 @@ export type EligibilityDenialReason =
   | "USER_BANNED"
   | "UNKNOWN";
 
-/** Notification queue entry */
 export interface NotificationQueueEntry {
   id: string;
   consultation_id: string;
@@ -206,11 +193,6 @@ export type NotificationType =
   | "REMINDER_24H"
   | "REMINDER_1H";
 
-// ---------------------------------------------------------------------------
-// Specialist & Slot types (read models)
-// ---------------------------------------------------------------------------
-
-/** Specialist display model for BookingReviewPage */
 export interface SpecialistDisplayModel {
   id: string;
   name: string;
@@ -218,11 +200,237 @@ export interface SpecialistDisplayModel {
   avatarUrl: string | null;
 }
 
-/** Slot display model for BookingReviewPage */
 export interface SlotDisplayModel {
   id: string;
-  datetime: string;      // ISO 8601
+  datetime: string;
   durationMinutes: number;
   isOnline: boolean;
   locationLabel: string | null;
+}
+
+// ===========================================================================
+// SECTION B — Runtime Session Types (preserved from Sprint 3.3)
+// Sprint 3.5 TODO: extract to consultationBookingSessionTypes.ts
+// ===========================================================================
+
+export const LIFECYCLE_NOTE = "simplified_sprint_3.1" as const;
+
+/**
+ * BookingPhase — الاسم الكنسي الرسمي لحالة جلسة الحجز.
+ */
+export type BookingPhase =
+  | "CREATED"
+  | "SPECIALIST_SELECTION"
+  | "SLOT_SELECTION"
+  | "REVIEW"
+  | "CONFIRMED"
+  | "RESCHEDULED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "EXPIRED"
+  | "ABANDONED";
+
+/**
+ * BookingLifecyclePhase — alias لـ BookingPhase للتوافق مع الكود القائم.
+ * استخدم BookingPhase في الكود الجديد.
+ */
+export type BookingLifecyclePhase = BookingPhase;
+
+export const RECOVERABLE_PHASES: BookingPhase[] = [
+  "SPECIALIST_SELECTION",
+  "SLOT_SELECTION",
+  "REVIEW",
+];
+
+export const TERMINAL_PHASES: BookingPhase[] = [
+  "CONFIRMED",
+  "COMPLETED",
+  "CANCELLED",
+  "EXPIRED",
+  "ABANDONED",
+];
+
+export type BookingEntryPoint =
+  | "post_assessment"
+  | "post_screening"
+  | "specialist_match"
+  | "direct_navigation"
+  | "consultation_intro";
+
+export type BookingEntitlementType =
+  | "free_first_consultation"
+  | "paid_consultation"
+  | "package_session"
+  | "follow_up";
+
+export type BookingRecoveryReason =
+  | "page_refresh"
+  | "browser_back"
+  | "tab_restore"
+  | "ttl_expired"
+  | "specialist_removed"
+  | "specialist_unavailable"
+  | "entitlement_invalidated"
+  | "entitlement_expired"
+  | "session_corrupted"
+  | "user_cancelled"
+  | "inactivity_timeout"
+  | "orchestrator_validation"
+  | "mount_ttl_check"
+  | "expiration_poll"
+  | "session_ttl_exceeded";
+
+export type RecoveryExecution =
+  | "AUTO"
+  | "MANUAL"
+  | "USER_CONFIRMATION_REQUIRED";
+
+export type BookingRecoveryStatus =
+  | "fresh"
+  | "recovered"
+  | "invalidated"
+  | "rerouted"
+  | "partial"
+  | "failed";
+
+export interface BookingRecoveryState {
+  status: BookingRecoveryStatus;
+  reason?: BookingRecoveryReason;
+  recoveredAt?: string;
+  recoveredPhase?: BookingPhase;
+  auditNote?: string;
+}
+
+export type BookingDenialReason =
+  | "entitlement_expired"
+  | "already_active"
+  | "validation_failed"
+  | "assessment_expired"
+  | "specialist_unavailable"
+  | "payment_required"
+  | "geo_restriction"
+  | "parental_consent_required"
+  | "unknown";
+
+export type RecoveryAction =
+  | "redirect_to_assessment"
+  | "redirect_to_payment"
+  | "show_retry_dialog"
+  | "resume_active_booking"
+  | "contact_support"
+  | "none";
+
+export type BookingInitializationResult =
+  | {
+      success: true;
+      bookingSessionId: string;
+      nextRoute: string;
+      entitlementType: BookingEntitlementType;
+      recoveryState?: BookingRecoveryState;
+    }
+  | {
+      success: false;
+      denialReason: BookingDenialReason;
+      denialMessage: string;
+      recoveryAction: RecoveryAction;
+    };
+
+export interface SpecialistRecommendation {
+  specialistId: string;
+  matchScore: number;
+  matchReasons: string[];
+  assessmentSessionId: string;
+}
+
+export type RuntimeSafetyStatus = "valid" | "expired" | "missing" | "corrupt";
+
+export interface RuntimeSafetyResult {
+  status: RuntimeSafetyStatus;
+  currentPhase: BookingPhase | null;
+  diagnosticNote: string;
+}
+
+export type SpecialistValidationStatus =
+  | "valid"
+  | "not_found"
+  | "unavailable"
+  | "entitlement_mismatch"
+  | "blocked";
+
+export interface SpecialistValidationResult {
+  status: SpecialistValidationStatus;
+  specialistId: string | null;
+  diagnosticNote: string;
+}
+
+/**
+ * ConsultationBookingSession — runtime booking state domain object.
+ */
+export interface ConsultationBookingSession {
+  sessionId: string;
+  sourceIntentId: string;
+  /** @deprecated use sourceIntentId */
+  readonly consultationIntentId: string;
+  bookingFlowPhase: BookingPhase;
+  bookingStatus: BookingPhase;
+  createdAt: string;
+  lastActivityAt: string;
+  expiresAt: string;
+  lifecycleVersion: "v1";
+  entryPoint: BookingEntryPoint;
+  assessmentSessionId?: string;
+  entitlementType: BookingEntitlementType;
+  recoveryState: BookingRecoveryState;
+  selectedSpecialistId?: string;
+  selectedSlotId?: string;
+  specialistRecommendation?: SpecialistRecommendation;
+}
+
+export interface ConsultationBookingRepository {
+  save(session: ConsultationBookingSession): void;
+  load(sessionId: string): ConsultationBookingSession | null;
+  setActive(sessionId: string): void;
+  getActiveId(): string | null;
+  loadActive(): ConsultationBookingSession | null;
+  /** @deprecated use loadActive() */
+  loadLatest(): ConsultationBookingSession | null;
+  invalidate(sessionId: string, reason: BookingRecoveryReason): void;
+  clearActive(): void;
+  clear(): void;
+}
+
+export const ALLOWED_TRANSITIONS: Readonly<
+  Partial<Record<BookingPhase, readonly BookingPhase[]>>
+> = {
+  CREATED:              ["SPECIALIST_SELECTION", "CANCELLED", "ABANDONED"],
+  SPECIALIST_SELECTION: ["SLOT_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
+  SLOT_SELECTION:       ["REVIEW", "SPECIALIST_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
+  REVIEW:               ["CONFIRMED", "SLOT_SELECTION", "CANCELLED", "EXPIRED"],
+  CONFIRMED:            ["RESCHEDULED", "COMPLETED", "CANCELLED"],
+  RESCHEDULED:          ["SLOT_SELECTION", "CANCELLED", "EXPIRED"],
+  COMPLETED:            [],
+  CANCELLED:            [],
+  EXPIRED:              [],
+  ABANDONED:            [],
+} as const;
+
+export function isValidTransition(from: BookingPhase, to: BookingPhase): boolean {
+  const allowed = ALLOWED_TRANSITIONS[from];
+  return allowed ? (allowed as readonly BookingPhase[]).includes(to) : false;
+}
+
+export function getAllowedNextPhases(from: BookingPhase): readonly BookingPhase[] {
+  return ALLOWED_TRANSITIONS[from] ?? [];
+}
+
+export function generateBookingSessionId(): string {
+  return `bks_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export function calculateBookingExpiry(fromDate = new Date()): string {
+  return new Date(fromDate.getTime() + 2 * 60 * 60 * 1000).toISOString();
+}
+
+export function isSessionExpired(session: ConsultationBookingSession): boolean {
+  return new Date(session.expiresAt) < new Date();
 }
