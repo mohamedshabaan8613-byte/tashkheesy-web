@@ -320,8 +320,6 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
 
   // ── Recovery عند mount ──────────────────────────────────
   // hydrateOnce guard: يمنع double-recovery في React StrictMode
-  const hydratedRef = useRef(false);
-
   // ── Recovery عند mount — مرة واحدة فقط ─────────────────────────────────
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -407,6 +405,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
         entryPoint: params.entryPoint,
         assessmentSessionId: params.assessmentSessionId,
         entitlementType: params.entitlementType,
+      };
 
       // sourceIntentId = الرابط الثابت مع ConsultationIntent (Rule 4)
       const newSession: ConsultationBookingSession = {
