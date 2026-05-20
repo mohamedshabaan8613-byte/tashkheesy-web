@@ -244,15 +244,23 @@ interface ConsultationBookingContextValue {
    *
    * يُصدر BOOKING_PHASE_TRANSITIONED domain event عند كل transition ناجح.
    *
+   * TRANSITION_NAMING_RULE:
+   *   الاسم يصف الحالة الناتجة وليس الحدث السابق.
+   *   transitionTo("SLOT_SELECTION")  ← بعد اختيار specialist ✅
+   *   transitionTo("REVIEW")          ← بعد اختيار slot ✅
+   *   transitionTo("RESCHEDULED")     ← من CONFIRMED عند إعادة الجدولة ✅
+   *
    * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
+   *
+   * @returns true إذا نجح الانتقال، false إذا كان invalid
    */
-  transitionTo(to: BookingLifecyclePhase, triggeredBy?: "orchestrator" | "recovery" | "expiration"): boolean;
+  transitionTo(to: BookingPhase, triggeredBy?: "orchestrator" | "recovery" | "expiration"): boolean;
 
   /**
    * @deprecated استخدم transitionTo() بدلاً منه.
    * محفوظ للتوافق مع الكود القائم — سيُزال في Sprint 3.4.
    */
-  advancePhase(to: BookingLifecyclePhase): boolean;
+  advancePhase(to: BookingPhase): boolean;
 
   /**
    * selectSpecialist() — PAYLOAD mutation.
@@ -261,19 +269,7 @@ interface ConsultationBookingContextValue {
    * يمكن استدعاؤها من الـ UI مباشرة.
    *
    * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
-    *
-   * transitionTo — الانتقال إلى phase جديدة.
-   *
-   * TRANSITION_NAMING_RULE:
-   *   الاسم يصف الحالة الناتجة وليس الحدث السابق.
-   *   transitionTo("SLOT_SELECTION")  ← بعد اختيار specialist ✅
-   *   transitionTo("REVIEW")          ← بعد اختيار slot ✅
-   *   transitionTo("RESCHEDULED")     ← من CONFIRMED عند إعادة الجدولة ✅
-   *
-   * @returns true إذا نجح الانتقال، false إذا كان invalid
    */
-  transitionTo(nextPhase: BookingPhase): boolean;
-
   selectSpecialist(specialistId: string): void;
 
   /**
@@ -318,8 +314,6 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
    */
   const hydratedRef = useRef(false);
 
-  // ── Recovery عند mount ──────────────────────────────────
-  // hydrateOnce guard: يمنع double-recovery في React StrictMode
   // ── Recovery عند mount — مرة واحدة فقط ─────────────────────────────────
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -389,23 +383,6 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const startBookingSession = useCallback(
     (params: Parameters<ConsultationBookingContextValue["startBookingSession"]>[0]): ConsultationBookingSession => {
       const now = new Date().toISOString();
-      const sessionId = generateBookingSessionId();
-
-      const newSession: ConsultationBookingSession = {
-        sessionId,
-        // sourceIntentId = consultationIntentId (v1 identicals)
-        sourceIntentId: params.consultationIntentId,
-        consultationIntentId: params.consultationIntentId,
-        bookingFlowPhase: "CREATED",
-        bookingStatus: "CREATED",
-        lifecycleVersion: "v1",
-        createdAt: now,
-        lastActivityAt: now,
-        expiresAt: calculateBookingExpiry(),
-        entryPoint: params.entryPoint,
-        assessmentSessionId: params.assessmentSessionId,
-        entitlementType: params.entitlementType,
-      };
 
       // sourceIntentId = الرابط الثابت مع ConsultationIntent (Rule 4)
       const newSession: ConsultationBookingSession = {
@@ -432,7 +409,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       // Domain event: BOOKING_SESSION_CREATED
       const createdEvent: BookingSessionCreatedEvent = createBookingEvent(
         "BOOKING_SESSION_CREATED",
-        sessionId,
+        newSession.sessionId,
         newSession.sourceIntentId,
         {
           entryPoint: params.entryPoint,
@@ -457,7 +434,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   //
   const transitionTo = useCallback(
     (
-      to: BookingLifecyclePhase,
+      to: BookingPhase,
       triggeredBy: "orchestrator" | "recovery" | "expiration" = "orchestrator",
     ): boolean => {
       const current = sessionRef.current;
@@ -496,7 +473,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
 
   // ── advancePhase — @deprecated: delegates to transitionTo ────────────────
   const advancePhase = useCallback(
-    (to: BookingLifecyclePhase): boolean => transitionTo(to, "orchestrator"),
+    (to: BookingPhase): boolean => transitionTo(to, "orchestrator"),
     [transitionTo],
   );
 
