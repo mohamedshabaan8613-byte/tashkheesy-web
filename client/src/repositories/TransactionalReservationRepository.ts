@@ -1,20 +1,17 @@
 /**
  * TransactionalReservationRepository
  *
- * Single responsibility: ALL slot and consultation persistence for the
- * reschedule lifecycle. This is the ONLY layer allowed to write to
- * slots and consultations tables in the reschedule path.
+ * Single responsibility: Thin persistence adapter for the reschedule lifecycle.
+ * Delegates ALL mutations to the server-side atomic_reschedule RPC.
  *
- * Transactional classification: COMPENSATED TRANSACTION (not true DB txn).
- * — Steps are sequential with explicit rollback compensation.
- * — A true atomic transaction requires a single Supabase RPC (Sprint 3.7 target).
- * — Current risk window: crash between step 2 and step 3 leaves orphaned state.
- * — This is explicitly documented and acceptable for Sprint 3.6.
+ * Transactional classification: TRUE ATOMIC TRANSACTION (Sprint 3.7).
+ * — All mutations execute inside a single server-side BEGIN/COMMIT block.
+ * — No distributed compensation. No client-side rollback orchestration.
+ * — Any failure inside the RPC automatically rolls back every step.
  *
- * Sprint 3.7 migration target:
- *   Replace executeReschedule() body with a single RPC call:
- *   supabase.rpc('atomic_reschedule', { consultation_id, old_slot_id, new_slot_id })
- *   that wraps all three steps in BEGIN...COMMIT server-side.
+ * Sprint 3.6 → 3.7 migration complete:
+ *   Distributed compensation pipeline (3 sequential DB calls + manual rollback)
+ *   is fully replaced by: supabase.rpc('atomic_reschedule', { ... })
  *
  * Layer: repositories
  * Depends on: Supabase client only.
@@ -25,114 +22,80 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface RescheduleExecutionResult {
   success: boolean;
-  newSlotReserved: boolean;
-  oldSlotReleased: boolean;
-  consultationUpdated: boolean;
-  rollbackExecuted: boolean;
-  failureReason?: 'NEW_SLOT_UNAVAILABLE' | 'OLD_SLOT_RELEASE_FAILED' | 'CONSULTATION_UPDATE_FAILED' | 'EXCEPTION';
+  newServerVersion?: number;
+  newRescheduleCount?: number;
+  rescheduledAt?: string;
+  failureReason?:
+    | 'CONSULTATION_NOT_FOUND'
+    | 'CONSULTATION_NOT_RESCHEDULABLE'
+    | 'INVALID_OWNERSHIP'
+    | 'STALE_VERSION'
+    | 'MAX_RESCHEDULES_REACHED'
+    | 'COOLDOWN_ACTIVE'
+    | 'SLOT_NOT_FOUND'
+    | 'SLOT_UNAVAILABLE'
+    | 'OLD_SLOT_NOT_FOUND'
+    | 'INTERNAL_ERROR'
+    | 'RPC_ERROR';
+  serverVersion?: number; // present on STALE_VERSION rejection so caller can refresh
+  cooldownExpiresAt?: string; // present on COOLDOWN_ACTIVE rejection
 }
 
 export class TransactionalReservationRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
   /**
-   * Execute the three-step reschedule persistence sequence:
-   * 1. Reserve new slot (optimistic lock: only if AVAILABLE)
-   * 2. Release old slot
-   * 3. Update consultation record
+   * Execute an atomic reschedule via the server-side RPC.
    *
-   * On any failure, compensation rollback is attempted.
-   * Classification: COMPENSATED TRANSACTION — not a true DB transaction.
-   * True atomicity is Sprint 3.7 scope (single server-side RPC).
+   * The RPC enforces atomically:
+   *   1. Ownership token validation
+   *   2. Lifecycle version check (stale rejection)
+   *   3. Reschedule limit + cooldown enforcement
+   *   4. New slot availability check (with FOR UPDATE lock)
+   *   5. Reserve new slot
+   *   6. Release old slot
+   *   7. Update consultation (slot_id, lifecycle_version, reschedule_count, timestamps)
+   *
+   * On ANY failure the DB rolls back everything. No orphan states possible.
    */
   async executeReschedule(
     consultationId: string,
     oldSlotId: string,
-    newSlotId: string
-  ): Promise<RescheduleExecutionResult> {
-    let newSlotReserved = false;
-    let oldSlotReleased = false;
-    let consultationUpdated = false;
-
-    try {
-      // Step 1: Reserve new slot (optimistic locking — eq status='AVAILABLE')
-      const { error: reserveError } = await this.supabase
-        .from('slots')
-        .update({ status: 'RESERVED', consultation_id: consultationId })
-        .eq('id', newSlotId)
-        .eq('status', 'AVAILABLE');
-
-      if (reserveError) {
-        return this.buildResult(false, newSlotReserved, oldSlotReleased, consultationUpdated, false, 'NEW_SLOT_UNAVAILABLE');
-      }
-      newSlotReserved = true;
-
-      // Step 2: Release old slot
-      const { error: releaseError } = await this.supabase
-        .from('slots')
-        .update({ status: 'AVAILABLE', consultation_id: null })
-        .eq('id', oldSlotId);
-
-      if (releaseError) {
-        await this.compensateReservedSlot(newSlotId);
-        return this.buildResult(false, newSlotReserved, oldSlotReleased, consultationUpdated, true, 'OLD_SLOT_RELEASE_FAILED');
-      }
-      oldSlotReleased = true;
-
-      // Step 3: Update consultation record
-      const { error: updateError } = await this.supabase
-        .from('consultations')
-        .update({
-          slot_id: newSlotId,
-          rescheduled_at: new Date().toISOString(),
-        })
-        .eq('id', consultationId);
-
-      if (updateError) {
-        await this.compensateFullReschedule(newSlotId, oldSlotId, consultationId);
-        return this.buildResult(false, newSlotReserved, oldSlotReleased, consultationUpdated, true, 'CONSULTATION_UPDATE_FAILED');
-      }
-      consultationUpdated = true;
-
-      return this.buildResult(true, newSlotReserved, oldSlotReleased, consultationUpdated, false);
-    } catch (err) {
-      console.error('[TransactionalReservationRepository] Unexpected exception:', err);
-      if (newSlotReserved) {
-        await this.compensateFullReschedule(newSlotId, oldSlotId, consultationId);
-      }
-      return this.buildResult(false, newSlotReserved, oldSlotReleased, consultationUpdated, true, 'EXCEPTION');
-    }
-  }
-
-  // ---- Private compensation methods ----
-
-  private async compensateReservedSlot(newSlotId: string): Promise<void> {
-    await this.supabase
-      .from('slots')
-      .update({ status: 'AVAILABLE', consultation_id: null })
-      .eq('id', newSlotId);
-  }
-
-  private async compensateFullReschedule(
     newSlotId: string,
-    oldSlotId: string,
-    consultationId: string
-  ): Promise<void> {
-    await this.compensateReservedSlot(newSlotId);
-    await this.supabase
-      .from('slots')
-      .update({ status: 'RESERVED', consultation_id: consultationId })
-      .eq('id', oldSlotId);
-  }
+    ownershipToken: string,
+    clientVersion: number
+  ): Promise<RescheduleExecutionResult> {
+    const { data, error } = await this.supabase.rpc('atomic_reschedule', {
+      p_consultation_id: consultationId,
+      p_old_slot_id:     oldSlotId,
+      p_new_slot_id:     newSlotId,
+      p_ownership_token: ownershipToken,
+      p_client_version:  clientVersion,
+    });
 
-  private buildResult(
-    success: boolean,
-    newSlotReserved: boolean,
-    oldSlotReleased: boolean,
-    consultationUpdated: boolean,
-    rollbackExecuted: boolean,
-    failureReason?: RescheduleExecutionResult['failureReason']
-  ): RescheduleExecutionResult {
-    return { success, newSlotReserved, oldSlotReleased, consultationUpdated, rollbackExecuted, failureReason };
+    // Network/RPC-level failure (not a business rejection).
+    if (error) {
+      console.error('[TransactionalReservationRepository] RPC transport error:', error);
+      return { success: false, failureReason: 'RPC_ERROR' };
+    }
+
+    // RPC returned a business rejection.
+    if (!data?.success) {
+      const code = data?.error_code as RescheduleExecutionResult['failureReason'];
+      return {
+        success:          false,
+        failureReason:    code ?? 'INTERNAL_ERROR',
+        serverVersion:    data?.server_version,
+        cooldownExpiresAt: data?.cooldown_expires_at,
+      };
+    }
+
+    // Atomic success: return authoritative state from server.
+    return {
+      success:            true,
+      newServerVersion:   data.new_lifecycle_version,
+      newRescheduleCount: data.new_reschedule_count,
+      rescheduledAt:      data.rescheduled_at,
+    };
   }
 }
