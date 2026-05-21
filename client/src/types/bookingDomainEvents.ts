@@ -16,6 +16,15 @@
  *   + publish() alias               — alias for emit()
  *   + createBookingEvent<T>()       — typed factory helper
  *
+ * Sprint 3.4 fix — Deploy Blocker #3:
+ *   Added missing symbols consumed by ConsultationBookingContext.tsx:
+ *     - BookingSessionCreatedEvent
+ *     - BookingRecoveredEvent
+ *     - BookingPhaseTransitionedEvent
+ *     - BookingExpiredEvent
+ *     - createBookingEvent<T>() factory
+ *     - bookingEventBus.publish() alias for .emit()
+ *
  * ARCHITECTURE RULE:
  *   All events are emitted via bookingEventBus only.
  *   No direct phase mutations from event handlers.
@@ -161,7 +170,7 @@ export interface SlotReservedEvent extends BaseBookingEvent {
   payload: {
     reservationId: string;
     slotId: string;
-    reservedUntil: string; // ISO 8601 — TTL expiry
+    reservedUntil: string;
   };
 }
 
@@ -179,7 +188,7 @@ export interface SlotReservationExpiredEvent extends BaseBookingEvent {
   payload: {
     reservationId: string;
     slotId: string;
-    expiredAt: string; // ISO 8601
+    expiredAt: string;
   };
 }
 
@@ -195,7 +204,7 @@ export interface BookingConfirmedEvent extends BaseBookingEvent {
     slotId: string;
     slotDatetime: string;
     isFreeConsultation: boolean;
-    confirmedAt: string; // ISO 8601
+    confirmedAt: string;
   };
 }
 
@@ -221,7 +230,7 @@ export interface BookingRescheduledEvent extends BaseBookingEvent {
   payload: {
     previousSlotId: string;
     newSlotId: string;
-    newSlotDatetime: string; // ISO 8601
+    newSlotDatetime: string;
     newReservationId: string;
     rescheduleCount: number;
   };
@@ -244,7 +253,7 @@ export interface BookingCancelledEvent extends BaseBookingEvent {
   payload: {
     reservationId: string | null;
     reason: string;
-    cancelledAt: string; // ISO 8601
+    cancelledAt: string;
   };
 }
 
@@ -272,7 +281,7 @@ export interface NotificationSentEvent extends BaseBookingEvent {
   type: "NOTIFICATION_SENT";
   payload: {
     notificationId: string;
-    sentAt: string; // ISO 8601
+    sentAt: string;
   };
 }
 
@@ -286,7 +295,7 @@ export interface NotificationFailedEvent extends BaseBookingEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Payment Events (infrastructure-ready, Sprint 3.5 implementation)
+// Payment Events
 // ---------------------------------------------------------------------------
 
 export interface PaymentStartedEvent extends BaseBookingEvent {
@@ -303,7 +312,7 @@ export interface PaymentCompletedEvent extends BaseBookingEvent {
   payload: {
     transactionId: string;
     amount: number;
-    paidAt: string; // ISO 8601
+    paidAt: string;
   };
 }
 
@@ -312,7 +321,7 @@ export interface PaymentFailedEvent extends BaseBookingEvent {
   payload: {
     reason: string;
     retryable: boolean;
-    failedAt: string; // ISO 8601
+    failedAt: string;
   };
 }
 
@@ -397,15 +406,12 @@ class BookingEventBus {
       this.handlers.set(eventType, new Set());
     }
     this.handlers.get(eventType)!.add(handler as EventHandler);
-
-    // Return unsubscribe function
     return () => {
       this.handlers.get(eventType)?.delete(handler as EventHandler);
     };
   }
 
   emit(event: AnyBookingEvent): void {
-    // queueMicrotask for safe async dispatch — prevents re-render loops
     queueMicrotask(() => {
       const handlers = this.handlers.get(event.type);
       if (!handlers) return;
