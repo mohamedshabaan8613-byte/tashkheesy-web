@@ -1,6 +1,16 @@
-# Sprint 3.7.1 — Migration Safety Gate
-# Validates 011 + 012 SQL migrations on a fresh Supabase DB.
-# Blocks merge if migration fails to apply or RPC is not callable.
+# Sprint 3.7.2 — Migration Safety Gate (FIXED)
+#
+# CHANGE LOG (3.7.2):
+#   REMOVED: curl + /rpc/exec_sql (was returning 404 on Supabase SaaS)
+#   ADDED:   Official Supabase CLI via supabase/setup-cli
+#   ADDED:   supabase db push --linked to apply migrations
+#   ADDED:   psql verification of schema + RPC existence
+#
+# Secrets required in GitHub Environment 'dev':
+#   SUPABASE_ACCESS_TOKEN  — personal access token (supabase.com → Account → Access Tokens)
+#   SUPABASE_PROJECT_ID    — project ref (e.g. abcdefghijklmnop)
+#   SUPABASE_DB_PASSWORD   — database password (for psql schema verification)
+#   SUPABASE_DB_HOST       — db.<project-ref>.supabase.co
 
 name: 'Migration Safety Validation'
 
@@ -9,11 +19,12 @@ on:
     branches: [ main, feat/sprint-* ]
     paths:
       - 'supabase/sql/**'
+      - 'supabase/migrations/**'
       - '.github/workflows/sprint-371-migration-validation.yml'
 
 jobs:
   migration-validation:
-    name: 'Validate SQL Migrations + RPC'
+    name: 'Validate SQL Migrations via Supabase CLI'
     runs-on: ubuntu-latest
     environment: dev
 
@@ -21,56 +32,140 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
+      # ── 1. Install Supabase CLI (official action) ─────────────
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      # ── Apply migration 011 ────────────────────────────────────
-      - name: Apply 011_sprint36_m2_reschedule.sql
-        id: migration_011
+      # ── 2. Link project (no login command needed with PAT) ────
+      - name: Link Supabase project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          RESULT=$(curl -s -o /tmp/response_011.json -w "%{http_code}" \
-            -X POST \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"query\": $(cat supabase/sql/011_sprint36_m2_reschedule.sql | jq -Rs .)}")
-          echo "HTTP: $RESULT"
-          cat /tmp/response_011.json
-          # HTTP 200 or 409 (already exists) are acceptable.
-          if [ "$RESULT" != "200" ] && [ "$RESULT" != "409" ]; then
-            echo "::error::Migration 011 failed with HTTP $RESULT"
+          supabase link \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} \
+            --password     ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      # ── 3. Prepare: copy sql files into supabase/migrations ──
+      # The Supabase CLI uses supabase/migrations/ by convention.
+      # Our SQL files live in supabase/sql/. We stage them as
+      # numbered migrations so `db push` picks them up in order.
+      - name: Stage SQL files as migrations
+        run: |
+          mkdir -p supabase/migrations
+
+          # Only stage the two Sprint 3.6/3.7 migration files.
+          # Earlier migrations are assumed applied to the live dev DB.
+          # Use timestamp-prefixed filenames as Supabase CLI requires.
+          cp supabase/sql/011_sprint36_m2_reschedule.sql \
+             supabase/migrations/20260520000011_sprint36_m2_reschedule.sql
+
+          cp supabase/sql/012_atomic_reschedule_transaction.sql \
+             supabase/migrations/20260521000012_atomic_reschedule_transaction.sql
+
+          echo "Staged migrations:"
+          ls -la supabase/migrations/
+
+      # ── 4. Apply migrations via official CLI ──────────────────
+      - name: Apply migrations (supabase db push)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          # --include-all: apply any migration not yet recorded in
+          # supabase_migrations.schema_migrations on the remote DB.
+          supabase db push \
+            --linked \
+            --include-all \
+            --password ${{ secrets.SUPABASE_DB_PASSWORD }}
+          echo "db push completed."
+
+      # ── 5. Verify schema via psql ─────────────────────────────
+      # Proves columns + function exist in the live DB.
+      - name: Install psql client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+
+      - name: Verify lifecycle_version column exists
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          RESULT=$(psql \
+            -h ${{ secrets.SUPABASE_DB_HOST }} \
+            -U postgres \
+            -d postgres \
+            -tAc "SELECT COUNT(*) FROM information_schema.columns \
+                  WHERE table_name = 'consultations' \
+                  AND   column_name = 'lifecycle_version';")
+          echo "lifecycle_version column count: $RESULT"
+          if [ "$RESULT" -lt "1" ]; then
+            echo "::error::lifecycle_version column missing from consultations."
             exit 1
           fi
 
-      # ── Apply migration 012 ────────────────────────────────────
-      - name: Apply 012_atomic_reschedule_transaction.sql
-        id: migration_012
+      - name: Verify reschedule_count column exists
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          RESULT=$(curl -s -o /tmp/response_012.json -w "%{http_code}" \
-            -X POST \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"query\": $(cat supabase/sql/012_atomic_reschedule_transaction.sql | jq -Rs .)}")
-          echo "HTTP: $RESULT"
-          cat /tmp/response_012.json
-          if [ "$RESULT" != "200" ] && [ "$RESULT" != "409" ]; then
-            echo "::error::Migration 012 failed with HTTP $RESULT"
+          RESULT=$(psql \
+            -h ${{ secrets.SUPABASE_DB_HOST }} \
+            -U postgres \
+            -d postgres \
+            -tAc "SELECT COUNT(*) FROM information_schema.columns \
+                  WHERE table_name = 'consultations' \
+                  AND   column_name = 'reschedule_count';")
+          echo "reschedule_count column count: $RESULT"
+          if [ "$RESULT" -lt "1" ]; then
+            echo "::error::reschedule_count column missing from consultations."
             exit 1
           fi
 
-      # ── Verify RPC callable ────────────────────────────────────
-      - name: Verify atomic_reschedule RPC is callable
+      - name: Verify atomic_reschedule function exists
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          # Call with dummy UUIDs — expect a domain error (not 500 / not-found).
-          # A 400/422 with error code CONSULTATION_NOT_FOUND proves the function exists + runs.
+          RESULT=$(psql \
+            -h ${{ secrets.SUPABASE_DB_HOST }} \
+            -U postgres \
+            -d postgres \
+            -tAc "SELECT COUNT(*) FROM pg_proc \
+                  WHERE proname = 'atomic_reschedule';")
+          echo "atomic_reschedule function count: $RESULT"
+          if [ "$RESULT" -lt "1" ]; then
+            echo "::error::atomic_reschedule function not found — migration 012 may not have applied."
+            exit 1
+          fi
+
+      # ── 6. Verify no NULL corruption ─────────────────────────
+      - name: Verify no NULL lifecycle_version in consultations
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          COUNT=$(psql \
+            -h ${{ secrets.SUPABASE_DB_HOST }} \
+            -U postgres \
+            -d postgres \
+            -tAc "SELECT COUNT(*) FROM consultations \
+                  WHERE lifecycle_version IS NULL;")
+          echo "Consultations with NULL lifecycle_version: $COUNT"
+          if [ "$COUNT" -gt "0" ]; then
+            echo "::error::$COUNT row(s) have NULL lifecycle_version — backfill may be incomplete."
+            exit 1
+          fi
+          echo "No NULL corruption detected."
+
+      # ── 7. RPC callable probe (REST, unchanged — RPC exists now) ─
+      # This probe is still valid: atomic_reschedule is exposed via
+      # PostgREST as /rest/v1/rpc/atomic_reschedule.
+      # A 400/422 with a domain error code proves it compiled + runs.
+      - name: Probe atomic_reschedule RPC via REST
+        run: |
           HTTP=$(curl -s -o /tmp/rpc_probe.json -w "%{http_code}" \
             -X POST \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/atomic_reschedule" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/rest/v1/rpc/atomic_reschedule" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
               "consultation_id": "00000000-0000-0000-0000-000000000001",
@@ -81,24 +176,8 @@ jobs:
             }')
           echo "HTTP: $HTTP"
           cat /tmp/rpc_probe.json
-          # 404 would mean function does not exist — that is a hard failure.
           if [ "$HTTP" = "404" ]; then
-            echo "::error::atomic_reschedule RPC not found — migration may not have applied."
+            echo "::error::atomic_reschedule RPC returned 404 — function not found in PostgREST schema cache."
             exit 1
           fi
-          echo "RPC reachable (returned $HTTP as expected for probe call)."
-
-      # ── Validate existing consultations survive (no NULLs) ────
-      - name: Validate no NULL corruption in consultations
-        run: |
-          RESULT=$(curl -s \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/consultations?lifecycle_version=is.null&select=id" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}")
-          COUNT=$(echo "$RESULT" | jq 'length')
-          echo "Consultations with NULL lifecycle_version: $COUNT"
-          if [ "$COUNT" -gt "0" ]; then
-            echo "::error::$COUNT consultations have NULL lifecycle_version — migration backfill may be incomplete."
-            exit 1
-          fi
-          echo "No NULL corruption detected."
+          echo "RPC reachable — returned HTTP $HTTP (domain error expected for probe UUIDs)."

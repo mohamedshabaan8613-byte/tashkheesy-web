@@ -1,7 +1,8 @@
-# Sprint 3.7.1 — Integration Test Gate
-# Runs atomicReschedule + realtimeSynchronization integration tests
-# against a REAL Supabase dev environment.
-# Blocks merge if any test fails.
+# Sprint 3.7.2 — Integration Test Gate (UPDATED)
+#
+# CHANGE LOG (3.7.2):
+#   REMOVED: curl exec_sql migration step
+#   REPLACED: supabase CLI db push to apply migrations before running tests
 
 name: 'Integration Tests — Atomic + Realtime'
 
@@ -17,7 +18,7 @@ jobs:
   integration-tests:
     name: 'Run Integration Tests (Real Supabase)'
     runs-on: ubuntu-latest
-    environment: dev   # stores SUPABASE_URL + SUPABASE_SERVICE_KEY secrets
+    environment: dev
 
     defaults:
       run:
@@ -40,28 +41,35 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # ── Apply migrations before running tests ──────────────────
-      - name: Apply migration 011
-        run: |
-          curl -X POST \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"query\": $(cat ../supabase/sql/011_sprint36_m2_reschedule.sql | jq -Rs .)}"
-        continue-on-error: true  # idempotent — may already be applied
+      # ── Apply migrations via Supabase CLI (not curl) ──────────
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Apply migration 012
+      - name: Link project
+        working-directory: .
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          curl -X POST \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"query\": $(cat ../supabase/sql/012_atomic_reschedule_transaction.sql | jq -Rs .)}"
-        continue-on-error: true  # idempotent — may already be applied
+          supabase link \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} \
+            --password     ${{ secrets.SUPABASE_DB_PASSWORD }}
 
-      # ── Atomic Reschedule Integration Tests ───────────────────
+      - name: Stage + push migrations
+        working-directory: .
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          mkdir -p supabase/migrations
+          cp supabase/sql/011_sprint36_m2_reschedule.sql \
+             supabase/migrations/20260520000011_sprint36_m2_reschedule.sql
+          cp supabase/sql/012_atomic_reschedule_transaction.sql \
+             supabase/migrations/20260521000012_atomic_reschedule_transaction.sql
+          supabase db push --linked --include-all \
+            --password ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      # ── Run integration tests ──────────────────────────────────
       - name: Run atomicReschedule integration tests
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
@@ -69,11 +77,8 @@ jobs:
         run: |
           pnpm jest \
             --testPathPattern='__tests__/integration/atomicReschedule\.integration\.test\.ts' \
-            --forceExit \
-            --detectOpenHandles \
-            --verbose
+            --forceExit --detectOpenHandles --verbose
 
-      # ── Realtime Synchronization Integration Tests ────────────
       - name: Run realtimeSynchronization integration tests
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
@@ -81,11 +86,8 @@ jobs:
         run: |
           pnpm jest \
             --testPathPattern='__tests__/integration/realtimeSynchronization\.integration\.test\.ts' \
-            --forceExit \
-            --detectOpenHandles \
-            --verbose
+            --forceExit --detectOpenHandles --verbose
 
-      # ── Upload test results as artifact ───────────────────────
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
