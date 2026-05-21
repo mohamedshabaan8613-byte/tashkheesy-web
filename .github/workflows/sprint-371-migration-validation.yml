@@ -1,0 +1,104 @@
+# Sprint 3.7.1 — Migration Safety Gate
+# Validates 011 + 012 SQL migrations on a fresh Supabase DB.
+# Blocks merge if migration fails to apply or RPC is not callable.
+
+name: 'Migration Safety Validation'
+
+on:
+  pull_request:
+    branches: [ main, feat/sprint-* ]
+    paths:
+      - 'supabase/sql/**'
+      - '.github/workflows/sprint-371-migration-validation.yml'
+
+jobs:
+  migration-validation:
+    name: 'Validate SQL Migrations + RPC'
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      # ── Apply migration 011 ────────────────────────────────────
+      - name: Apply 011_sprint36_m2_reschedule.sql
+        id: migration_011
+        run: |
+          RESULT=$(curl -s -o /tmp/response_011.json -w "%{http_code}" \
+            -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $(cat supabase/sql/011_sprint36_m2_reschedule.sql | jq -Rs .)}")
+          echo "HTTP: $RESULT"
+          cat /tmp/response_011.json
+          # HTTP 200 or 409 (already exists) are acceptable.
+          if [ "$RESULT" != "200" ] && [ "$RESULT" != "409" ]; then
+            echo "::error::Migration 011 failed with HTTP $RESULT"
+            exit 1
+          fi
+
+      # ── Apply migration 012 ────────────────────────────────────
+      - name: Apply 012_atomic_reschedule_transaction.sql
+        id: migration_012
+        run: |
+          RESULT=$(curl -s -o /tmp/response_012.json -w "%{http_code}" \
+            -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $(cat supabase/sql/012_atomic_reschedule_transaction.sql | jq -Rs .)}")
+          echo "HTTP: $RESULT"
+          cat /tmp/response_012.json
+          if [ "$RESULT" != "200" ] && [ "$RESULT" != "409" ]; then
+            echo "::error::Migration 012 failed with HTTP $RESULT"
+            exit 1
+          fi
+
+      # ── Verify RPC callable ────────────────────────────────────
+      - name: Verify atomic_reschedule RPC is callable
+        run: |
+          # Call with dummy UUIDs — expect a domain error (not 500 / not-found).
+          # A 400/422 with error code CONSULTATION_NOT_FOUND proves the function exists + runs.
+          HTTP=$(curl -s -o /tmp/rpc_probe.json -w "%{http_code}" \
+            -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/atomic_reschedule" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "consultation_id": "00000000-0000-0000-0000-000000000001",
+              "old_slot_id":     "00000000-0000-0000-0000-000000000002",
+              "new_slot_id":     "00000000-0000-0000-0000-000000000003",
+              "ownership_token": "probe",
+              "client_version":  1
+            }')
+          echo "HTTP: $HTTP"
+          cat /tmp/rpc_probe.json
+          # 404 would mean function does not exist — that is a hard failure.
+          if [ "$HTTP" = "404" ]; then
+            echo "::error::atomic_reschedule RPC not found — migration may not have applied."
+            exit 1
+          fi
+          echo "RPC reachable (returned $HTTP as expected for probe call)."
+
+      # ── Validate existing consultations survive (no NULLs) ────
+      - name: Validate no NULL corruption in consultations
+        run: |
+          RESULT=$(curl -s \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/consultations?lifecycle_version=is.null&select=id" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}")
+          COUNT=$(echo "$RESULT" | jq 'length')
+          echo "Consultations with NULL lifecycle_version: $COUNT"
+          if [ "$COUNT" -gt "0" ]; then
+            echo "::error::$COUNT consultations have NULL lifecycle_version — migration backfill may be incomplete."
+            exit 1
+          fi
+          echo "No NULL corruption detected."

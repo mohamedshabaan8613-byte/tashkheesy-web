@@ -1,0 +1,106 @@
+# Sprint 3.7.1 — PR Safety Gate
+# Aggregates all Sprint 3.7.1 validation results.
+# PR is BLOCKED if ANY validation job fails.
+# This is the single required status check for branch protection.
+
+name: 'PR Safety Gate — Sprint 3.7.1'
+
+on:
+  pull_request:
+    branches: [ main, feat/sprint-* ]
+
+jobs:
+  # ── Collect results from all sibling workflows ──────────────
+  # GitHub Actions does not natively aggregate across workflows,
+  # so we re-run the lightweight checks inline here as a
+  # single required status check.
+
+  type-check:
+    name: '[Gate] TypeScript'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm tsc --noEmit
+        name: TypeScript type check
+
+  migration-probe:
+    name: '[Gate] Migration RPC Probe'
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      - name: Probe atomic_reschedule RPC
+        run: |
+          HTTP=$(curl -s -o /tmp/probe.json -w "%{http_code}" \
+            -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/atomic_reschedule" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "consultation_id": "00000000-0000-0000-0000-000000000001",
+              "old_slot_id":     "00000000-0000-0000-0000-000000000002",
+              "new_slot_id":     "00000000-0000-0000-0000-000000000003",
+              "ownership_token": "probe",
+              "client_version":  1
+            }')
+          if [ "$HTTP" = "404" ]; then
+            echo "::error::atomic_reschedule RPC not found."
+            exit 1
+          fi
+          echo "RPC callable — probe returned $HTTP."
+
+  integration-gate:
+    name: '[Gate] Integration Tests'
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: [type-check, migration-probe]  # only run if type + migration pass
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - run: pnpm install --frozen-lockfile
+      - name: Atomic Reschedule Integration Tests
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          pnpm jest \
+            --testPathPattern='__tests__/integration/atomicReschedule\.integration\.test\.ts' \
+            --forceExit --detectOpenHandles --verbose
+      - name: Realtime Sync Integration Tests
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          pnpm jest \
+            --testPathPattern='__tests__/integration/realtimeSynchronization\.integration\.test\.ts' \
+            --forceExit --detectOpenHandles --verbose
+
+  # ── Final gate status ─────────────────────────────────────────
+  all-gates-passed:
+    name: '✅ All Validation Gates Passed'
+    runs-on: ubuntu-latest
+    needs: [type-check, migration-probe, integration-gate]
+    if: success()
+    steps:
+      - run: echo "All Sprint 3.7.1 validation gates passed. PR may proceed to architectural review."

@@ -1,0 +1,95 @@
+# Sprint 3.7.1 — Integration Test Gate
+# Runs atomicReschedule + realtimeSynchronization integration tests
+# against a REAL Supabase dev environment.
+# Blocks merge if any test fails.
+
+name: 'Integration Tests — Atomic + Realtime'
+
+on:
+  pull_request:
+    branches: [ main, feat/sprint-* ]
+    paths:
+      - 'client/src/**'
+      - 'supabase/sql/**'
+      - '.github/workflows/sprint-371-integration-tests.yml'
+
+jobs:
+  integration-tests:
+    name: 'Run Integration Tests (Real Supabase)'
+    runs-on: ubuntu-latest
+    environment: dev   # stores SUPABASE_URL + SUPABASE_SERVICE_KEY secrets
+
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Apply migrations before running tests ──────────────────
+      - name: Apply migration 011
+        run: |
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $(cat ../supabase/sql/011_sprint36_m2_reschedule.sql | jq -Rs .)}"
+        continue-on-error: true  # idempotent — may already be applied
+
+      - name: Apply migration 012
+        run: |
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/exec_sql" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $(cat ../supabase/sql/012_atomic_reschedule_transaction.sql | jq -Rs .)}"
+        continue-on-error: true  # idempotent — may already be applied
+
+      # ── Atomic Reschedule Integration Tests ───────────────────
+      - name: Run atomicReschedule integration tests
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          pnpm jest \
+            --testPathPattern='__tests__/integration/atomicReschedule\.integration\.test\.ts' \
+            --forceExit \
+            --detectOpenHandles \
+            --verbose
+
+      # ── Realtime Synchronization Integration Tests ────────────
+      - name: Run realtimeSynchronization integration tests
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          pnpm jest \
+            --testPathPattern='__tests__/integration/realtimeSynchronization\.integration\.test\.ts' \
+            --forceExit \
+            --detectOpenHandles \
+            --verbose
+
+      # ── Upload test results as artifact ───────────────────────
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: client/coverage/
+          retention-days: 7
