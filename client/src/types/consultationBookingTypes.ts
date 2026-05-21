@@ -1,63 +1,222 @@
 /**
- * consultationBookingTypes.ts
+ * consultationBookingTypes.ts — Sprint 3.4 Transactional Booking Types
  *
- * Pre-Sprint 3.3 — Stabilization Phase
+ * PHASE 1: Complete domain type definitions for:
+ *   - ConsultationRecord (consultations table)
+ *   - SlotReservationRecord (slot_reservations table)
+ *   - ConsultationEventRecord (consultation_events table)
  *
- * ─── ARCHITECTURE RULES ────────────────────────────────────────────
+ * ARCHITECTURE RULE:
+ *   These types mirror the Supabase DB schema exactly.
+ *   Runtime state machine types remain in consultationTypes.ts.
+ *   Do NOT mix UI state with persistence types.
  *
- * 1. BOOKING_CONTEXT_BOUNDARY
- *    BookingContext / BookingSession لا يملكان domain data من Assessment:
- *    ❌ assessment payload  ❌ clinical severity  ❌ recommendation engine data
- *    ❌ entitlement policy  ❌ subject metadata
- *    ✅ يملكان فقط: runtime booking state + lifecycle + timestamps + recovery
- *    Assessment data يبقى source-owned بالكامل داخل ConsultationIntent.
- *
- * 2. ORCHESTRATOR_BOUNDARY
- *    ConsultationBookingOrchestrator يحتوي فقط:
- *    ✅ validation  ✅ entitlement resolution  ✅ route resolution  ✅ session init
- *    ❌ analytics  ❌ tracking  ❌ UI copy  ❌ payment redirect  ❌ recommendation ranking
- *
- * 3. DENIAL_PRESENTATION_RULE
- *    BookingDenialReason هو domain code — لا يُعرض مباشرة للمستخدم.
- *
- * 4. SOURCE_INTENT_LINKAGE
- *    sourceIntentId هو الرابط الثابت بين BookingSession و ConsultationIntent.
- *    لا تُعدِل sourceIntentId بعد إنشاء الجلسة — immutable بعد creation.
- *    consultationIntentId محفوظ كـ alias للتوافق مع الكود القائم.
- *
- * 5. TRANSITION_MUTATION_RULE (Sprint 3.3)
- *    transitionTo() هو المسار الوحيد لتغيير bookingFlowPhase.
- *    لا تُعدّل bookingFlowPhase مباشرة من الـ UI.
- *    الـ UI يستدعي orchestrator → orchestrator يستدعي transitionTo().
- *
- * 6. TRANSITION_NAMING_RULE
- *    transitionTo(nextPhase) = describes resulting workflow state ✅
- *    advancePhase removed — was semantically incorrect (described past event).
- *    مثال: بعد اختيار specialist → transitionTo("SLOT_SELECTION")  ✅
- *
- * 7. BOOKING_PHASE_ALIAS
- *    BookingPhase = الاسم الكنسي الرسمي.
- *    BookingLifecyclePhase محفوظ للتوافق مع الكود القائم.
- *
- * 8. ROUTES_SOURCE_OF_TRUTH (Sprint 3.3 Audit Fix C2)
- *    CONSULTATION_ROUTES مُعرَّف حصرًا في:
- *    client/src/constants/consultationRoutes.ts
- *    لا تُعيد تعريفه هنا — استورده من مصدره الكنسي عند الحاجة.
- * ───────────────────────────────────────────────────────────────────────────
+ * ─── SPRINT 3.4 NOTE ────────────────────────────────────────────────────────
+ * The bottom section of this file preserves the runtime session types and
+ * utility functions that were present before Sprint 3.4. These are required
+ * by 6 consumer files across the codebase. They will be extracted to a
+ * dedicated file (consultationBookingSessionTypes.ts) in Sprint 3.5.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 
-// ─── Lifecycle Future Marker ─────────────────────────────────────────────────
+// ===========================================================================
+// SECTION A — DB Persistence Types (Sprint 3.4 additions)
+// ===========================================================================
+
+/** Status progression for a consultation booking */
+export type ConsultationStatus =
+  | "DRAFT"
+  | "SLOT_SELECTED"
+  | "CONFIRMING"
+  | "CONFIRMED"
+  | "CONFIRMATION_FAILED"
+  | "CANCELLING"
+  | "CANCELLED"
+  | "CANCELLATION_FAILED"
+  | "RESCHEDULE_REQUESTED"
+  | "RESCHEDULE_IN_PROGRESS"
+  | "RESCHEDULED"
+  | "EXPIRED"
+  | "COMPLETED";
+
+/** Reservation lifecycle for slot ownership */
+export type ReservationStatus =
+  | "PENDING"
+  | "RESERVED"
+  | "CONFIRMED"
+  | "RELEASED"
+  | "EXPIRED";
+
+/** Booking lifecycle phases — runtime state machine */
+export type BookingFlowPhase =
+  | "IDLE"
+  | "SELECTING"
+  | "SLOT_RESERVED"
+  | "REVIEW"
+  | "CONFIRMING"
+  | "CONFIRMED"
+  | "CONFIRMATION_FAILED"
+  | "CANCELLING"
+  | "CANCELLED"
+  | "RESCHEDULE_REQUESTED"
+  | "RESCHEDULE_IN_PROGRESS"
+  | "RESCHEDULED"
+  | "EXPIRED"
+  | "SESSION_TERMINATED";
+
+/**
+ * ConsultationRecord — mirrors `consultations` table
+ */
+export interface ConsultationRecord {
+  id: string;
+  user_id: string;
+  status: ConsultationStatus;
+  booking_phase: BookingFlowPhase;
+  reservation_status: ReservationStatus | null;
+  specialist_id: string | null;
+  slot_id: string | null;
+  created_at: string;
+  updated_at: string;
+  expires_at: string | null;
+  confirmed_at: string | null;
+  cancelled_at: string | null;
+  rescheduled_from: string | null;
+  is_free_consultation: boolean;
+  cancellation_reason: string | null;
+  reschedule_count: number;
+  ownership_token: string | null;
+}
+
+/**
+ * SlotReservationRecord — mirrors `slot_reservations` table
+ */
+export interface SlotReservationRecord {
+  id: string;
+  slot_id: string;
+  user_id: string;
+  consultation_id: string | null;
+  status: ReservationStatus;
+  reserved_until: string;
+  released_at: string | null;
+  created_at: string;
+}
+
+/**
+ * ConsultationEventRecord — mirrors `consultation_events` table
+ * Append-only audit log.
+ */
+export interface ConsultationEventRecord {
+  id: string;
+  consultation_id: string;
+  event_type: ConsultationAuditEventType;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export type ConsultationAuditEventType =
+  | "BOOKING_STARTED"
+  | "SPECIALIST_SELECTED"
+  | "SLOT_SELECTED"
+  | "SLOT_RESERVED"
+  | "SLOT_RELEASED"
+  | "SLOT_RESERVATION_EXPIRED"
+  | "BOOKING_REVIEW_REACHED"
+  | "BOOKING_CONFIRMED"
+  | "BOOKING_CONFIRMATION_FAILED"
+  | "BOOKING_CANCELLED"
+  | "BOOKING_CANCELLATION_FAILED"
+  | "BOOKING_RESCHEDULED"
+  | "BOOKING_RESCHEDULE_FAILED"
+  | "BOOKING_EXPIRED"
+  | "BOOKING_RECOVERED"
+  | "NOTIFICATION_QUEUED"
+  | "NOTIFICATION_SENT"
+  | "NOTIFICATION_FAILED";
+
+export interface ReserveSlotInput {
+  slotId: string;
+  userId: string;
+  consultationId?: string;
+  ttlMinutes?: number;
+}
+
+export interface ConfirmBookingInput {
+  consultationId: string;
+  userId: string;
+  reservationId: string;
+  ownershipToken: string;
+}
+
+export interface CancelBookingInput {
+  consultationId: string;
+  userId: string;
+  reason?: string;
+}
+
+export interface RescheduleBookingInput {
+  consultationId: string;
+  userId: string;
+  newSlotId: string;
+  currentReservationId: string;
+}
+
+export interface EligibilityResult {
+  eligible: boolean;
+  reason: EligibilityDenialReason | null;
+  existingConsultationId: string | null;
+  canReschedule: boolean;
+}
+
+export type EligibilityDenialReason =
+  | "FREE_CONSULTATION_ALREADY_USED"
+  | "ACTIVE_BOOKING_EXISTS"
+  | "USER_BANNED"
+  | "UNKNOWN";
+
+export interface NotificationQueueEntry {
+  id: string;
+  consultation_id: string;
+  user_id: string;
+  notification_type: NotificationType;
+  payload: Record<string, unknown>;
+  queued_at: string;
+  sent_at: string | null;
+  failed_at: string | null;
+  retry_count: number;
+}
+
+export type NotificationType =
+  | "BOOKING_CONFIRMED_EMAIL"
+  | "BOOKING_CONFIRMED_SMS"
+  | "BOOKING_CANCELLED_EMAIL"
+  | "BOOKING_RESCHEDULED_EMAIL"
+  | "REMINDER_24H"
+  | "REMINDER_1H";
+
+export interface SpecialistDisplayModel {
+  id: string;
+  name: string;
+  title: string;
+  avatarUrl: string | null;
+}
+
+export interface SlotDisplayModel {
+  id: string;
+  datetime: string;
+  durationMinutes: number;
+  isOnline: boolean;
+  locationLabel: string | null;
+}
+
+// ===========================================================================
+// SECTION B — Runtime Session Types (preserved from Sprint 3.3)
+// Sprint 3.5 TODO: extract to consultationBookingSessionTypes.ts
+// ===========================================================================
+
 export const LIFECYCLE_NOTE = "simplified_sprint_3.1" as const;
 
-// ─── Booking Phase ────────────────────────────────────────────────────────────
 /**
- * BookingPhase — الاسم الكنسي الرسمي لحالة جلسة الحجز (Rule 7).
- *
- * الـ state machine:
- *   CREATED → SPECIALIST_SELECTION → SLOT_SELECTION → REVIEW → CONFIRMED
- *   CONFIRMED → RESCHEDULED → SLOT_SELECTION (إعادة جدولة)
- *   CONFIRMED / RESCHEDULED → CANCELLED / EXPIRED
- *   أي phase → ABANDONED
+ * BookingPhase — الاسم الكنسي الرسمي لحالة جلسة الحجز.
  */
 export type BookingPhase =
   | "CREATED"
@@ -72,13 +231,10 @@ export type BookingPhase =
   | "ABANDONED";
 
 /**
- * BookingLifecyclePhase — alias لـ BookingPhase للتوافق مع الكود القائم (Rule 7).
+ * BookingLifecyclePhase — alias لـ BookingPhase للتوافق مع الكود القائم.
  * استخدم BookingPhase في الكود الجديد.
  */
 export type BookingLifecyclePhase = BookingPhase;
-
-// NOTE: BookingLifecyclePhaseAlias أُزيل — كان @deprecated بدون consumers.
-// تاريخ الحذف: Sprint 3.3 Audit Fix C2.
 
 export const RECOVERABLE_PHASES: BookingPhase[] = [
   "SPECIALIST_SELECTION",
@@ -94,7 +250,6 @@ export const TERMINAL_PHASES: BookingPhase[] = [
   "ABANDONED",
 ];
 
-// ─── Entry Points ────────────────────────────────────────────────────────────
 export type BookingEntryPoint =
   | "post_assessment"
   | "post_screening"
@@ -102,14 +257,12 @@ export type BookingEntryPoint =
   | "direct_navigation"
   | "consultation_intro";
 
-// ─── Entitlement Types ───────────────────────────────────────────────────────
 export type BookingEntitlementType =
   | "free_first_consultation"
   | "paid_consultation"
   | "package_session"
   | "follow_up";
 
-// ─── Recovery Reason Taxonomy ────────────────────────────────────────────────
 export type BookingRecoveryReason =
   | "page_refresh"
   | "browser_back"
@@ -127,13 +280,11 @@ export type BookingRecoveryReason =
   | "expiration_poll"
   | "session_ttl_exceeded";
 
-// ─── Recovery Execution Mode ─────────────────────────────────────────────────
 export type RecoveryExecution =
   | "AUTO"
   | "MANUAL"
   | "USER_CONFIRMATION_REQUIRED";
 
-// ─── Recovery State ────────────────────────────────────────────────────────────
 export type BookingRecoveryStatus =
   | "fresh"
   | "recovered"
@@ -150,7 +301,6 @@ export interface BookingRecoveryState {
   auditNote?: string;
 }
 
-// ─── Booking Denial ────────────────────────────────────────────────────────────
 export type BookingDenialReason =
   | "entitlement_expired"
   | "already_active"
@@ -170,7 +320,6 @@ export type RecoveryAction =
   | "contact_support"
   | "none";
 
-// ─── BookingInitializationResult ───────────────────────────────────────────────────
 export type BookingInitializationResult =
   | {
       success: true;
@@ -186,7 +335,6 @@ export type BookingInitializationResult =
       recoveryAction: RecoveryAction;
     };
 
-// ─── Specialist Recommendation ──────────────────────────────────────────────────
 export interface SpecialistRecommendation {
   specialistId: string;
   matchScore: number;
@@ -194,7 +342,6 @@ export interface SpecialistRecommendation {
   assessmentSessionId: string;
 }
 
-// ─── RuntimeSafetyStatus ───────────────────────────────────────────────────────────
 export type RuntimeSafetyStatus = "valid" | "expired" | "missing" | "corrupt";
 
 export interface RuntimeSafetyResult {
@@ -203,7 +350,6 @@ export interface RuntimeSafetyResult {
   diagnosticNote: string;
 }
 
-// ─── Specialist Validation Result ────────────────────────────────────────────────
 export type SpecialistValidationStatus =
   | "valid"
   | "not_found"
@@ -217,41 +363,20 @@ export interface SpecialistValidationResult {
   diagnosticNote: string;
 }
 
-// ─── ConsultationBookingSession (Domain Object) ─────────────────────────────────
 /**
- * ConsultationBookingSession — runtime booking state.
- *
- * BOOKING_CONTEXT_BOUNDARY:
- *   هذا الكائن يملك runtime booking data فقط.
- *
- * sourceIntentId — immutable (Rule 4):
- *   الرابط الدائم بين هذه الجلسة والـ ConsultationIntent الأصلي.
- *   لا تُعدِل هذا الحقل بعد creation.
- *
- * consultationIntentId — readonly alias للتوافق.
- *   استخدم sourceIntentId في الكود الجديد.
+ * ConsultationBookingSession — runtime booking state domain object.
  */
 export interface ConsultationBookingSession {
   sessionId: string;
-
-  /** sourceIntentId — immutable. الرابط الدائم مع ConsultationIntent. */
   sourceIntentId: string;
-
-  /**
-   * @deprecated استخدم sourceIntentId بدلاً منه.
-   * محفوظ مؤقتًا للتوافق مع الكود القائم. سيُزال في Sprint 3.4+.
-   */
+  /** @deprecated use sourceIntentId */
   readonly consultationIntentId: string;
-
   bookingFlowPhase: BookingPhase;
   bookingStatus: BookingPhase;
   createdAt: string;
   lastActivityAt: string;
   expiresAt: string;
-
-  /** v1 = Sprint 3.1 simplified machine. v2 = Sprint 3.2+ payment phases. */
   lifecycleVersion: "v1";
-
   entryPoint: BookingEntryPoint;
   assessmentSessionId?: string;
   entitlementType: BookingEntitlementType;
@@ -261,32 +386,19 @@ export interface ConsultationBookingSession {
   specialistRecommendation?: SpecialistRecommendation;
 }
 
-// ─── Repository Interface ──────────────────────────────────────────────────────────
 export interface ConsultationBookingRepository {
   save(session: ConsultationBookingSession): void;
   load(sessionId: string): ConsultationBookingSession | null;
   setActive(sessionId: string): void;
   getActiveId(): string | null;
   loadActive(): ConsultationBookingSession | null;
-  /** @deprecated استخدم loadActive() */
+  /** @deprecated use loadActive() */
   loadLatest(): ConsultationBookingSession | null;
   invalidate(sessionId: string, reason: BookingRecoveryReason): void;
   clearActive(): void;
   clear(): void;
 }
 
-// ─── Lifecycle Transition Validation ──────────────────────────────────────────────
-/**
- * ALLOWED_TRANSITIONS — خريطة الانتقالات الصحيحة بين phases.
- *
- * exported const — يستخدمه:
- *   - ConsultationBookingContext: isValidTransition()
- *   - getAllowedNextPhases(): لمساعدة الـ UI في معرفة الانتقالات المتاحة
- *
- * TRANSITION_NAMING_RULE (Rule 6):
- *   المفتاح = الحالة الحالية (from)
- *   القيم  = الحالات المسموح بالانتقال إليها (to)
- */
 export const ALLOWED_TRANSITIONS: Readonly<
   Partial<Record<BookingPhase, readonly BookingPhase[]>>
 > = {
@@ -302,29 +414,14 @@ export const ALLOWED_TRANSITIONS: Readonly<
   ABANDONED:            [],
 } as const;
 
-/**
- * isValidTransition — تحقق من صحة انتقال بين phases.
- *
- * يستخدمه ConsultationBookingContext.transitionTo() قبل كل transition.
- */
 export function isValidTransition(from: BookingPhase, to: BookingPhase): boolean {
   const allowed = ALLOWED_TRANSITIONS[from];
   return allowed ? (allowed as readonly BookingPhase[]).includes(to) : false;
 }
 
-/**
- * getAllowedNextPhases — ما هي الـ phases المتاحة من الحالة الحالية؟
- *
- * يستخدمه الـ UI لمنع عرض أزرار انتقال غير صالحة.
- * مثال:
- *   getAllowedNextPhases("SLOT_SELECTION")
- *   // → ["REVIEW", "SPECIALIST_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"]
- */
 export function getAllowedNextPhases(from: BookingPhase): readonly BookingPhase[] {
   return ALLOWED_TRANSITIONS[from] ?? [];
 }
-
-// ─── Utility Functions ────────────────────────────────────────────────────────────
 
 export function generateBookingSessionId(): string {
   return `bks_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
