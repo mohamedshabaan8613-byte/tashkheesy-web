@@ -12,6 +12,15 @@
  *     NOTIFICATION_QUEUED, NOTIFICATION_SENT, NOTIFICATION_FAILED,
  *     PAYMENT_STARTED, PAYMENT_COMPLETED, PAYMENT_FAILED
  *
+ * Sprint 3.4 fix — Deploy Blocker #3:
+ *   Added missing symbols consumed by ConsultationBookingContext.tsx:
+ *     - BookingSessionCreatedEvent
+ *     - BookingRecoveredEvent
+ *     - BookingPhaseTransitionedEvent
+ *     - BookingExpiredEvent
+ *     - createBookingEvent<T>() factory
+ *     - bookingEventBus.publish() alias for .emit()
+ *
  * ARCHITECTURE RULE:
  *   All events are emitted via bookingEventBus only.
  *   No direct phase mutations from event handlers.
@@ -41,6 +50,16 @@ export interface BookingSessionStartedEvent extends BaseBookingEvent {
   };
 }
 
+/** New in Sprint 3.4 fix — emitted by startBookingSession() */
+export interface BookingSessionCreatedEvent extends BaseBookingEvent {
+  type: "BOOKING_SESSION_CREATED";
+  payload: {
+    entryPoint: string;
+    entitlementType: string;
+    assessmentSessionId?: string;
+  };
+}
+
 export interface BookingSessionTerminatedEvent extends BaseBookingEvent {
   type: "SESSION_TERMINATED";
   payload: {
@@ -53,6 +72,38 @@ export interface BookingSessionRecoveredEvent extends BaseBookingEvent {
   payload: {
     recoveredFromPhase: string;
     ownershipToken: string;
+  };
+}
+
+/** New in Sprint 3.4 fix — emitted by recovery on mount */
+export interface BookingRecoveredEvent extends BaseBookingEvent {
+  type: "BOOKING_RECOVERED";
+  payload: {
+    recoveredPhase: string;
+    recoveredAt: string; // ISO 8601
+  };
+}
+
+/** New in Sprint 3.4 fix — emitted by expireBooking() / expiration poll */
+export interface BookingExpiredEvent extends BaseBookingEvent {
+  type: "BOOKING_EXPIRED";
+  payload: {
+    expiredPhase: string;
+    expiredAt: string; // ISO 8601
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Phase Transition Events
+// ---------------------------------------------------------------------------
+
+/** New in Sprint 3.4 fix — emitted by transitionTo() */
+export interface BookingPhaseTransitionedEvent extends BaseBookingEvent {
+  type: "BOOKING_PHASE_TRANSITIONED";
+  payload: {
+    fromPhase: string;
+    toPhase: string;
+    triggeredBy: "orchestrator" | "recovery" | "expiration";
   };
 }
 
@@ -85,7 +136,7 @@ export interface SlotReservedEvent extends BaseBookingEvent {
   payload: {
     reservationId: string;
     slotId: string;
-    reservedUntil: string; // ISO 8601 — TTL expiry
+    reservedUntil: string;
   };
 }
 
@@ -103,7 +154,7 @@ export interface SlotReservationExpiredEvent extends BaseBookingEvent {
   payload: {
     reservationId: string;
     slotId: string;
-    expiredAt: string; // ISO 8601
+    expiredAt: string;
   };
 }
 
@@ -119,7 +170,7 @@ export interface BookingConfirmedEvent extends BaseBookingEvent {
     slotId: string;
     slotDatetime: string;
     isFreeConsultation: boolean;
-    confirmedAt: string; // ISO 8601
+    confirmedAt: string;
   };
 }
 
@@ -145,7 +196,7 @@ export interface BookingRescheduledEvent extends BaseBookingEvent {
   payload: {
     previousSlotId: string;
     newSlotId: string;
-    newSlotDatetime: string; // ISO 8601
+    newSlotDatetime: string;
     newReservationId: string;
     rescheduleCount: number;
   };
@@ -168,7 +219,7 @@ export interface BookingCancelledEvent extends BaseBookingEvent {
   payload: {
     reservationId: string | null;
     reason: string;
-    cancelledAt: string; // ISO 8601
+    cancelledAt: string;
   };
 }
 
@@ -196,7 +247,7 @@ export interface NotificationSentEvent extends BaseBookingEvent {
   type: "NOTIFICATION_SENT";
   payload: {
     notificationId: string;
-    sentAt: string; // ISO 8601
+    sentAt: string;
   };
 }
 
@@ -210,7 +261,7 @@ export interface NotificationFailedEvent extends BaseBookingEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Payment Events (infrastructure-ready, Sprint 3.5 implementation)
+// Payment Events
 // ---------------------------------------------------------------------------
 
 export interface PaymentStartedEvent extends BaseBookingEvent {
@@ -227,7 +278,7 @@ export interface PaymentCompletedEvent extends BaseBookingEvent {
   payload: {
     transactionId: string;
     amount: number;
-    paidAt: string; // ISO 8601
+    paidAt: string;
   };
 }
 
@@ -236,7 +287,7 @@ export interface PaymentFailedEvent extends BaseBookingEvent {
   payload: {
     reason: string;
     retryable: boolean;
-    failedAt: string; // ISO 8601
+    failedAt: string;
   };
 }
 
@@ -246,8 +297,12 @@ export interface PaymentFailedEvent extends BaseBookingEvent {
 
 export type BookingEventType =
   | "BOOKING_SESSION_STARTED"
+  | "BOOKING_SESSION_CREATED"
   | "SESSION_TERMINATED"
   | "BOOKING_SESSION_RECOVERED"
+  | "BOOKING_RECOVERED"
+  | "BOOKING_EXPIRED"
+  | "BOOKING_PHASE_TRANSITIONED"
   | "SPECIALIST_SELECTED"
   | "SLOT_SELECTED"
   | "SLOT_RESERVED"
@@ -259,7 +314,6 @@ export type BookingEventType =
   | "BOOKING_RESCHEDULE_FAILED"
   | "BOOKING_CANCELLED"
   | "BOOKING_CANCELLATION_FAILED"
-  | "BOOKING_EXPIRED"
   | "NOTIFICATION_QUEUED"
   | "NOTIFICATION_SENT"
   | "NOTIFICATION_FAILED"
@@ -268,13 +322,17 @@ export type BookingEventType =
   | "PAYMENT_FAILED";
 
 // ---------------------------------------------------------------------------
-// AnyBookingEvent — complete discriminated union (Sprint 3.4: COMPLETE)
+// AnyBookingEvent — complete discriminated union
 // ---------------------------------------------------------------------------
 
 export type AnyBookingEvent =
   | BookingSessionStartedEvent
+  | BookingSessionCreatedEvent
   | BookingSessionTerminatedEvent
   | BookingSessionRecoveredEvent
+  | BookingRecoveredEvent
+  | BookingExpiredEvent
+  | BookingPhaseTransitionedEvent
   | SpecialistSelectedEvent
   | SlotSelectedEvent
   | SlotReservedEvent
@@ -312,15 +370,12 @@ class BookingEventBus {
       this.handlers.set(eventType, new Set());
     }
     this.handlers.get(eventType)!.add(handler as EventHandler);
-
-    // Return unsubscribe function
     return () => {
       this.handlers.get(eventType)?.delete(handler as EventHandler);
     };
   }
 
   emit(event: AnyBookingEvent): void {
-    // queueMicrotask for safe async dispatch — prevents re-render loops
     queueMicrotask(() => {
       const handlers = this.handlers.get(event.type);
       if (!handlers) return;
@@ -332,6 +387,14 @@ class BookingEventBus {
         }
       });
     });
+  }
+
+  /**
+   * publish() — alias for emit().
+   * ConsultationBookingContext uses .publish(); kept for consistency.
+   */
+  publish(event: AnyBookingEvent): void {
+    this.emit(event);
   }
 
   /** Clear all handlers — use in tests only */
@@ -348,4 +411,35 @@ export function generateEventId(): string {
   return typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `evt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+/**
+ * createBookingEvent<T> — typed event factory.
+ *
+ * Builds a fully-typed AnyBookingEvent with auto-generated id and timestamp.
+ * Used by ConsultationBookingContext and any future orchestrators.
+ *
+ * Example:
+ *   const event = createBookingEvent(
+ *     "BOOKING_PHASE_TRANSITIONED",
+ *     session.sessionId,
+ *     session.sourceIntentId,
+ *     { fromPhase: "CREATED", toPhase: "SPECIALIST_SELECTION", triggeredBy: "orchestrator" }
+ *   );
+ *   bookingEventBus.publish(event);
+ */
+export function createBookingEvent<T extends AnyBookingEvent>(
+  type: T["type"],
+  consultationId: string,
+  userId: string,
+  payload: T["payload"]
+): T {
+  return {
+    id: generateEventId(),
+    consultationId,
+    userId,
+    timestamp: new Date().toISOString(),
+    type,
+    payload,
+  } as T;
 }
