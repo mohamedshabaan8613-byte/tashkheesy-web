@@ -1,45 +1,37 @@
 /**
- * BookingReviewPage.tsx — Sprint 3.3 PHASE 1 (Fix N3 + N4)
+ * BookingReviewPage.tsx — Sprint 3.4.1 M1 Fix
  *
  * UX completion boundary before persistence commit.
  *
  * ────────────────────────────────────────────────────────────────────
- * ARCHITECTURE RULES (Sprint 3.3)
+ * ARCHITECTURE RULES (Sprint 3.3 → Sprint 3.4.1)
  * ────────────────────────────────────────────────────────────────────
- *
- * RULE 2 — UI لا تُعدِّل lifecycle مباشرة:
- *   هذه الصفحة تعرض فقط. لا تستدعي transitionTo() مباشرة.
- *   التأكيد يمر عبر BookingOrchestrator.
  *
  * RULE 1 — SOURCE OF TRUTH:
- *   تعرض بيانات runtime session حاليًا.
+ *   تعرض بيانات runtime session.
  *   Phase 2: ستتحقق من persistent record قبل العرض.
  *
+ * RULE 2 — UI لا تُعدّل lifecycle مباشرةً:
+ *   handleConfirm → orchestrateBookingConfirmation() → transitionTo()
+ *   لا تستدعي transitionTo() مباشرةً من الصفحة.
+ *
  * RULE 3 — CONFIRMED ≠ visual:
- *   زر التأكيد هنا لا يُصدر transitionTo("CONFIRMED") مباشرة.
- *   يستدعي orchestrator الذي يضمن الشروط أولاً.
+ *   الزر لا يُصدر transitionTo("CONFIRMED") مباشرةً.
+ *   transitionTo يُستدعى حصرًا من orchestrateBookingConfirmation().
+ *
+ * RULE 4 — No hardcoded routes (Fix N4):
+ *   جميع navigate() تستخدم CONSULTATION_ROUTES.
  *
  * ────────────────────────────────────────────────────────────────────
- * Fix N3 — Orphan Guard (Sprint 3.3 review)
+ * Sprint 3.4.1 M1 Changes
  * ────────────────────────────────────────────────────────────────────
  *
- * الإضافة: isSessionExpired() check في redirect useEffect.
+ * FIX 1: handleConfirm — wired to orchestrateBookingConfirmation()
+ *   الوضع السابق: console.warn placeholder — لا يفعل شيئًا
+ *   الآن: orchestrateBookingConfirmation() مربوط بالكامل مع transitionTo dep-injection
  *
- * المشكلة السابقة:
- *   الصفحة كانت تعرض UI لـ session منتهية الصلاحية ما دام
- *   session موجود في memory — SessionExpiryNotice تعرض
- *   "انتهت المهلة" كـ UI فقط دون إبطال الـ session أو redirect.
- *
- * الحل:
- *   إذا كانت session منتهية → expireBooking() + redirect فوري
- *   قبل أي render للمحتوى الحقيقي.
- *
- * ────────────────────────────────────────────────────────────────────
- * Fix N4 — No Hardcoded Routes (Sprint 3.3 review)
- * ────────────────────────────────────────────────────────────────────
- *
- * جميع navigate() تستخدم CONSULTATION_ROUTES.
- * لا توجد strings مباشرة مثل "/consultation/start" في هذا الملف.
+ * FIX 2: BookingReviewReachedEvent import كان يسبب build error
+ *   الآن: النوع معرّف في bookingDomainEvents.ts
  *
  * ────────────────────────────────────────────────────────────────────
  * ما تفعله هذه الصفحة:
@@ -47,24 +39,33 @@
  *   ✅ إتاحة التعديل (العودة لاختيار الأخصائي أو الموعد)
  *   ✅ hydration-safe + recovery-safe + expiry-safe
  *   ✅ تصدر BOOKING_REVIEW_REACHED event عند الوصول
+ *   ✅ تستدعي orchestrateBookingConfirmation() لتأكيد الحجز
  *
  * ما لا تفعله:
  *   ❌ لا تؤكد الحجز مباشرة
  *   ❌ لا تكتب في Supabase
  *   ❌ لا تستدعي transitionTo() مباشرة
- *   ❌ لا تقرأ من URL params (URL = navigation concern فقط)
+ *   ❌ لا تقرأ من URL params
  * ────────────────────────────────────────────────────────────────────
  */
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useConsultationBooking } from "../contexts/ConsultationBookingContext";
 import { bookingEventBus, createBookingEvent } from "../types/bookingDomainEvents";
 import { isSessionExpired } from "../types/consultationBookingTypes";
 import { CONSULTATION_ROUTES } from "../constants/consultationRoutes";
+import { orchestrateBookingConfirmation } from "../orchestrators/BookingConfirmationOrchestrator";
 import type { BookingReviewReachedEvent } from "../types/bookingDomainEvents";
 
-// ─── BookingReviewPage ────────────────────────────────────────────────────────
+// ─── Confirmation UI state ───────────────────────────────────────────────────────────────
+
+type ConfirmState =
+  | { status: "idle" }
+  | { status: "confirming" }
+  | { status: "failed"; reason: string; retryable: boolean };
+
+// ─── BookingReviewPage ───────────────────────────────────────────────────────────────
 export default function BookingReviewPage() {
   const {
     session,
@@ -73,12 +74,14 @@ export default function BookingReviewPage() {
     isRecovering,
     cancelBooking,
     expireBooking,
+    transitionTo,
   } = useConsultationBooking();
   const [, navigate] = useLocation();
 
   const reviewEventFiredRef = useRef(false);
+  const [confirmState, setConfirmState] = useState<ConfirmState>({ status: "idle" });
 
-  // ── حماية: تحقق من session + phase ──────────────────────────────────────
+  // ── حماية: تحقق من session + phase ──────────────────────────────────────────
   const isValidForReview =
     hasActiveSession &&
     session !== null &&
@@ -86,7 +89,7 @@ export default function BookingReviewPage() {
     Boolean(session.selectedSpecialistId) &&
     Boolean(session.selectedSlotId);
 
-  // ── إطلاق BOOKING_REVIEW_REACHED مرة واحدة ──────────────────────────────
+  // ── إطلاق BOOKING_REVIEW_REACHED مرة واحدة ─────────────────────────────────────
   useEffect(() => {
     if (!isValidForReview || reviewEventFiredRef.current || !session) return;
     if (!session.selectedSpecialistId || !session.selectedSlotId) return;
@@ -107,7 +110,7 @@ export default function BookingReviewPage() {
     bookingEventBus.publish(event);
   }, [isValidForReview, session]);
 
-  // ── Redirect + Expiry Guard (Fix N3) ─────────────────────────────────────
+  // ── Redirect + Expiry Guard (Fix N3) ──────────────────────────────────────────
   //
   // الترتيب مهم:
   //   1. isRecovering → انتظر (لا redirect أثناء hydration)
@@ -118,7 +121,6 @@ export default function BookingReviewPage() {
   useEffect(() => {
     if (isRecovering) return;
 
-    // Fix N3: فحص انتهاء صلاحية الـ session قبل أي render
     if (session && isSessionExpired(session)) {
       expireBooking("session_ttl_exceeded");
       navigate(CONSULTATION_ROUTES.START, { replace: true });
@@ -138,7 +140,66 @@ export default function BookingReviewPage() {
     }
   }, [isRecovering, hasActiveSession, session, navigate, expireBooking]);
 
-  // ── Loading state ─────────────────────────────────────────────────────────
+  // ── handleConfirm — RULE 2 + RULE 3 (Sprint 3.4.1 M1 Fix) ──────────────────
+  //
+  // الدفق الصحيح:
+  //   UI → orchestrateBookingConfirmation() → transitionTo() → domain event
+  //
+  // لماذا transitionTo مُمرّر كـ dep-injection:
+  //   orchestrateBookingConfirmation لا يستورد Context مباشرةً — RULE 2 isolation.
+  //   transitionTo هو المسار الوحيد لتغيير lifecycle phase.
+  //
+  // userId مصدر: session.sourceIntentId
+  //   مؤقت حتى اكتمال Sprint 3.5 auth layer.
+  //   session.sourceIntentId = consultationIntentId = userId في v1.
+  //
+  // reservationId مصدر: session.reservationId
+  //   مضبوط بواسطة SlotReservationOrchestrator عند اختيار الموعد.
+  //
+  const handleConfirm = useCallback(async () => {
+    if (!session) return;
+    if (confirmState.status === "confirming") return; // منع double-submit
+
+    const reservationId = (session as Record<string, unknown>).reservationId as string | undefined;
+    const ownershipToken = session.sessionId; // ownershipToken = sessionId في v1
+
+    if (!reservationId) {
+      // reservationId غير موجود: عادة لم يكتمل SlotReservationOrchestrator
+      setConfirmState({
+        status: "failed",
+        reason: "reservation_not_found",
+        retryable: false,
+      });
+      return;
+    }
+
+    setConfirmState({ status: "confirming" });
+
+    const result = await orchestrateBookingConfirmation(
+      {
+        consultationId: session.sessionId,
+        userId: session.sourceIntentId,
+        reservationId,
+        ownershipToken,
+      },
+      {
+        // RULE 2: transitionTo ُممرّر كـ dep-injection — لا import مباشر
+        transitionTo: (phase: string) => transitionTo(phase as Parameters<typeof transitionTo>[0]),
+      },
+    );
+
+    if (result.success) {
+      navigate(CONSULTATION_ROUTES.CONFIRMED, { replace: true });
+    } else {
+      setConfirmState({
+        status: "failed",
+        reason: result.reason ?? "unknown_error",
+        retryable: result.retryable ?? false,
+      });
+    }
+  }, [session, confirmState.status, transitionTo, navigate]);
+
+  // ── Loading state ───────────────────────────────────────────────────────────────
   if (isRecovering) {
     return <BookingReviewSkeleton />;
   }
@@ -147,35 +208,18 @@ export default function BookingReviewPage() {
     return null;
   }
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
-  const handleEditSpecialist = () => {
-    navigate(CONSULTATION_ROUTES.BOOKING);
-  };
+  const isConfirming = confirmState.status === "confirming";
 
-  const handleEditSlot = () => {
-    navigate(CONSULTATION_ROUTES.BOOKING);
-  };
+  // ── Edit Handlers ───────────────────────────────────────────────────────────────
+  const handleEditSpecialist = () => navigate(CONSULTATION_ROUTES.BOOKING);
+  const handleEditSlot = () => navigate(CONSULTATION_ROUTES.BOOKING);
 
   const handleCancel = () => {
     cancelBooking("user_cancelled");
     navigate(CONSULTATION_ROUTES.START, { replace: true });
   };
 
-  /**
-   * handleConfirm — RULE 2 + RULE 3
-   *
-   * الآن: placeholder — Sprint 3.3 Phase 4 سيستبدله بـ orchestrator call.
-   * لا يُستدعى transitionTo() مباشرة هنا.
-   * يجب أن يمر عبر BookingOrchestrator عند اكتمال Phase 2.
-   */
-  const handleConfirm = () => {
-    // Sprint 3.3 Phase 4: استبدل هذا بـ:
-    //   await bookingOrchestrator.confirmBooking({ sessionId: session.sessionId })
-    // لا تضيف transitionTo("CONFIRMED") هنا مباشرة.
-    console.warn(
-      "[BookingReviewPage] handleConfirm: orchestrator not yet connected. Sprint 3.3 Phase 4.",
-    );
-  };
+  const handleRetry = () => setConfirmState({ status: "idle" });
 
   return (
     <div
@@ -183,7 +227,7 @@ export default function BookingReviewPage() {
       className="min-h-screen bg-background flex flex-col items-center justify-start pt-8 pb-16 px-4"
     >
       <div className="w-full max-w-lg">
-        {/* ─── Header ──────────────────────────────────────────────────────── */}
+        {/* ─── Header ───────────────────────────────────────────────────────────────── */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-1">مراجعة الحجز</h1>
           <p className="text-sm text-muted-foreground">
@@ -191,7 +235,16 @@ export default function BookingReviewPage() {
           </p>
         </div>
 
-        {/* ─── Booking Summary Card ─────────────────────────────────────────── */}
+        {/* ─── Confirmation Error Banner (Sprint 3.4.1 M1) ──────────────────────── */}
+        {confirmState.status === "failed" && (
+          <ConfirmationErrorBanner
+            reason={confirmState.reason}
+            retryable={confirmState.retryable}
+            onRetry={handleRetry}
+          />
+        )}
+
+        {/* ─── Booking Summary Card ─────────────────────────────────────────────── */}
         <div className="bg-card border border-border rounded-xl p-5 mb-4 shadow-sm">
           <h2 className="text-base font-semibold text-foreground mb-4">
             ملخص الحجز
@@ -207,7 +260,8 @@ export default function BookingReviewPage() {
             </div>
             <button
               onClick={handleEditSpecialist}
-              className="text-xs text-primary underline-offset-2 hover:underline transition-colors"
+              disabled={isConfirming}
+              className="text-xs text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="تعديل اختيار الأخصائي"
             >
               تعديل
@@ -224,7 +278,8 @@ export default function BookingReviewPage() {
             </div>
             <button
               onClick={handleEditSlot}
-              className="text-xs text-primary underline-offset-2 hover:underline transition-colors"
+              disabled={isConfirming}
+              className="text-xs text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="تعديل الموعد"
             >
               تعديل
@@ -240,63 +295,80 @@ export default function BookingReviewPage() {
           </div>
         </div>
 
-        {/* ─── Session Expiry Notice ────────────────────────────────────────── */}
+        {/* ─── Session Expiry Notice ───────────────────────────────────────────── */}
         <SessionExpiryNotice expiresAt={session.expiresAt} />
 
-        {/* ─── Actions ─────────────────────────────────────────────────────── */}
+        {/* ─── Actions ─────────────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 mt-6">
           {/*
-           * Sprint 3.3 Phase 4:
-           * هذا الزر سيُفعَّل بعد اكتمال orchestrator + persistence layer.
-           * حاليًا: disabled مع توضيح للمستخدم.
+           * Confirm Button — Sprint 3.4.1 M1 Fix
+           * الآن: مفعّل ومربوط بالكامل بـ orchestrateBookingConfirmation()
+           * يُعطّل أثناء CONFIRMING لمنع double-submit
            */}
           <button
             onClick={handleConfirm}
-            disabled
-            className="w-full py-3 px-4 bg-primary/40 text-primary-foreground/60 rounded-lg text-sm font-semibold cursor-not-allowed"
-            aria-label="تأكيد الحجز — قيد التطوير"
+            disabled={isConfirming}
+            className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-semibold
+                       hover:bg-primary/90 active:bg-primary/80 transition-colors
+                       disabled:bg-primary/40 disabled:text-primary-foreground/60 disabled:cursor-not-allowed"
+            aria-label="تأكيد الحجز"
+            aria-busy={isConfirming}
           >
-            تأكيد الحجز
-            <span className="block text-xs font-normal opacity-70 mt-0.5">
-              قريبًا — قيد الإعداد
-            </span>
+            {isConfirming ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                جاري تأكيد الحجز…
+              </span>
+            ) : (
+              "تأكيد الحجز"
+            )}
           </button>
 
           <button
             onClick={handleCancel}
-            className="w-full py-2.5 px-4 bg-transparent border border-border text-muted-foreground rounded-lg text-sm hover:bg-muted/50 transition-colors"
+            disabled={isConfirming}
+            className="w-full py-2.5 px-4 bg-transparent border border-border text-muted-foreground rounded-lg text-sm
+                       hover:bg-muted/50 transition-colors
+                       disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="إلغاء الحجز"
           >
             إلغاء الحجز
           </button>
         </div>
 
-        {/* ─── Recovery State Badge (dev-visible) ──────────────────────────── */}
-        {process.env.NODE_ENV === "development" && session.recoveryState.status !== "fresh" && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs text-amber-700">
-              <strong>Recovery:</strong> {session.recoveryState.status}
-              {session.recoveryState.reason && ` — ${session.recoveryState.reason}`}
-            </p>
-          </div>
-        )}
+        {/* ─── Recovery State Badge (dev-visible) ──────────────────────────────── */}
+        {process.env.NODE_ENV === "development" &&
+          session.recoveryState.status !== "fresh" && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-xs text-amber-700">
+                <strong>Recovery:</strong> {session.recoveryState.status}
+                {session.recoveryState.reason && ` — ${session.recoveryState.reason}`}
+              </p>
+            </div>
+          )}
       </div>
     </div>
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Sub-components ─────────────────────────────────────────────────────────────────────────
 
 function BookingReviewSkeleton() {
   return (
-    <div dir="rtl" className="min-h-screen bg-background flex flex-col items-center pt-8 px-4 animate-pulse">
+    <div
+      dir="rtl"
+      className="min-h-screen bg-background flex flex-col items-center pt-8 px-4 animate-pulse"
+    >
       <div className="w-full max-w-lg">
         <div className="h-7 w-40 bg-muted rounded mb-2" />
         <div className="h-4 w-64 bg-muted rounded mb-6" />
         <div className="bg-card border border-border rounded-xl p-5 mb-4">
           <div className="h-5 w-32 bg-muted rounded mb-4" />
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex justify-between mb-4 pb-4 border-b border-border/40">
+            <div
+              key={i}
+              className="flex justify-between mb-4 pb-4 border-b border-border/40"
+            >
               <div>
                 <div className="h-3 w-20 bg-muted rounded mb-2" />
                 <div className="h-4 w-36 bg-muted rounded" />
@@ -318,7 +390,6 @@ function EntitlementBadge({ type }: { type: string }) {
     follow_up: "متابعة",
   };
   const label = labels[type] ?? type;
-
   const isFreeTier = type === "free_first_consultation";
 
   return (
@@ -364,8 +435,58 @@ function SessionExpiryNotice({ expiresAt }: { expiresAt: string }) {
     <div className="flex items-center gap-2 p-3 bg-muted/40 border border-border rounded-lg">
       <span className="text-muted-foreground text-xs">🕐</span>
       <p className="text-xs text-muted-foreground">
-        الحجز محجوز حتى {expiryDate.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" })}
+        الحجز محجوز حتى{" "}
+        {expiryDate.toLocaleTimeString("ar-SA", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
       </p>
+    </div>
+  );
+}
+
+/**
+ * ConfirmationErrorBanner — Sprint 3.4.1 M1 Addition
+ *
+ * يظهر خطأ تأكيد مترجم إلى العربية بدل raw error string.
+ * يتيح إعادة المحاولة إذا كان الخطأ retryable.
+ */
+function ConfirmationErrorBanner({
+  reason,
+  retryable,
+  onRetry,
+}: {
+  reason: string;
+  retryable: boolean;
+  onRetry: () => void;
+}) {
+  const messages: Record<string, string> = {
+    reservation_expired: "انتهت مدة حجز الموعد. يرجى اختيار موعد جديد.",
+    reservation_not_owned: "تعذّر التحقق من ملكية الموعد. حاول مرة أخرى.",
+    reservation_not_found: "لم يتم حجز الموعد بعد. يرجى العودة واختيار الموعد.",
+    eligibility_denied: "غير مؤهّل لهذه الاستشارة حاليًا.",
+    network_error: "خطأ في الشبكة. تحقق من الاتصال وحاول مجددًا.",
+    db_error: "تعذّر حفظ الحجز. تواصل مع الدعم إذا تكررت المشكلة.",
+    unknown_error: "حدث خطأ غير متوقع. حاول مرة أخرى.",
+  };
+
+  const message = messages[reason] ?? messages.unknown_error;
+
+  return (
+    <div
+      role="alert"
+      className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start justify-between gap-3"
+    >
+      <p className="text-xs text-red-700 flex-1">{message}</p>
+      {retryable && (
+        <button
+          onClick={onRetry}
+          className="text-xs text-red-700 font-semibold underline underline-offset-2 whitespace-nowrap shrink-0"
+          aria-label="إعادة المحاولة"
+        >
+          حاول مجددًا
+        </button>
+      )}
     </div>
   );
 }

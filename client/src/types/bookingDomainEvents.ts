@@ -1,16 +1,20 @@
 /**
- * bookingDomainEvents.ts — Sprint 3.4 Complete Domain Events
+ * bookingDomainEvents.ts — Sprint 3.4.1 Resolved
  *
- * PHASE 1 + PHASE 2 + PHASE 3:
- *   Complete AnyBookingEvent union with ALL typed event shapes.
+ * CONFLICT RESOLUTION (PR #72):
+ *   HEAD  added: BookingReviewReachedEvent, BOOKING_REVIEW_REACHED in union
+ *   BASE (main) had: BookingExpiredEvent, BOOKING_EXPIRED in union
+ *   RESOLVED: superset — both are included.
  *
- * Sprint 3.3 gap closed:
- *   Previously missing typed shapes:
- *     SLOT_RESERVED, SLOT_RELEASED, SLOT_RESERVATION_EXPIRED,
- *     BOOKING_CONFIRMED, BOOKING_CONFIRMATION_FAILED,
- *     BOOKING_CANCELLED, BOOKING_RESCHEDULED,
- *     NOTIFICATION_QUEUED, NOTIFICATION_SENT, NOTIFICATION_FAILED,
- *     PAYMENT_STARTED, PAYMENT_COMPLETED, PAYMENT_FAILED
+ * Sprint 3.4.1 additions:
+ *   + BookingReviewReachedEvent     — emitted by BookingReviewPage on mount
+ *   + BOOKING_REVIEW_REACHED        — added to BookingEventType union
+ *   + BookingSessionCreatedEvent    — emitted by startBookingSession()
+ *   + BookingRecoveredEvent         — emitted by recovery on mount
+ *   + BookingPhaseTransitionedEvent — emitted by transitionTo()
+ *   + BookingExpiredEvent           — emitted by expireBooking() / expiration poll
+ *   + publish() alias               — alias for emit()
+ *   + createBookingEvent<T>()       — typed factory helper
  *
  * Sprint 3.4 fix — Deploy Blocker #3:
  *   Added missing symbols consumed by ConsultationBookingContext.tsx:
@@ -50,7 +54,10 @@ export interface BookingSessionStartedEvent extends BaseBookingEvent {
   };
 }
 
-/** New in Sprint 3.4 fix — emitted by startBookingSession() */
+/**
+ * BookingSessionCreatedEvent — emitted by startBookingSession() in Context.
+ * Distinct from BOOKING_SESSION_STARTED which is for the legacy event shape.
+ */
 export interface BookingSessionCreatedEvent extends BaseBookingEvent {
   type: "BOOKING_SESSION_CREATED";
   payload: {
@@ -75,7 +82,9 @@ export interface BookingSessionRecoveredEvent extends BaseBookingEvent {
   };
 }
 
-/** New in Sprint 3.4 fix — emitted by recovery on mount */
+/**
+ * BookingRecoveredEvent — emitted by ConsultationBookingContext on mount recovery.
+ */
 export interface BookingRecoveredEvent extends BaseBookingEvent {
   type: "BOOKING_RECOVERED";
   payload: {
@@ -84,7 +93,9 @@ export interface BookingRecoveredEvent extends BaseBookingEvent {
   };
 }
 
-/** New in Sprint 3.4 fix — emitted by expireBooking() / expiration poll */
+/**
+ * BookingExpiredEvent — emitted by expireBooking() / expiration poll.
+ */
 export interface BookingExpiredEvent extends BaseBookingEvent {
   type: "BOOKING_EXPIRED";
   payload: {
@@ -93,11 +104,10 @@ export interface BookingExpiredEvent extends BaseBookingEvent {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Phase Transition Events
-// ---------------------------------------------------------------------------
-
-/** New in Sprint 3.4 fix — emitted by transitionTo() */
+/**
+ * BookingPhaseTransitionedEvent — emitted by transitionTo() in Context.
+ * Single authoritative event for all lifecycle phase changes.
+ */
 export interface BookingPhaseTransitionedEvent extends BaseBookingEvent {
   type: "BOOKING_PHASE_TRANSITIONED";
   payload: {
@@ -124,6 +134,30 @@ export interface SlotSelectedEvent extends BaseBookingEvent {
   payload: {
     slotId: string;
     slotDatetime: string; // ISO 8601
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Review Events — Sprint 3.4.1 Addition
+// ---------------------------------------------------------------------------
+
+/**
+ * BookingReviewReachedEvent — emitted by BookingReviewPage on mount.
+ *
+ * Signals that the user has reached the review boundary with a valid
+ * specialist + slot selection. Used by analytics and audit trail.
+ *
+ * ARCHITECTURE NOTE:
+ *   This is an OBSERVATION event — it does NOT trigger a phase transition.
+ *   The phase is already REVIEW when this page renders.
+ *   transitionTo("REVIEW") is called by the orchestrator upstream.
+ */
+export interface BookingReviewReachedEvent extends BaseBookingEvent {
+  type: "BOOKING_REVIEW_REACHED";
+  payload: {
+    specialistId: string;
+    slotId: string;
+    entitlementType: string;
   };
 }
 
@@ -305,6 +339,7 @@ export type BookingEventType =
   | "BOOKING_PHASE_TRANSITIONED"
   | "SPECIALIST_SELECTED"
   | "SLOT_SELECTED"
+  | "BOOKING_REVIEW_REACHED"
   | "SLOT_RESERVED"
   | "SLOT_RELEASED"
   | "SLOT_RESERVATION_EXPIRED"
@@ -322,7 +357,7 @@ export type BookingEventType =
   | "PAYMENT_FAILED";
 
 // ---------------------------------------------------------------------------
-// AnyBookingEvent — complete discriminated union
+// AnyBookingEvent — complete discriminated union (Sprint 3.4.1: COMPLETE)
 // ---------------------------------------------------------------------------
 
 export type AnyBookingEvent =
@@ -335,6 +370,7 @@ export type AnyBookingEvent =
   | BookingPhaseTransitionedEvent
   | SpecialistSelectedEvent
   | SlotSelectedEvent
+  | BookingReviewReachedEvent
   | SlotReservedEvent
   | SlotReleasedEvent
   | SlotReservationExpiredEvent
@@ -391,7 +427,10 @@ class BookingEventBus {
 
   /**
    * publish() — alias for emit().
-   * ConsultationBookingContext uses .publish(); kept for consistency.
+   *
+   * ConsultationBookingContext and BookingReviewPage call publish().
+   * Both emit() and publish() dispatch through the same queueMicrotask pipeline.
+   * Use publish() in application code — emit() is the internal implementation.
    */
   publish(event: AnyBookingEvent): void {
     this.emit(event);
@@ -414,19 +453,22 @@ export function generateEventId(): string {
 }
 
 /**
- * createBookingEvent<T> — typed event factory.
+ * createBookingEvent<T>() — typed event factory.
  *
- * Builds a fully-typed AnyBookingEvent with auto-generated id and timestamp.
- * Used by ConsultationBookingContext and any future orchestrators.
+ * Creates a fully-typed AnyBookingEvent with a stable ID and ISO timestamp.
+ * Consumed by:
+ *   - ConsultationBookingContext (startBookingSession, transitionTo, recoverSession)
+ *   - BookingReviewPage (BOOKING_REVIEW_REACHED)
  *
- * Example:
- *   const event = createBookingEvent(
- *     "BOOKING_PHASE_TRANSITIONED",
- *     session.sessionId,
- *     session.sourceIntentId,
- *     { fromPhase: "CREATED", toPhase: "SPECIALIST_SELECTION", triggeredBy: "orchestrator" }
- *   );
+ * Usage:
+ *   const event = createBookingEvent("BOOKING_REVIEW_REACHED", sessionId, userId, {
+ *     specialistId, slotId, entitlementType,
+ *   });
  *   bookingEventBus.publish(event);
+ *
+ * TYPE CONTRACT:
+ *   The payload parameter type is inferred from T["payload"].
+ *   TypeScript will error at call site if the payload shape is wrong.
  */
 export function createBookingEvent<T extends AnyBookingEvent>(
   type: T["type"],
@@ -436,10 +478,10 @@ export function createBookingEvent<T extends AnyBookingEvent>(
 ): T {
   return {
     id: generateEventId(),
+    type,
     consultationId,
     userId,
     timestamp: new Date().toISOString(),
-    type,
     payload,
   } as T;
 }

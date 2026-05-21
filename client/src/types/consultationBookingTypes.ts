@@ -1,10 +1,13 @@
 /**
- * consultationBookingTypes.ts — Sprint 3.4 Transactional Booking Types
+ * consultationBookingTypes.ts — Sprint 3.4.1 Resolved
  *
- * PHASE 1: Complete domain type definitions for:
- *   - ConsultationRecord (consultations table)
- *   - SlotReservationRecord (slot_reservations table)
- *   - ConsultationEventRecord (consultation_events table)
+ * CONFLICT RESOLUTION (PR #72):
+ *   Accepted main (BASE) as the authoritative version.
+ *   main contains the complete runtime contract restored in the Sprint 3.4.1 fix,
+ *   including all symbols consumed by ConsultationBookingContext:
+ *     BookingPhase, RECOVERABLE_PHASES, TERMINAL_PHASES, isValidTransition(),
+ *     calculateBookingExpiry(), generateBookingSessionId(), BookingRecoveryState,
+ *     RuntimeSafetyResult, SpecialistRecommendation, ConsultationBookingSession.
  *
  * ARCHITECTURE RULE:
  *   These types mirror the Supabase DB schema exactly.
