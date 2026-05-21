@@ -1,24 +1,20 @@
 /**
- * bookingDomainEvents.ts — Sprint 3.4.1 M1 Fix
+ * bookingDomainEvents.ts — Sprint 3.4.1 Resolved
  *
- * CHANGES vs Sprint 3.4:
- *   + BookingReviewReachedEvent     — was missing, caused BookingReviewPage import error
+ * CONFLICT RESOLUTION (PR #72):
+ *   HEAD  added: BookingReviewReachedEvent, BOOKING_REVIEW_REACHED in union
+ *   BASE (main) had: BookingExpiredEvent, BOOKING_EXPIRED in union
+ *   RESOLVED: superset — both are included.
+ *
+ * Sprint 3.4.1 additions:
+ *   + BookingReviewReachedEvent     — emitted by BookingReviewPage on mount
  *   + BOOKING_REVIEW_REACHED        — added to BookingEventType union
- *   + BookingReviewReachedEvent     — added to AnyBookingEvent union
- *   + publish() alias               — BookingReviewPage + Context use publish(), not emit()
- *   + createBookingEvent<T>()       — typed factory helper consumed by Context + BookingReviewPage
- *
- * Sprint 3.4 history:
- *   PHASE 1 + PHASE 2 + PHASE 3:
- *     Complete AnyBookingEvent union with ALL typed event shapes.
- *
- *   Sprint 3.3 gap closed:
- *     Previously missing typed shapes:
- *       SLOT_RESERVED, SLOT_RELEASED, SLOT_RESERVATION_EXPIRED,
- *       BOOKING_CONFIRMED, BOOKING_CONFIRMATION_FAILED,
- *       BOOKING_CANCELLED, BOOKING_RESCHEDULED,
- *       NOTIFICATION_QUEUED, NOTIFICATION_SENT, NOTIFICATION_FAILED,
- *       PAYMENT_STARTED, PAYMENT_COMPLETED, PAYMENT_FAILED
+ *   + BookingSessionCreatedEvent    — emitted by startBookingSession()
+ *   + BookingRecoveredEvent         — emitted by recovery on mount
+ *   + BookingPhaseTransitionedEvent — emitted by transitionTo()
+ *   + BookingExpiredEvent           — emitted by expireBooking() / expiration poll
+ *   + publish() alias               — alias for emit()
+ *   + createBookingEvent<T>()       — typed factory helper
  *
  * ARCHITECTURE RULE:
  *   All events are emitted via bookingEventBus only.
@@ -89,6 +85,17 @@ export interface BookingRecoveredEvent extends BaseBookingEvent {
 }
 
 /**
+ * BookingExpiredEvent — emitted by expireBooking() / expiration poll.
+ */
+export interface BookingExpiredEvent extends BaseBookingEvent {
+  type: "BOOKING_EXPIRED";
+  payload: {
+    expiredPhase: string;
+    expiredAt: string; // ISO 8601
+  };
+}
+
+/**
  * BookingPhaseTransitionedEvent — emitted by transitionTo() in Context.
  * Single authoritative event for all lifecycle phase changes.
  */
@@ -122,7 +129,7 @@ export interface SlotSelectedEvent extends BaseBookingEvent {
 }
 
 // ---------------------------------------------------------------------------
-// Review Events — Sprint 3.4.1 M1 Addition
+// Review Events — Sprint 3.4.1 Addition
 // ---------------------------------------------------------------------------
 
 /**
@@ -319,6 +326,7 @@ export type BookingEventType =
   | "SESSION_TERMINATED"
   | "BOOKING_SESSION_RECOVERED"
   | "BOOKING_RECOVERED"
+  | "BOOKING_EXPIRED"
   | "BOOKING_PHASE_TRANSITIONED"
   | "SPECIALIST_SELECTED"
   | "SLOT_SELECTED"
@@ -332,7 +340,6 @@ export type BookingEventType =
   | "BOOKING_RESCHEDULE_FAILED"
   | "BOOKING_CANCELLED"
   | "BOOKING_CANCELLATION_FAILED"
-  | "BOOKING_EXPIRED"
   | "NOTIFICATION_QUEUED"
   | "NOTIFICATION_SENT"
   | "NOTIFICATION_FAILED"
@@ -350,6 +357,7 @@ export type AnyBookingEvent =
   | BookingSessionTerminatedEvent
   | BookingSessionRecoveredEvent
   | BookingRecoveredEvent
+  | BookingExpiredEvent
   | BookingPhaseTransitionedEvent
   | SpecialistSelectedEvent
   | SlotSelectedEvent
@@ -447,7 +455,7 @@ export function generateEventId(): string {
  *   - BookingReviewPage (BOOKING_REVIEW_REACHED)
  *
  * Usage:
- *   const event = createBookingEvent("BOOKING_REVIEW_REACHED", sessionId, sourceIntentId, {
+ *   const event = createBookingEvent("BOOKING_REVIEW_REACHED", sessionId, userId, {
  *     specialistId, slotId, entitlementType,
  *   });
  *   bookingEventBus.publish(event);
