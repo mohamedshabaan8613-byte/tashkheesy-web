@@ -1,0 +1,97 @@
+# Sprint 3.7.2 — Integration Test Gate (UPDATED)
+#
+# CHANGE LOG (3.7.2):
+#   REMOVED: curl exec_sql migration step
+#   REPLACED: supabase CLI db push to apply migrations before running tests
+
+name: 'Integration Tests — Atomic + Realtime'
+
+on:
+  pull_request:
+    branches: [ main, feat/sprint-* ]
+    paths:
+      - 'client/src/**'
+      - 'supabase/sql/**'
+      - '.github/workflows/sprint-371-integration-tests.yml'
+
+jobs:
+  integration-tests:
+    name: 'Run Integration Tests (Real Supabase)'
+    runs-on: ubuntu-latest
+    environment: dev
+
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Apply migrations via Supabase CLI (not curl) ──────────
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        working-directory: .
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link \
+            --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} \
+            --password     ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Stage + push migrations
+        working-directory: .
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          mkdir -p supabase/migrations
+          cp supabase/sql/011_sprint36_m2_reschedule.sql \
+             supabase/migrations/20260520000011_sprint36_m2_reschedule.sql
+          cp supabase/sql/012_atomic_reschedule_transaction.sql \
+             supabase/migrations/20260521000012_atomic_reschedule_transaction.sql
+          supabase db push --linked --include-all \
+            --password ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      # ── Run integration tests ──────────────────────────────────
+      - name: Run atomicReschedule integration tests
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          pnpm jest \
+            --testPathPattern='__tests__/integration/atomicReschedule\.integration\.test\.ts' \
+            --forceExit --detectOpenHandles --verbose
+
+      - name: Run realtimeSynchronization integration tests
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          pnpm jest \
+            --testPathPattern='__tests__/integration/realtimeSynchronization\.integration\.test\.ts' \
+            --forceExit --detectOpenHandles --verbose
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: client/coverage/
+          retention-days: 7
