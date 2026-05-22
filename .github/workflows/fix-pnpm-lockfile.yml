@@ -1,6 +1,11 @@
 name: Fix pnpm Lockfile
 
 on:
+  push:
+    branches:
+      - feat/sprint-3.6-m2-supabase-integration
+    paths:
+      - '.github/workflows/fix-pnpm-lockfile.yml'
   workflow_dispatch:
 
 jobs:
