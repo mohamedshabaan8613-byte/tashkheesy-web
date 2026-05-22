@@ -8,7 +8,7 @@ on:
       - '.github/workflows/fix-pnpm-lockfile.yml'
   workflow_dispatch:
 
-  permissions:
+permissions:
   contents: write
 
 jobs:
