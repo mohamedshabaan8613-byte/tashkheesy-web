@@ -1,0 +1,45 @@
+name: Fix pnpm Lockfile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-lockfile:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: feat/sprint-3.6-m2-supabase-integration
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.4.1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Regenerate lockfile
+        run: pnpm install --no-frozen-lockfile
+      
+      - name: Verify lockfile
+        run: pnpm install --frozen-lockfile
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Commit changes
+        run: |
+          git add pnpm-lock.yaml
+          git diff --staged --quiet || git commit -m "fix(deps): regenerate pnpm-lock.yaml to resolve ERR_PNPM_LOCKFILE_CONFIG_MISMATCH"
+      
+      - name: Push changes
+        run: git push origin feat/sprint-3.6-m2-supabase-integration
