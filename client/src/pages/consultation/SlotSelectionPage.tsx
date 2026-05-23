@@ -1,5 +1,5 @@
 /**
- * SlotSelectionPage.tsx — Sprint 3.2
+ * SlotSelectionPage.tsx — Sprint 3.2 / Phase-4 hardened
  *
  * ─── SLOT_SELECTION_BOUNDARY ────────────────────────────────────────────────
  *
@@ -19,6 +19,10 @@
  *   useBookingOwnershipGuard() — ownership
  *   useRuntimeSafetyCheck()    — orphaned/mismatch/expired
  *   useBookingSessionHydration() — phase validation
+ *
+ * Phase-4 fixes:
+ *   ✅ Fix 3: removed invalid hydration.status === "stale" branch (type error)
+ *   ✅ Fix 4: guardCheck() pre-flight added before advancePhase()
  */
 
 import { useCallback, useMemo, useState } from "react";
@@ -209,7 +213,7 @@ export default function SlotSelectionPage() {
   const [searchParams] = useSearchParams();
   const specialistId = searchParams.get("specialistId");
 
-  const { session, selectSlot, advancePhase } = useConsultationBooking();
+  const { session, selectSlot, advancePhase, guardCheck } = useConsultationBooking();
 
   // ── Guard 1: Ownership ───────────────────────────────────────────────
   const ownershipGuard = useBookingOwnershipGuard();
@@ -242,15 +246,26 @@ export default function SlotSelectionPage() {
   }, [slotResult]);
 
   // ── Select Handler ───────────────────────────────────────────────────
+  // Fix 3: no "stale" branch — only valid HydrationStatus members used below
+  // Fix 4: guardCheck() pre-flight before selectSlot + advancePhase
   const handleSelectSlot = useCallback(
     (slotId: string) => {
+      // PRE-FLIGHT: verify the machine allows transition to REVIEW
+      const allowed = guardCheck("REVIEW");
+      if (!allowed) {
+        // phase mismatch — do not corrupt session state
+        // recovery UI already shown by guards above on next render
+        return;
+      }
+
       selectSlot(slotId);
-      const advanced = advancePhase("SLOT_SELECTION");
+
+      const advanced = advancePhase("REVIEW");
       if (advanced) {
         navigate("/consultation/booking/review");
       }
     },
-    [selectSlot, advancePhase, navigate]
+    [selectSlot, advancePhase, guardCheck, navigate]
   );
 
   const handleBack = useCallback(() => {
@@ -277,7 +292,9 @@ export default function SlotSelectionPage() {
     return <RecoveryScreen reason="expired" onRetry={() => navigate("/consultation/start")} />;
   }
 
-  if (hydration.status === "missing" || hydration.status === "stale") {
+  // Fix 3: removed invalid "stale" branch — hydration returns only:
+  // "checking" | "valid" | "expired" | "missing"
+  if (hydration.status === "missing") {
     return <RecoveryScreen reason="missing" onRetry={() => navigate("/consultation/booking/specialists")} />;
   }
 
