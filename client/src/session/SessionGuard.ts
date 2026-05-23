@@ -1,108 +1,82 @@
 /**
- * SessionGuard
+ * SessionGuard.ts — Sprint 3.7.1 Phase 1
  *
- * Sprint 3.7.1 — Phase 1: Session Runtime
+ * Guards every booking mutation.
+ * Consults BookingSessionStateMachine for state validity.
+ * Version-compares client vs server timestamp to detect stale sessions.
  *
- * Enforces session state preconditions BEFORE any mutation reaches
- * an orchestrator or repository.
- *
- * Rules:
- *   - Mutations are only allowed from ACTIVE state.
- *   - STALE state blocks ALL mutations and demands forceRefresh.
- *   - RESCHEDULING / CONFIRMING block duplicate submissions.
- *   - clientVersion must match serverVersion (checked at guard boundary).
- *
- * This class has ZERO Supabase / network dependencies.
- * It is a pure domain guard.
+ * Phase 2 addition: GuardCheckResult is now exported for use in Context.
  */
 
-import { BookingSessionStateMachine, BookingSessionState } from './BookingSessionStateMachine';
+import type { BookingSessionStateMachine, SessionMutationType } from "./BookingSessionStateMachine";
 
-export type MutationType = 'RESCHEDULE' | 'CONFIRM' | 'CANCEL';
+export type GuardBlockedReason =
+  | "STALE"        // client version behind server
+  | "CONCURRENT"   // another operation is in-flight
+  | "EXPIRED"      // session TTL exceeded
+  | "INVALID_STATE"; // state machine doesn't allow this mutation
 
-export interface GuardResult {
-  allowed:       boolean;
-  blockedReason: SessionGuardBlockReason | null;
-}
+export type GuardCheckResult =
+  | { allowed: true }
+  | { allowed: false; reason: GuardBlockedReason; detail?: string };
 
-export type SessionGuardBlockReason =
-  | 'SESSION_NOT_ACTIVE'
-  | 'SESSION_STALE'
-  | 'MUTATION_IN_FLIGHT'
-  | 'SESSION_EXPIRED'
-  | 'SESSION_COMPLETED'
-  | 'SESSION_ERROR'
-  | 'STALE_CLIENT_VERSION';
+// Mutations allowed per machine state
+const ALLOWED_MUTATIONS: Partial<Record<string, SessionMutationType[]>> = {
+  CREATED:              ["SELECT_SPECIALIST", "CANCEL"],
+  SPECIALIST_SELECTION: ["SELECT_SPECIALIST", "CANCEL"],
+  SLOT_SELECTION:       ["SELECT_SLOT", "CANCEL"],
+  REVIEW:               ["CONFIRM", "CANCEL"],
+  CONFIRMING:           ["CANCEL"],
+  CONFIRMED:            ["RESCHEDULE"],
+  RESCHEDULED:          ["CONFIRM", "CANCEL"],
+};
 
 export class SessionGuard {
-  constructor(
-    private readonly machine: BookingSessionStateMachine
-  ) {}
+  private _inFlight = false;
+
+  constructor(private readonly machine: BookingSessionStateMachine) {}
 
   /**
-   * Main guard check.
-   * Call this BEFORE dispatching any mutation to an orchestrator.
+   * check() — pre-flight validation.
    *
-   * @param clientVersion  The version the client believes is current.
-   * @param serverVersion  The authoritative version from the last DB fetch.
+   * @param mutation    The mutation the caller wants to perform.
+   * @param clientVersion  ISO timestamp from context session (lastActivityAt).
+   * @param serverVersion  ISO timestamp from repository session (lastActivityAt).
    */
   check(
-    mutation: MutationType,
-    clientVersion: number,
-    serverVersion: number
-  ): GuardResult {
-    const state: BookingSessionState = this.machine.state;
-
-    // ── Terminal / blocked states ────────────────────────────────
-    if (state === 'COMPLETED') {
-      return { allowed: false, blockedReason: 'SESSION_COMPLETED' };
-    }
-    if (state === 'EXPIRED') {
-      return { allowed: false, blockedReason: 'SESSION_EXPIRED' };
-    }
-    if (state === 'ERROR') {
-      return { allowed: false, blockedReason: 'SESSION_ERROR' };
+    mutation: SessionMutationType,
+    clientVersion: string | null,
+    serverVersion: string | null,
+  ): GuardCheckResult {
+    // 1. Stale check — client behind server
+    if (
+      clientVersion !== null &&
+      serverVersion !== null &&
+      clientVersion < serverVersion
+    ) {
+      return { allowed: false, reason: "STALE", detail: `client=${clientVersion} server=${serverVersion}` };
     }
 
-    // ── Stale state ───────────────────────────────────────────────
-    if (state === 'STALE') {
-      return { allowed: false, blockedReason: 'SESSION_STALE' };
+    // 2. Concurrency check
+    if (this._inFlight) {
+      return { allowed: false, reason: "CONCURRENT" };
     }
 
-    // ── Mutation already in flight ───────────────────────────────
-    if (state === 'RESCHEDULING' || state === 'CONFIRMING') {
-      return { allowed: false, blockedReason: 'MUTATION_IN_FLIGHT' };
+    // 3. State machine check
+    const currentState = this.machine.state;
+    const allowed = ALLOWED_MUTATIONS[currentState];
+    if (!allowed || !allowed.includes(mutation)) {
+      return {
+        allowed: false,
+        reason: "INVALID_STATE",
+        detail: `state=${currentState} does not allow mutation=${mutation}`,
+      };
     }
 
-    // ── Must be ACTIVE to proceed ────────────────────────────────
-    if (state !== 'ACTIVE') {
-      return { allowed: false, blockedReason: 'SESSION_NOT_ACTIVE' };
-    }
-
-    // ── Optimistic version check ─────────────────────────────────
-    // Note: the RPC performs the authoritative check server-side.
-    // This is a fast-fail client-side pre-check only.
-    if (clientVersion < serverVersion) {
-      return { allowed: false, blockedReason: 'STALE_CLIENT_VERSION' };
-    }
-
-    return { allowed: true, blockedReason: null };
+    return { allowed: true };
   }
 
-  /**
-   * Convenience: throws if mutation is blocked.
-   * Use in orchestrators that prefer exception flow.
-   */
-  assertAllowed(
-    mutation: MutationType,
-    clientVersion: number,
-    serverVersion: number
-  ): void {
-    const result = this.check(mutation, clientVersion, serverVersion);
-    if (!result.allowed) {
-      throw new Error(
-        `[SessionGuard] Mutation '${mutation}' blocked: ${result.blockedReason}`
-      );
-    }
-  }
+  /** Mark an async operation as in-flight to block concurrent mutations */
+  beginOperation(): void  { this._inFlight = true; }
+  endOperation():   void  { this._inFlight = false; }
 }

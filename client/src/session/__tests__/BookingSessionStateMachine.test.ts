@@ -1,106 +1,120 @@
 /**
- * Unit Tests: BookingSessionStateMachine
- * Sprint 3.7.1 — Phase 1
+ * BookingSessionStateMachine.test.ts
+ * Sprint 3.7.1 Phase 1 — 11 unit tests
  */
 
-import { BookingSessionStateMachine } from '../BookingSessionStateMachine';
+import { describe, it, expect, beforeEach } from "vitest";
+import { BookingSessionStateMachine } from "../BookingSessionStateMachine";
 
-describe('BookingSessionStateMachine', () => {
+describe("BookingSessionStateMachine", () => {
   let machine: BookingSessionStateMachine;
 
   beforeEach(() => {
     machine = new BookingSessionStateMachine();
   });
 
-  it('starts in IDLE state', () => {
-    expect(machine.state).toBe('IDLE');
+  // ── Initial state ──────────────────────────────────────────────────────────
+
+  it("starts in IDLE", () => {
+    expect(machine.state).toBe("IDLE");
   });
 
-  it('transitions IDLE → INITIALIZING', () => {
-    machine.transitionTo('INITIALIZING');
-    expect(machine.state).toBe('INITIALIZING');
+  // ── Happy-path transitions ─────────────────────────────────────────────────
+
+  it("transitions IDLE → CREATED on CREATE", () => {
+    expect(machine.transition("CREATE")).toBe(true);
+    expect(machine.state).toBe("CREATED");
   });
 
-  it('transitions INITIALIZING → ACTIVE', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    expect(machine.state).toBe('ACTIVE');
+  it("transitions through the full booking flow", () => {
+    machine.transition("CREATE");
+    machine.transition("SELECT_SPECIALIST");
+    machine.transition("SELECT_SLOT");
+    machine.transition("REVIEW");
+    machine.transition("CONFIRM_START");
+    machine.transition("CONFIRM_SUCCESS");
+    expect(machine.state).toBe("CONFIRMED");
   });
 
-  it('transitions ACTIVE → STALE', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    machine.transitionTo('STALE', 'SERVER_VERSION_AHEAD');
-    expect(machine.state).toBe('STALE');
+  it("allows RESCHEDULE from CONFIRMED", () => {
+    machine.transition("CREATE");
+    machine.transition("SELECT_SPECIALIST");
+    machine.transition("SELECT_SLOT");
+    machine.transition("REVIEW");
+    machine.transition("CONFIRM_START");
+    machine.transition("CONFIRM_SUCCESS");
+    expect(machine.transition("RESCHEDULE")).toBe(true);
+    expect(machine.state).toBe("RESCHEDULED");
   });
 
-  it('transitions ACTIVE → RESCHEDULING', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    machine.transitionTo('RESCHEDULING');
-    expect(machine.state).toBe('RESCHEDULING');
+  // ── Cancellation ──────────────────────────────────────────────────────────
+
+  it("allows CANCEL from CREATED", () => {
+    machine.transition("CREATE");
+    expect(machine.transition("CANCEL")).toBe(true);
+    expect(machine.state).toBe("CANCELLED");
   });
 
-  it('transitions RESCHEDULING → ACTIVE on success', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    machine.transitionTo('RESCHEDULING');
-    machine.transitionTo('ACTIVE', 'RESCHEDULE_SUCCESS');
-    expect(machine.state).toBe('ACTIVE');
+  it("allows EXPIRE from SLOT_SELECTION", () => {
+    machine.transition("CREATE");
+    machine.transition("SELECT_SPECIALIST");
+    machine.transition("SELECT_SLOT");
+    expect(machine.transition("EXPIRE")).toBe(true);
+    expect(machine.state).toBe("EXPIRED");
   });
 
-  it('transitions ACTIVE → CONFIRMING → COMPLETED', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    machine.transitionTo('CONFIRMING');
-    machine.transitionTo('COMPLETED');
-    expect(machine.state).toBe('COMPLETED');
+  // ── Invalid transitions ────────────────────────────────────────────────────
+
+  it("rejects invalid transitions and returns false", () => {
+    machine.transition("CREATE");
+    expect(machine.transition("CONFIRM_SUCCESS")).toBe(false);
+    expect(machine.state).toBe("CREATED"); // state unchanged
   });
 
-  it('throws on invalid transition', () => {
-    expect(() => machine.transitionTo('ACTIVE')).toThrow(
-      'Invalid transition: IDLE → ACTIVE'
-    );
+  it("rejects any transition from terminal CANCELLED state", () => {
+    machine.transition("CREATE");
+    machine.transition("CANCEL");
+    expect(machine.transition("CREATE")).toBe(false);
+    expect(machine.state).toBe("CANCELLED");
   });
 
-  it('throws on transition from COMPLETED (terminal)', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    machine.transitionTo('CONFIRMING');
-    machine.transitionTo('COMPLETED');
-    expect(() => machine.transitionTo('ACTIVE')).toThrow('Invalid transition');
+  // ── History ────────────────────────────────────────────────────────────────
+
+  it("records transition history", () => {
+    machine.transition("CREATE");
+    machine.transition("SELECT_SPECIALIST");
+    const h = machine.history;
+    expect(h).toHaveLength(2);
+    expect(h[0].from).toBe("IDLE");
+    expect(h[0].to).toBe("CREATED");
+    expect(h[1].from).toBe("CREATED");
+    expect(h[1].to).toBe("SPECIALIST_SELECTION");
   });
 
-  it('records full transition history', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    expect(machine.history).toHaveLength(2);
-    expect(machine.history[0].from).toBe('IDLE');
-    expect(machine.history[0].to).toBe('INITIALIZING');
+  // ── syncToPhase ────────────────────────────────────────────────────────────
+
+  it("syncToPhase aligns machine state to domain phase directly", () => {
+    machine.syncToPhase("CONFIRMED");
+    expect(machine.state).toBe("CONFIRMED");
   });
 
-  it('notifies subscriber on each transition', () => {
-    const events: string[] = [];
-    machine.subscribe((e) => events.push(`${e.from}→${e.to}`));
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    expect(events).toEqual(['IDLE→INITIALIZING', 'INITIALIZING→ACTIVE']);
-  });
+  // ── reset ──────────────────────────────────────────────────────────────────
 
-  it('unsubscribes correctly', () => {
-    const events: string[] = [];
-    const unsub = machine.subscribe((e) => events.push(e.to));
-    machine.transitionTo('INITIALIZING');
-    unsub();
-    machine.transitionTo('ACTIVE');
-    expect(events).toEqual(['INITIALIZING']); // ACTIVE not recorded
-  });
-
-  it('reset() returns to IDLE from any state', () => {
-    machine.transitionTo('INITIALIZING');
-    machine.transitionTo('ACTIVE');
-    machine.transitionTo('RESCHEDULING');
+  it("reset returns machine to IDLE and clears history", () => {
+    machine.transition("CREATE");
+    machine.transition("SELECT_SPECIALIST");
     machine.reset();
-    expect(machine.state).toBe('IDLE');
+    expect(machine.state).toBe("IDLE");
+    expect(machine.history).toHaveLength(0);
+  });
+
+  // ── Listeners ─────────────────────────────────────────────────────────────
+
+  it("notifies listeners on transition", () => {
+    const states: string[] = [];
+    machine.subscribe(s => states.push(s));
+    machine.transition("CREATE");
+    machine.transition("SELECT_SPECIALIST");
+    expect(states).toEqual(["CREATED", "SPECIALIST_SELECTION"]);
   });
 });

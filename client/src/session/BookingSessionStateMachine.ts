@@ -1,138 +1,168 @@
 /**
- * BookingSessionStateMachine
+ * BookingSessionStateMachine.ts — Sprint 3.7.1 Phase 1
  *
- * Sprint 3.7.1 — Phase 1: Session Runtime
- *
- * Authoritative state machine for the booking session lifecycle.
- * Owns ALL valid state transitions. Nothing outside this class
- * may transition session state directly.
+ * Deterministic state machine for the booking session lifecycle.
+ * Fail-closed: any unrecognised transition is rejected silently.
  *
  * States:
- *   IDLE          → No active session.
- *   INITIALIZING  → Session setup in progress (auth + slot fetch).
- *   ACTIVE        → Session live, mutations allowed.
- *   STALE         → Server version ahead of client — mutations BLOCKED.
- *   RESCHEDULING  → Atomic reschedule RPC in flight.
- *   CONFIRMING    → Booking confirmation in flight.
- *   COMPLETED     → Terminal success state.
- *   EXPIRED       → Auth token or slot reservation expired.
- *   ERROR         → Unrecoverable error state.
+ *   IDLE → CREATED → SPECIALIST_SELECTION → SLOT_SELECTION
+ *       → REVIEW → CONFIRMING → CONFIRMED → RESCHEDULED
+ *       → CANCELLED | EXPIRED
  *
- * Transition rules are exhaustive and fail-closed.
- * Any attempt to transition via an invalid edge throws.
+ * Phase 2 addition: syncToPhase(phase) — allows the Provider to align
+ * the machine after a domain-level transition without going through the
+ * machine's own transition graph (used during recovery and transitionTo).
  */
 
-export type BookingSessionState =
-  | 'IDLE'
-  | 'INITIALIZING'
-  | 'ACTIVE'
-  | 'STALE'
-  | 'RESCHEDULING'
-  | 'CONFIRMING'
-  | 'COMPLETED'
-  | 'EXPIRED'
-  | 'ERROR';
+export type SessionMachineState =
+  | "IDLE"
+  | "CREATED"
+  | "SPECIALIST_SELECTION"
+  | "SLOT_SELECTION"
+  | "REVIEW"
+  | "CONFIRMING"
+  | "CONFIRMED"
+  | "RESCHEDULED"
+  | "CANCELLED"
+  | "EXPIRED";
 
-export interface SessionTransitionEvent {
-  from: BookingSessionState;
-  to:   BookingSessionState;
-  at:   number; // epoch ms
-  reason?: string;
-}
+export type SessionMachineEvent =
+  | "CREATE"
+  | "SELECT_SPECIALIST"
+  | "SELECT_SLOT"
+  | "REVIEW"
+  | "CONFIRM_START"
+  | "CONFIRM_SUCCESS"
+  | "RESCHEDULE"
+  | "CANCEL"
+  | "EXPIRE";
 
-// Valid directed edges in the state graph.
-const VALID_TRANSITIONS: Record<BookingSessionState, BookingSessionState[]> = {
-  IDLE:         ['INITIALIZING'],
-  INITIALIZING: ['ACTIVE', 'EXPIRED', 'ERROR'],
-  ACTIVE:       ['STALE', 'RESCHEDULING', 'CONFIRMING', 'EXPIRED', 'ERROR'],
-  STALE:        ['ACTIVE', 'EXPIRED', 'ERROR'],           // ACTIVE after forceRefresh
-  RESCHEDULING: ['ACTIVE', 'STALE', 'EXPIRED', 'ERROR'],  // ACTIVE on success
-  CONFIRMING:   ['COMPLETED', 'ACTIVE', 'EXPIRED', 'ERROR'],
-  COMPLETED:    [],                                        // terminal
-  EXPIRED:      ['INITIALIZING'],                         // re-auth path
-  ERROR:        ['IDLE', 'INITIALIZING'],                 // explicit reset
+/** Mutations that consumers can request — used by SessionGuard */
+export type SessionMutationType =
+  | "SELECT_SPECIALIST"
+  | "SELECT_SLOT"
+  | "CONFIRM"
+  | "RESCHEDULE"
+  | "CANCEL";
+
+// ─── Transition table ─────────────────────────────────────────────────────────
+type TransitionMap = Partial<Record<SessionMachineState, Partial<Record<SessionMachineEvent, SessionMachineState>>>>;
+
+const TRANSITIONS: TransitionMap = {
+  IDLE: {
+    CREATE: "CREATED",
+  },
+  CREATED: {
+    SELECT_SPECIALIST: "SPECIALIST_SELECTION",
+    CANCEL:            "CANCELLED",
+    EXPIRE:            "EXPIRED",
+  },
+  SPECIALIST_SELECTION: {
+    SELECT_SLOT:       "SLOT_SELECTION",
+    CANCEL:            "CANCELLED",
+    EXPIRE:            "EXPIRED",
+  },
+  SLOT_SELECTION: {
+    REVIEW:            "REVIEW",
+    CANCEL:            "CANCELLED",
+    EXPIRE:            "EXPIRED",
+  },
+  REVIEW: {
+    CONFIRM_START:     "CONFIRMING",
+    CANCEL:            "CANCELLED",
+    EXPIRE:            "EXPIRED",
+  },
+  CONFIRMING: {
+    CONFIRM_SUCCESS:   "CONFIRMED",
+    CANCEL:            "CANCELLED",
+    EXPIRE:            "EXPIRED",
+  },
+  CONFIRMED: {
+    RESCHEDULE:        "RESCHEDULED",
+    EXPIRE:            "EXPIRED",
+  },
+  RESCHEDULED: {
+    CONFIRM_START:     "CONFIRMING",
+    CANCEL:            "CANCELLED",
+    EXPIRE:            "EXPIRED",
+  },
+  // Terminal states — no outbound transitions
+  CANCELLED: {},
+  EXPIRED:   {},
+};
+
+/** Phases from which the machine can be forcefully synced (recovery path) */
+const SYNCABLE_PHASES: Partial<Record<string, SessionMachineState>> = {
+  CREATED:              "CREATED",
+  SPECIALIST_SELECTION: "SPECIALIST_SELECTION",
+  SLOT_SELECTION:       "SLOT_SELECTION",
+  REVIEW:               "REVIEW",
+  CONFIRMING:           "CONFIRMING",
+  CONFIRMED:            "CONFIRMED",
+  RESCHEDULED:          "RESCHEDULED",
+  CANCELLED:            "CANCELLED",
+  EXPIRED:              "EXPIRED",
 };
 
 export class BookingSessionStateMachine {
-  private _state: BookingSessionState = 'IDLE';
-  private _history: SessionTransitionEvent[] = [];
-  private _listeners: Array<(event: SessionTransitionEvent) => void> = [];
+  private _state: SessionMachineState = "IDLE";
+  private _history: Array<{ from: SessionMachineState; event: SessionMachineEvent; to: SessionMachineState; at: string }> = [];
+  private _listeners: Set<(state: SessionMachineState) => void> = new Set();
 
-  // ── Read ──────────────────────────────────────────────────────
-
-  get state(): BookingSessionState {
+  get state(): SessionMachineState {
     return this._state;
   }
 
-  get history(): Readonly<SessionTransitionEvent[]> {
-    return this._history;
+  get history() {
+    return [...this._history];
   }
 
-  is(state: BookingSessionState): boolean {
-    return this._state === state;
-  }
-
-  canTransitionTo(target: BookingSessionState): boolean {
-    return VALID_TRANSITIONS[this._state].includes(target);
-  }
-
-  // ── Mutations ─────────────────────────────────────────────────
-
-  /**
-   * Attempt a state transition.
-   * Throws if the transition is not valid for the current state.
-   * Fails closed — invalid edge = exception, never silent skip.
-   */
-  transitionTo(next: BookingSessionState, reason?: string): void {
-    if (!this.canTransitionTo(next)) {
-      throw new Error(
-        `[BookingSessionStateMachine] Invalid transition: ${this._state} → ${next}. ` +
-        `Valid targets: [${VALID_TRANSITIONS[this._state].join(', ')}]`
-      );
+  // ── transition ─────────────────────────────────────────────────────────────
+  transition(event: SessionMachineEvent): boolean {
+    const possible = TRANSITIONS[this._state];
+    if (!possible) return false;
+    const next = possible[event];
+    if (!next) {
+      console.warn(`[StateMachine] No transition: ${this._state} --${event}--> ?`);
+      return false;
     }
-    const event: SessionTransitionEvent = {
-      from:   this._state,
-      to:     next,
-      at:     Date.now(),
-      reason,
-    };
+    const from = this._state;
     this._state = next;
-    this._history.push(event);
-    this._notifyListeners(event);
+    this._history.push({ from, event, to: next, at: new Date().toISOString() });
+    this._notify();
+    return true;
   }
 
-  /**
-   * Hard reset to IDLE — only for explicit teardown (unmount / logout).
-   * Does NOT go through normal transition validation.
-   */
-  reset(): void {
-    const event: SessionTransitionEvent = {
-      from:   this._state,
-      to:     'IDLE',
-      at:     Date.now(),
-      reason: 'HARD_RESET',
-    };
-    this._state = 'IDLE';
-    this._history.push(event);
-    this._notifyListeners(event);
-  }
-
-  // ── Observers ─────────────────────────────────────────────────
-
-  subscribe(listener: (event: SessionTransitionEvent) => void): () => void {
-    this._listeners.push(listener);
-    return () => {
-      this._listeners = this._listeners.filter(l => l !== listener);
-    };
-  }
-
-  private _notifyListeners(event: SessionTransitionEvent): void {
-    for (const listener of this._listeners) {
-      try {
-        listener(event);
-      } catch (err) {
-        console.error('[BookingSessionStateMachine] Listener threw:', err);
-      }
+  // ── syncToPhase — Phase 2 addition ─────────────────────────────────────────
+  //
+  // Used by Provider after a domain-level transitionTo() or recovery.
+  // Bypasses the transition graph — sets state directly.
+  // Only call this when the domain layer has already validated the transition.
+  //
+  syncToPhase(domainPhase: string): void {
+    const machineState = SYNCABLE_PHASES[domainPhase];
+    if (!machineState) {
+      console.warn(`[StateMachine] syncToPhase: unknown domain phase "${domainPhase}"`);
+      return;
     }
+    this._state = machineState;
+    this._notify();
+  }
+
+  // ── reset ───────────────────────────────────────────────────────────────────
+  reset(): void {
+    this._state = "IDLE";
+    this._history = [];
+    this._notify();
+  }
+
+  // ── subscribe / unsubscribe ─────────────────────────────────────────────────
+  subscribe(listener: (state: SessionMachineState) => void): () => void {
+    this._listeners.add(listener);
+    return () => this._listeners.delete(listener);
+  }
+
+  private _notify(): void {
+    this._listeners.forEach(l => l(this._state));
   }
 }
