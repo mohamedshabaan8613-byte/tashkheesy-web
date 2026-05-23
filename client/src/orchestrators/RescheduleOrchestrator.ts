@@ -34,6 +34,7 @@ import { AuthoritativeVersionService } from '../reliability/AuthoritativeVersion
 import { RescheduleLimitsGuard }       from '../reliability/RescheduleLimitsGuard';
 import { MultiTabRealtimeSync }        from '../reliability/MultiTabRealtimeSync';
 import { TransactionalReservationRepository } from '../repositories/TransactionalReservationRepository';
+import type { BookingPhase } from '../types/consultationBookingTypes';
 
 export type RescheduleRejectionCode =
   | 'VERSION_STALE'
@@ -63,6 +64,52 @@ export interface RescheduleDeps {
   limitsGuard:           RescheduleLimitsGuard;
   reservationRepository: TransactionalReservationRepository;
   realtimeSync:          MultiTabRealtimeSync;
+}
+
+// ---------------------------------------------------------------------------
+// Policy helpers — consumed by RescheduleBookingModal
+// ---------------------------------------------------------------------------
+
+/** الـ phases التي يُسمح فيها بإعادة الجدولة */
+const RESCHEDULABLE_PHASES: ReadonlySet<BookingPhase> = new Set([
+  'CONFIRMED',
+  'RESCHEDULED',
+]);
+
+/**
+ * isReschedulablePhase
+ *
+ * يُعيد true إذا كانت الحالة الحالية تسمح بإعادة الجدولة.
+ * يُستخدم في RescheduleBookingModal لتفعيل/تعطيل زر إعادة الجدولة.
+ */
+export function isReschedulablePhase(phase: BookingPhase): boolean {
+  return RESCHEDULABLE_PHASES.has(phase);
+}
+
+/**
+ * getReschedulePolicyMessage
+ *
+ * يُعيد رسالة للمستخدم تشرح لماذا لا يمكن إعادة الجدولة الآن.
+ * يُستخدم في RescheduleBookingModal كـ tooltip على الزر المعطّل.
+ * إذا كانت الحالة قابلة للجدولة يُعيد null.
+ */
+export function getReschedulePolicyMessage(phase: BookingPhase): string | null {
+  if (isReschedulablePhase(phase)) return null;
+
+  const messages: Partial<Record<BookingPhase, string>> = {
+    CREATED:               'لم يكتمل الحجز بعد.',
+    SPECIALIST_SELECTION:  'يُرجى إتمام اختيار الأخصائي أولاً.',
+    SLOT_SELECTION:        'يُرجى إتمام اختيار الموعد أولاً.',
+    REVIEW:                'يُرجى تأكيد الحجز أولاً قبل إعادة الجدولة.',
+    CONFIRMING:            'جارٍ تأكيد الحجز، يُرجى الانتظار.',
+    CONFIRMATION_FAILED:   'تعذّر تأكيد الحجز. يُرجى إعادة المحاولة أولاً.',
+    COMPLETED:             'الجلسة مكتملة ولا يمكن إعادة جدولتها.',
+    CANCELLED:             'تم إلغاء الحجز ولا يمكن إعادة جدولته.',
+    EXPIRED:               'انتهت صلاحية الحجز.',
+    ABANDONED:             'تم التخلي عن الحجز.',
+  };
+
+  return messages[phase] ?? 'لا يمكن إعادة الجدولة في الوضع الحالي.';
 }
 
 export class RescheduleOrchestrator {
