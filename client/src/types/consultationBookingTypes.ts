@@ -1,5 +1,5 @@
 /**
- * consultationBookingTypes.ts — Sprint 3.4.1 Resolved
+ * consultationBookingTypes.ts — Sprint 3.7.1 Phase 3
  *
  * CONFLICT RESOLUTION (PR #72):
  *   Accepted main (BASE) as the authoritative version.
@@ -8,6 +8,23 @@
  *     BookingPhase, RECOVERABLE_PHASES, TERMINAL_PHASES, isValidTransition(),
  *     calculateBookingExpiry(), generateBookingSessionId(), BookingRecoveryState,
  *     RuntimeSafetyResult, SpecialistRecommendation, ConsultationBookingSession.
+ *
+ * ─── Sprint 3.7.1 Phase 3 additions ────────────────────────────────────────
+ *
+ * Gap A fix:
+ *   + CONFIRMING added to BookingPhase union
+ *   + CONFIRMATION_FAILED added to BookingPhase union
+ *   Reason: BookingConfirmationOrchestrator calls transitionTo("CONFIRMING")
+ *   and transitionTo("CONFIRMATION_FAILED") — both must be valid BookingPhase
+ *   values or isValidTransition() will reject them at the type level.
+ *
+ * Gap B fix:
+ *   + CONFIRMING added to ALLOWED_TRANSITIONS["REVIEW"]
+ *   + CONFIRMATION_FAILED added to ALLOWED_TRANSITIONS["CONFIRMING"]
+ *   + CONFIRMED added to ALLOWED_TRANSITIONS["CONFIRMING"]
+ *   Reason: Without this, transitionTo("CONFIRMING") from REVIEW and
+ *   transitionTo("CONFIRMED") from CONFIRMING both fail isValidTransition()
+ *   silently — the orchestrator's 9-step chain breaks at step 1.
  *
  * ARCHITECTURE RULE:
  *   These types mirror the Supabase DB schema exactly.
@@ -220,12 +237,23 @@ export const LIFECYCLE_NOTE = "simplified_sprint_3.1" as const;
 
 /**
  * BookingPhase — الاسم الكنسي الرسمي لحالة جلسة الحجز.
+ *
+ * Sprint 3.7.1 Phase 3:
+ *   + CONFIRMING         — optimistic phase during orchestration (step 1 of 9)
+ *   + CONFIRMATION_FAILED — rollback phase when any orchestration step fails
+ *
+ * Both phases are required by BookingConfirmationOrchestrator:
+ *   transitionTo("CONFIRMING")          — called at orchestration start
+ *   transitionTo("CONFIRMATION_FAILED") — called on any failure path
+ *   transitionTo("CONFIRMED")           — called on success (step 9)
  */
 export type BookingPhase =
   | "CREATED"
   | "SPECIALIST_SELECTION"
   | "SLOT_SELECTION"
   | "REVIEW"
+  | "CONFIRMING"
+  | "CONFIRMATION_FAILED"
   | "CONFIRMED"
   | "RESCHEDULED"
   | "COMPLETED"
@@ -243,6 +271,7 @@ export const RECOVERABLE_PHASES: BookingPhase[] = [
   "SPECIALIST_SELECTION",
   "SLOT_SELECTION",
   "REVIEW",
+  "CONFIRMATION_FAILED", // قابل للاسترداد — يسمح للمستخدم بإعادة المحاولة
 ];
 
 export const TERMINAL_PHASES: BookingPhase[] = [
@@ -281,7 +310,8 @@ export type BookingRecoveryReason =
   | "orchestrator_validation"
   | "mount_ttl_check"
   | "expiration_poll"
-  | "session_ttl_exceeded";
+  | "session_ttl_exceeded"
+  | "guard_expired";
 
 export type RecoveryExecution =
   | "AUTO"
@@ -387,6 +417,8 @@ export interface ConsultationBookingSession {
   selectedSpecialistId?: string;
   selectedSlotId?: string;
   specialistRecommendation?: SpecialistRecommendation;
+  /** reservationId — set by SlotReservationOrchestrator on slot selection */
+  reservationId?: string;
 }
 
 export interface ConsultationBookingRepository {
@@ -402,13 +434,25 @@ export interface ConsultationBookingRepository {
   clear(): void;
 }
 
+/**
+ * ALLOWED_TRANSITIONS — Sprint 3.7.1 Phase 3 additions:
+ *
+ *   REVIEW → CONFIRMING          — orchestrator step 1 (optimistic transition)
+ *   CONFIRMING → CONFIRMED        — orchestrator step 9 (success)
+ *   CONFIRMING → CONFIRMATION_FAILED — orchestrator failure path
+ *   CONFIRMATION_FAILED → REVIEW  — user retry (back to review boundary)
+ *   CONFIRMATION_FAILED → CANCELLED — user cancels after failure
+ *   CONFIRMATION_FAILED → EXPIRED  — TTL expired while in failed state
+ */
 export const ALLOWED_TRANSITIONS: Readonly<
   Partial<Record<BookingPhase, readonly BookingPhase[]>>
 > = {
   CREATED:              ["SPECIALIST_SELECTION", "CANCELLED", "ABANDONED"],
   SPECIALIST_SELECTION: ["SLOT_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
   SLOT_SELECTION:       ["REVIEW", "SPECIALIST_SELECTION", "CANCELLED", "EXPIRED", "ABANDONED"],
-  REVIEW:               ["CONFIRMED", "SLOT_SELECTION", "CANCELLED", "EXPIRED"],
+  REVIEW:               ["CONFIRMING", "CONFIRMED", "SLOT_SELECTION", "CANCELLED", "EXPIRED"],
+  CONFIRMING:           ["CONFIRMED", "CONFIRMATION_FAILED"],
+  CONFIRMATION_FAILED:  ["REVIEW", "CANCELLED", "EXPIRED"],
   CONFIRMED:            ["RESCHEDULED", "COMPLETED", "CANCELLED"],
   RESCHEDULED:          ["SLOT_SELECTION", "CANCELLED", "EXPIRED"],
   COMPLETED:            [],
