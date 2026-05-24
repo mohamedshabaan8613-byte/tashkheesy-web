@@ -124,6 +124,8 @@ export interface AssessmentResultPayload {
 export interface ConsultationIntent {
   /** من أين وصل المستخدم */
   entryPoint: ConsultationEntryPoint;
+    /** معرّف فريد للنية (UUID) */
+  intentId: string;
 
   /** بيانات التقييم إذا كان entryPoint = "assessment_result" */
   assessmentResult?: AssessmentResultPayload;
