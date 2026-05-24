@@ -26,6 +26,16 @@
  *   transitionTo("CONFIRMED") from CONFIRMING both fail isValidTransition()
  *   silently — the orchestrator's 9-step chain breaks at step 1.
  *
+ * Root-1 fix (backward-compat aliases — no logic change):
+ *   + ConsultationEntryPoint      → alias to BookingEntryPoint
+ *   + BookingInterruptionReason   → alias to BookingRecoveryReason
+ *   + BOOKING_RECOVERABLE_PHASES  → re-export of RECOVERABLE_PHASES
+ *   + BOOKING_TERMINAL_PHASES     → re-export of TERMINAL_PHASES
+ *   + BookingRecoveryState.wasRecovered     (optional boolean)
+ *   + BookingRecoveryState.recoveryAttempts (optional number)
+ *   These aliases allow consultationBookingRepository.ts to compile without
+ *   any changes to the consumer file.
+ *
  * ARCHITECTURE RULE:
  *   These types mirror the Supabase DB schema exactly.
  *   Runtime state machine types remain in consultationTypes.ts.
@@ -332,6 +342,17 @@ export interface BookingRecoveryState {
   recoveredAt?: string;
   recoveredPhase?: BookingPhase;
   auditNote?: string;
+  /**
+   * wasRecovered — backward-compat field for consultationBookingRepository.ts
+   * Root-1 fix: added in Sprint 3.7.1 to resolve TS2353.
+   * Derived from status === "recovered" when not explicitly set.
+   */
+  wasRecovered?: boolean;
+  /**
+   * recoveryAttempts — backward-compat field for consultationBookingRepository.ts
+   * Root-1 fix: added in Sprint 3.7.1 to resolve TS2339.
+   */
+  recoveryAttempts?: number;
 }
 
 export type BookingDenialReason =
@@ -481,3 +502,36 @@ export function calculateBookingExpiry(fromDate = new Date()): string {
 export function isSessionExpired(session: ConsultationBookingSession): boolean {
   return new Date(session.expiresAt) < new Date();
 }
+
+// ===========================================================================
+// SECTION C — Backward-Compat Aliases (Root-1 fix — Sprint 3.7.1)
+//
+// These aliases allow legacy consumer files to compile without any changes.
+// They map old names → canonical names defined above.
+// DO NOT use these aliases in new code — use the canonical names directly.
+// These will be removed when all consumers are migrated (Sprint 3.8 target).
+// ===========================================================================
+
+/**
+ * @deprecated use BookingEntryPoint
+ * Alias kept for consultationBookingRepository.ts compatibility.
+ */
+export type ConsultationEntryPoint = BookingEntryPoint;
+
+/**
+ * @deprecated use BookingRecoveryReason
+ * Alias kept for consultationBookingRepository.ts compatibility.
+ */
+export type BookingInterruptionReason = BookingRecoveryReason;
+
+/**
+ * @deprecated use RECOVERABLE_PHASES
+ * Re-export kept for consultationBookingRepository.ts compatibility.
+ */
+export const BOOKING_RECOVERABLE_PHASES: BookingPhase[] = RECOVERABLE_PHASES;
+
+/**
+ * @deprecated use TERMINAL_PHASES
+ * Re-export kept for consultationBookingRepository.ts compatibility.
+ */
+export const BOOKING_TERMINAL_PHASES: BookingPhase[] = TERMINAL_PHASES;
