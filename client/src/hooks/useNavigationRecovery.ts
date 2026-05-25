@@ -26,8 +26,8 @@ import {
   getPhaseFromPath,
   getRecoveryPhase,
   transition,
-  type ExtendedFlowPhase,
 } from "../lib/consultationStateMachine";
+import type { ConsultationFlowPhase } from "../types/consultationTypes";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +36,7 @@ import {
 export interface NavigationRecoveryState {
   wasRecovered: boolean;
   recoverySource: "back_button" | "refresh" | "auth_redirect" | "none";
-  currentPhase: ExtendedFlowPhase;
+  currentPhase: ConsultationFlowPhase;
 }
 
 export interface UseNavigationRecoveryReturn {

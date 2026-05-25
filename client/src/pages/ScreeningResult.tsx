@@ -14,19 +14,11 @@
  *   - تحديد route يدوياً
  *   - Supabase / payments / AI matching
  *
- * ─── GUARD_HOOK_BOUNDARY (Point 1) ────────────────────────────────────────────
- * useAssessmentGuard() يحتوي فقط:
- * ✅ validate intent presence
- * ✅ validate entryPoint === "assessment_result"
- * ✅ redirect invalid access → /consultation/start
- *
- * ❌ ممنوع داخل useAssessmentGuard():
- * ❌ analytics / tracking
- * ❌ hydration / session restoration
- * ❌ booking recovery logic
- * ❌ UI copy decisions
- * ❌ entitlement checks
- * ──────────────────────────────────────────────────────────────────────────
+ * Sprint 3.7.1 Fix:
+ *   - [FIX] intent.intentId → intent.initiatedAt (intentId لا يوجد في ConsultationIntent)
+ *   - [FIX] intent.assessmentSessionId → intent.assessmentResult?.sessionId
+ *   - [FIX] startFromAssessment input: يستخدم consultationIntentId وassessmentSessionId
+ *     من الأماكن الصحيحة على ConsultationIntent
  */
 
 import { useEffect, useState } from "react";
@@ -40,24 +32,6 @@ import type { BookingDenialPresentation } from "../hooks/useConsultationBooking"
 import { resolveRecoveryPolicy } from "../utils/recoveryPolicy";
 
 // ─── GUARD_HOOK_BOUNDARY (Point 1) ───────────────────────────────────────────
-/**
- * useAssessmentGuard — guard محدود المسؤولية.
- *
- * مسموح فقط:
- *   ✅ validate intent presence
- *   ✅ validate entryPoint === "assessment_result"
- *   ✅ redirect invalid access
- *
- * ممنوع إضافة مستقبلاً:
- *   ❌ analytics events
- *   ❌ booking session hydration
- *   ❌ entitlement resolution
- *   ❌ recovery logic
- *   ❌ UI state decisions
- *
- * إذا كبيرت هذه الدالة عن 3-4 سطور —
- * أنت تُضيف شيئًا خارج مسؤوليته.
- */
 function useAssessmentGuard() {
   const { intent, hasActiveIntent } = useConsultationContext();
   const navigate = useNavigate();
@@ -153,32 +127,31 @@ export default function ScreeningResult() {
 
   if (!isReady || !intent) return null;
 
-  const assessmentResult    = intent.assessmentResult;
-  const assessmentSessionId = intent.assessmentSessionId ?? "";
+  const assessmentResult = intent.assessmentResult;
+  // [FIX] استخدام initiatedAt كـ session identifier مؤقت.
+  // intent.assessmentResult.sessionId هو الـ ID الحقيقي للـ assessment session.
+  const assessmentSessionId = assessmentResult?.sessionId ?? "";
 
   // ─── Start Booking ────────────────────────────────────────────────────────
   function handleStartBooking() {
-    if (!intent?.intentId || !assessmentSessionId) return;
+    // [FIX] intent.intentId غير موجود — نستخدم initiatedAt كـ fallback identifier
+    if (!assessmentSessionId) return;
 
     setIsStarting(true);
     setDenial(null);
 
     const result = startFromAssessment({
-      consultationIntentId: intent.intentId ?? "",
+      // [FIX] consultationIntentId: نستخدم initiatedAt كـ unique identifier للـ intent
+      consultationIntentId: intent.initiatedAt,
       assessmentSessionId,
-      specialistRecommendation: intent.specialistRecommendation,
     });
 
     if (result.success) {
-      // ✅ Point 2: navigate بناءً على result.nextRoute من orchestrator
-      // nextRoute مقيد بـ ConsultationRoute type — لا hardcoded strings
       navigate(result.nextRoute);
       return;
     }
 
     const presentation = resolveBookingDenialPresentation(result.denialReason);
-
-    // ✅ Point 5: استخدام RecoveryPolicy لتحديد UX pattern
     const policy = resolveRecoveryPolicy(presentation.recoveryAction, null);
 
     if (policy.execution === "USER_CONFIRMATION_REQUIRED") {

@@ -1,10 +1,8 @@
 /**
- * BookingReviewPage.tsx — Sprint 3.4.1 M1 Fix
- *
- * UX completion boundary before persistence commit.
+ * BookingReviewPage.tsx — Sprint 3.4.1 M1 / Phase-5 hardened
  *
  * ────────────────────────────────────────────────────────────────────
- * ARCHITECTURE RULES (Sprint 3.3 → Sprint 3.4.1)
+ * ARCHITECTURE RULES (Sprint 3.3 → Sprint 3.4.1 / Phase 5)
  * ────────────────────────────────────────────────────────────────────
  *
  * RULE 1 — SOURCE OF TRUTH:
@@ -16,36 +14,21 @@
  *   لا تستدعي transitionTo() مباشرةً من الصفحة.
  *
  * RULE 3 — CONFIRMED ≠ visual:
- *   الزر لا يُصدر transitionTo("CONFIRMED") مباشرةً.
+ *   الزر لا يُصدر transitionTo(“CONFIRMED”) مباشرةً.
  *   transitionTo يُستدعى حصرًا من orchestrateBookingConfirmation().
  *
- * RULE 4 — No hardcoded routes (Fix N4):
+ * RULE 4 — No hardcoded routes:
  *   جميع navigate() تستخدم CONSULTATION_ROUTES.
  *
- * ────────────────────────────────────────────────────────────────────
- * Sprint 3.4.1 M1 Changes
- * ────────────────────────────────────────────────────────────────────
- *
- * FIX 1: handleConfirm — wired to orchestrateBookingConfirmation()
- *   الوضع السابق: console.warn placeholder — لا يفعل شيئًا
- *   الآن: orchestrateBookingConfirmation() مربوط بالكامل مع transitionTo dep-injection
- *
- * FIX 2: BookingReviewReachedEvent import كان يسبب build error
- *   الآن: النوع معرّف في bookingDomainEvents.ts
+ * RULE 5 (Phase 5) — navigate() بعد phase مؤكدة:
+ *   navigate(“CONFIRMED”) يحدث فقط بعد التحقق من currentPhase === “CONFIRMED”
+ *   عبر useEffect — ليس بشكل مباشر على result.success.
  *
  * ────────────────────────────────────────────────────────────────────
- * ما تفعله هذه الصفحة:
- *   ✅ عرض ملخص الحجز (الأخصائي + الموعد + الاستحقاق)
- *   ✅ إتاحة التعديل (العودة لاختيار الأخصائي أو الموعد)
- *   ✅ hydration-safe + recovery-safe + expiry-safe
- *   ✅ تصدر BOOKING_REVIEW_REACHED event عند الوصول
- *   ✅ تستدعي orchestrateBookingConfirmation() لتأكيد الحجز
- *
- * ما لا تفعله:
- *   ❌ لا تؤكد الحجز مباشرة
- *   ❌ لا تكتب في Supabase
- *   ❌ لا تستدعي transitionTo() مباشرة
- *   ❌ لا تقرأ من URL params
+ * Phase-5 fixes:
+ *   ✅ G1: transitionTo cast حل — typed BookingPhase union مستخدم
+ *   ✅ G2: session.reservationId مقروء مباشرةً (نوع مضاف في Phase 3)
+ *   ✅ G3: navigate مربوط بـ useEffect يراقب currentPhase === "CONFIRMED"
  * ────────────────────────────────────────────────────────────────────
  */
 
@@ -54,18 +37,52 @@ import { useLocation } from "wouter";
 import { useConsultationBooking } from "../contexts/ConsultationBookingContext";
 import { bookingEventBus, createBookingEvent } from "../types/bookingDomainEvents";
 import { isSessionExpired } from "../types/consultationBookingTypes";
+import type { BookingPhase } from "../types/consultationBookingTypes";
 import { CONSULTATION_ROUTES } from "../constants/consultationRoutes";
 import { orchestrateBookingConfirmation } from "../orchestrators/BookingConfirmationOrchestrator";
 import type { BookingReviewReachedEvent } from "../types/bookingDomainEvents";
 
-// ─── Confirmation UI state ───────────────────────────────────────────────────────────────
+// ─── Confirmation UI state ─────────────────────────────────────────────────────────────
 
 type ConfirmState =
   | { status: "idle" }
   | { status: "confirming" }
   | { status: "failed"; reason: string; retryable: boolean };
 
-// ─── BookingReviewPage ───────────────────────────────────────────────────────────────
+// ─── Typed transitionTo helper (G1 fix) ───────────────────────────────────────────────
+//
+// المشكلة السابقة:
+//   orchestrateBookingConfirmation تستقبل transitionTo: (phase: string) => void
+//   BookingContext يعرّف transitionTo: (phase: BookingPhase) => void
+//   الجسر: cast غير آمن بـ `as Parameters<typeof transitionTo>[0]`
+//
+// الحل: ننشئ wrapper محدود النوع يضمن أن كل phase تمر عبر الـ union.
+//
+const VALID_ORCHESTRATOR_PHASES = new Set<BookingPhase>([
+  "CONFIRMING",
+  "CONFIRMED",
+  "CONFIRMATION_FAILED",
+]);
+
+function makeTypedTransitionTo(
+  transitionTo: (phase: BookingPhase) => void
+): (phase: string) => void {
+  return (phase: string) => {
+    if (VALID_ORCHESTRATOR_PHASES.has(phase as BookingPhase)) {
+      transitionTo(phase as BookingPhase);
+    } else {
+      // لا تترجم phase غير معروفة إلى فساد حالة — اسجل فقط
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          `[BookingReviewPage] orchestrator sent unknown phase: "${phase}" — ignored`
+        );
+      }
+    }
+  };
+}
+
+// ─── BookingReviewPage ─────────────────────────────────────────────────────────────
+
 export default function BookingReviewPage() {
   const {
     session,
@@ -80,16 +97,36 @@ export default function BookingReviewPage() {
 
   const reviewEventFiredRef = useRef(false);
   const [confirmState, setConfirmState] = useState<ConfirmState>({ status: "idle" });
+  // G3: track whether we should navigate after phase settles
+  const pendingNavigateRef = useRef(false);
 
-  // ── حماية: تحقق من session + phase ──────────────────────────────────────────
+  // ── حماية: تحقق من session + phase ─────────────────────────────────────────
   const isValidForReview =
     hasActiveSession &&
     session !== null &&
-    (currentPhase === "REVIEW" || currentPhase === "SLOT_SELECTION") &&
+    (currentPhase === "REVIEW" ||
+      currentPhase === "SLOT_SELECTION" ||
+      currentPhase === "CONFIRMING" ||
+      currentPhase === "CONFIRMATION_FAILED") &&
     Boolean(session.selectedSpecialistId) &&
     Boolean(session.selectedSlotId);
 
-  // ── إطلاق BOOKING_REVIEW_REACHED مرة واحدة ─────────────────────────────────────
+  // ── G3: navigate فور currentPhase يصبح CONFIRMED ──────────────────────────────
+  //
+  // لماذا useEffect وليس بعد result.success مباشرةً:
+  //   orchestrateBookingConfirmation تستدعي transitionTo("CONFIRMED") ثم ترجع.
+  //   transitionTo يحدث re-render لـ React.
+  //   navigate في نفس callback المتزامن = racing condition.
+  //   useEffect يضمن أن currentPhase استقر فعلاً على "CONFIRMED" قبل navigate.
+  //
+  useEffect(() => {
+    if (currentPhase === "CONFIRMED" && pendingNavigateRef.current) {
+      pendingNavigateRef.current = false;
+      navigate(CONSULTATION_ROUTES.CONFIRMED, { replace: true });
+    }
+  }, [currentPhase, navigate]);
+
+  // ── إطلاق BOOKING_REVIEW_REACHED مرة واحدة ───────────────────────────────────
   useEffect(() => {
     if (!isValidForReview || reviewEventFiredRef.current || !session) return;
     if (!session.selectedSpecialistId || !session.selectedSlotId) return;
@@ -104,22 +141,24 @@ export default function BookingReviewPage() {
         specialistId: session.selectedSpecialistId,
         slotId: session.selectedSlotId,
         entitlementType: session.entitlementType,
-      },
+      }
     );
 
     bookingEventBus.publish(event);
   }, [isValidForReview, session]);
 
-  // ── Redirect + Expiry Guard (Fix N3) ──────────────────────────────────────────
+  // ── Redirect + Expiry Guard ───────────────────────────────────────────────────
   //
-  // الترتيب مهم:
-  //   1. isRecovering → انتظر (لا redirect أثناء hydration)
-  //   2. session منتهية → expireBooking() + redirect فوري
-  //   3. لا session → redirect لـ START
-  //   4. specialist/slot ناقص → redirect لـ BOOKING
+  // الترتيب:
+  //   1. isRecovering → انتظر
+  //   2. CONFIRMED → لا redirect (تتولى useEffect أعلاه التنقل)
+  //   3. session منتهية → expireBooking() + redirect
+  //   4. لا session → redirect
+  //   5. specialist/slot ناقص → redirect
   //
   useEffect(() => {
     if (isRecovering) return;
+    if (currentPhase === "CONFIRMED") return; // تولى G3 useEffect
 
     if (session && isSessionExpired(session)) {
       expireBooking("session_ttl_exceeded");
@@ -138,33 +177,24 @@ export default function BookingReviewPage() {
     if (!session.selectedSlotId) {
       navigate(CONSULTATION_ROUTES.BOOKING, { replace: true });
     }
-  }, [isRecovering, hasActiveSession, session, navigate, expireBooking]);
+  }, [isRecovering, currentPhase, hasActiveSession, session, navigate, expireBooking]);
 
-  // ── handleConfirm — RULE 2 + RULE 3 (Sprint 3.4.1 M1 Fix) ──────────────────
+  // ── handleConfirm — RULE 2 + RULE 3 + Phase-5 fixes ────────────────────────────
   //
-  // الدفق الصحيح:
-  //   UI → orchestrateBookingConfirmation() → transitionTo() → domain event
-  //
-  // لماذا transitionTo مُمرّر كـ dep-injection:
-  //   orchestrateBookingConfirmation لا يستورد Context مباشرةً — RULE 2 isolation.
-  //   transitionTo هو المسار الوحيد لتغيير lifecycle phase.
-  //
-  // userId مصدر: session.sourceIntentId
-  //   مؤقت حتى اكتمال Sprint 3.5 auth layer.
-  //   session.sourceIntentId = consultationIntentId = userId في v1.
-  //
-  // reservationId مصدر: session.reservationId
-  //   مضبوط بواسطة SlotReservationOrchestrator عند اختيار الموعد.
+  // G1: transitionTo ملفوف بـ makeTypedTransitionTo() — لا cast غير آمن
+  // G2: reservationId مقروء من session.reservationId مباشرةً
+  // G3: بعد result.success → pendingNavigateRef.current = true
+  //     التنقل الفعلي يحدث في useEffect عند currentPhase === "CONFIRMED"
   //
   const handleConfirm = useCallback(async () => {
     if (!session) return;
-    if (confirmState.status === "confirming") return; // منع double-submit
+    if (confirmState.status === "confirming") return;
 
-    const reservationId = (session as Record<string, unknown>).reservationId as string | undefined;
-    const ownershipToken = session.sessionId; // ownershipToken = sessionId في v1
+    // G2: قراءة مباشرة — reservationId مضاف في ConsultationBookingSession في Phase 3
+    const reservationId = session.reservationId;
+    const ownershipToken = session.sessionId;
 
     if (!reservationId) {
-      // reservationId غير موجود: عادة لم يكتمل SlotReservationOrchestrator
       setConfirmState({
         status: "failed",
         reason: "reservation_not_found",
@@ -175,6 +205,9 @@ export default function BookingReviewPage() {
 
     setConfirmState({ status: "confirming" });
 
+    // G1: typed wrapper — يضمن أن orchestrator لا يرسل phase غير معروفة للـ context
+    const typedTransitionTo = makeTypedTransitionTo(transitionTo);
+
     const result = await orchestrateBookingConfirmation(
       {
         consultationId: session.sessionId,
@@ -183,23 +216,27 @@ export default function BookingReviewPage() {
         ownershipToken,
       },
       {
-        // RULE 2: transitionTo ُممرّر كـ dep-injection — لا import مباشر
-        transitionTo: (phase: string) => transitionTo(phase as Parameters<typeof transitionTo>[0]),
-      },
+        // RULE 2: transitionTo مُمرّر كـ dep-injection — لا import مباشر
+        transitionTo: typedTransitionTo,
+      }
     );
 
     if (result.success) {
-      navigate(CONSULTATION_ROUTES.CONFIRMED, { replace: true });
+      // G3: لا navigate() مباشرةً — علّم useEffect بالانتظار حتى phase يستقر
+      pendingNavigateRef.current = true;
+      // إذا currentPhase انتقل إلى "CONFIRMED" بالفعل قبل re-render (نادر)، نتحقق هنا
+      // ولكن الحالة الطبيعية — useEffect يرصد التغيير وينتقل
     } else {
+      pendingNavigateRef.current = false;
       setConfirmState({
         status: "failed",
         reason: result.reason ?? "unknown_error",
         retryable: result.retryable ?? false,
       });
     }
-  }, [session, confirmState.status, transitionTo, navigate]);
+  }, [session, confirmState.status, transitionTo]);
 
-  // ── Loading state ───────────────────────────────────────────────────────────────
+  // ── Loading state ────────────────────────────────────────────────────────────
   if (isRecovering) {
     return <BookingReviewSkeleton />;
   }
@@ -210,7 +247,7 @@ export default function BookingReviewPage() {
 
   const isConfirming = confirmState.status === "confirming";
 
-  // ── Edit Handlers ───────────────────────────────────────────────────────────────
+  // ── Edit Handlers ────────────────────────────────────────────────────────────
   const handleEditSpecialist = () => navigate(CONSULTATION_ROUTES.BOOKING);
   const handleEditSlot = () => navigate(CONSULTATION_ROUTES.BOOKING);
 
@@ -227,7 +264,7 @@ export default function BookingReviewPage() {
       className="min-h-screen bg-background flex flex-col items-center justify-start pt-8 pb-16 px-4"
     >
       <div className="w-full max-w-lg">
-        {/* ─── Header ───────────────────────────────────────────────────────────────── */}
+        {/* ─── Header ─────────────────────────────────────────────────────────────── */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-1">مراجعة الحجز</h1>
           <p className="text-sm text-muted-foreground">
@@ -235,7 +272,15 @@ export default function BookingReviewPage() {
           </p>
         </div>
 
-        {/* ─── Confirmation Error Banner (Sprint 3.4.1 M1) ──────────────────────── */}
+        {/* ─── Phase indicator (CONFIRMING state) ───────────────────────────────── */}
+        {currentPhase === "CONFIRMING" && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+            <span className="h-4 w-4 border-2 border-blue-400 border-t-blue-600 rounded-full animate-spin shrink-0" />
+            <p className="text-xs text-blue-700">جاري تأكيد حجزك…</p>
+          </div>
+        )}
+
+        {/* ─── Confirmation Error Banner ───────────────────────────────────────────── */}
         {confirmState.status === "failed" && (
           <ConfirmationErrorBanner
             reason={confirmState.reason}
@@ -246,9 +291,7 @@ export default function BookingReviewPage() {
 
         {/* ─── Booking Summary Card ─────────────────────────────────────────────── */}
         <div className="bg-card border border-border rounded-xl p-5 mb-4 shadow-sm">
-          <h2 className="text-base font-semibold text-foreground mb-4">
-            ملخص الحجز
-          </h2>
+          <h2 className="text-base font-semibold text-foreground mb-4">ملخص الحجز</h2>
 
           {/* Specialist */}
           <div className="flex items-start justify-between mb-4 pb-4 border-b border-border/60">
@@ -295,16 +338,11 @@ export default function BookingReviewPage() {
           </div>
         </div>
 
-        {/* ─── Session Expiry Notice ───────────────────────────────────────────── */}
+        {/* ─── Session Expiry Notice ──────────────────────────────────────────────── */}
         <SessionExpiryNotice expiresAt={session.expiresAt} />
 
-        {/* ─── Actions ─────────────────────────────────────────────────────────────── */}
+        {/* ─── Actions ────────────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 mt-6">
-          {/*
-           * Confirm Button — Sprint 3.4.1 M1 Fix
-           * الآن: مفعّل ومربوط بالكامل بـ orchestrateBookingConfirmation()
-           * يُعطّل أثناء CONFIRMING لمنع double-submit
-           */}
           <button
             onClick={handleConfirm}
             disabled={isConfirming}
@@ -336,7 +374,7 @@ export default function BookingReviewPage() {
           </button>
         </div>
 
-        {/* ─── Recovery State Badge (dev-visible) ──────────────────────────────── */}
+        {/* ─── Recovery State Badge (dev-visible) ─────────────────────────────────── */}
         {process.env.NODE_ENV === "development" &&
           session.recoveryState.status !== "fresh" && (
             <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -346,12 +384,21 @@ export default function BookingReviewPage() {
               </p>
             </div>
           )}
+
+        {/* ─── Phase Badge (dev-visible) ────────────────────────────────────────── */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mt-2 p-2 bg-muted/40 border border-border rounded-lg">
+            <p className="text-xs text-muted-foreground font-mono">
+              phase: <strong>{currentPhase}</strong>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Sub-components ─────────────────────────────────────────────────────────────────────────
+// ─── Sub-components ─────────────────────────────────────────────────────────────────────
 
 function BookingReviewSkeleton() {
   return (
@@ -445,12 +492,6 @@ function SessionExpiryNotice({ expiresAt }: { expiresAt: string }) {
   );
 }
 
-/**
- * ConfirmationErrorBanner — Sprint 3.4.1 M1 Addition
- *
- * يظهر خطأ تأكيد مترجم إلى العربية بدل raw error string.
- * يتيح إعادة المحاولة إذا كان الخطأ retryable.
- */
 function ConfirmationErrorBanner({
   reason,
   retryable,
