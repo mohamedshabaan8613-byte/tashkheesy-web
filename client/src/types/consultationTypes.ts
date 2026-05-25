@@ -19,7 +19,7 @@
  *   - BookingPage.tsx (Sprint 3.0c)
  */
 
-import type { PathType, AssessmentMode } from "../lib/assessmentTypes";
+import type { PathType, AssessmentMode } from "../components/screening/assessmentTypes";
 
 // ---------------------------------------------------------------------------
 // Route Registry — مصدر وحيد لجميع consultation routes
