@@ -4,22 +4,36 @@
  * Sprint 3.1 — Business Layer Foundation
  * Priority 2: Booking Domain Isolation
  *
- * هذا الملف يوفّر طبقة repository لـ booking sessions.
+ * ─── fix/entitlement-type-separation ────────────────────────────────────────
+ *
+ * ARCHITECTURE FIX:
+ *   create() تم تغيير نوع معامل entitlementType:
+ *     قبل: ConsultationEntitlement  — يسمح بتمرير "EXPIRED" و"BLOCKED"
+ *     بعد:  ActiveBookingEntitlement — subset صالح للحجز فقط
+ *
+ * TypeScript يمنع تمرير "EXPIRED"/"BLOCKED" عند compile time.
+ *
+ * التحقق عند الاستدعاء:
+ *   if (!isActiveBookingEntitlement(resolvedEntitlement)) {
+ *     return { denied: true, reason: resolvedEntitlement };
+ *   }
+ *   repository.create(intentId, entryPoint, resolvedEntitlement);
  *
  * الحالة الحالية (Sprint 3.1):
  *   in-memory + sessionStorage مؤقتاً.
  *
  * تحذير معماري:
- * ════════════════════════════════════════════════
+ * ╔════════════════════════════════════════════════
  * TEMPORARY: sessionStorage implementation.
  * Sprint 3.1 Priority 3 (Persistence Layer):
  *   يجب استبدال هذا الملف بـ Supabase repository.
  *   الواجهة (create/get/update/clear) تبقى ثابتة — فقط التنفيذ يتغيّر.
- * ════════════════════════════════════════════════
+ * ╔════════════════════════════════════════════════
  */
 
 import type {
   BookingDenialReason,
+  ActiveBookingEntitlement,
 } from "../types/consultationEntitlements";
 import type {
   BookingInterruptionReason,
@@ -28,7 +42,6 @@ import type {
   ConsultationBookingSession,
   ConsultationEntryPoint,
 } from "../types/consultationBookingTypes";
-import type { ConsultationEntitlement } from "../types/consultationEntitlements";
 import {
   BOOKING_RECOVERABLE_PHASES,
   BOOKING_TERMINAL_PHASES,
@@ -57,7 +70,7 @@ function isValidTransition(
   to: BookingLifecyclePhase
 ): boolean {
   // لا يمكن الخروج من حالة نهائية
-  if (BOOKING_TERMINAL_PHASES.has(from)) return false;
+  if ((BOOKING_TERMINAL_PHASES as BookingLifecyclePhase[]).includes(from)) return false;
 
   // إلى CANCELLED أو EXPIRED: مسموح من أي حالة غير نهائية
   if (to === "CANCELLED" || to === "EXPIRED" || to === "ABANDONED") return true;
@@ -118,7 +131,7 @@ function clearPersistedSession(): void {
 /**
  * createConsultationBookingRepository
  *
- * مصنع ريروبِتوري لجلسة الحجز.
+ * مصنع ريروبَتوري لجلسة الحجز.
  * كل عملية create/update/recover تمر عبر هذه الواجهة حصراً.
  *
  * يُستخدم داخل ConsultationBookingContext فقط.
@@ -129,10 +142,17 @@ export function createConsultationBookingRepository() {
 
   // ---------------------------------------------------------------------------
 
+  /**
+   * create — ينشئ جلسة حجز جديدة.
+   *
+   * @param entitlementType - يجب أن يكون ActiveBookingEntitlement صالحًا.
+   *   يمنع TypeScript تمرير "EXPIRED" أو "BLOCKED" عند compile time.
+   *   استخدم isActiveBookingEntitlement() للتحقق قبل الاستدعاء.
+   */
   function create(
     intentId: string,
     entryPoint: ConsultationEntryPoint,
-    entitlementType: ConsultationEntitlement,
+    entitlementType: ActiveBookingEntitlement,
     assessmentSessionId?: string
   ): ConsultationBookingSession {
     const now = new Date().toISOString();
@@ -254,7 +274,7 @@ export function createConsultationBookingRepository() {
     if (!persisted) return null;
 
     // فحص إذا الحالة قابلة للاستعادة
-    if (!BOOKING_RECOVERABLE_PHASES.has(persisted.bookingStatus)) return null;
+    if (!(BOOKING_RECOVERABLE_PHASES as BookingLifecyclePhase[]).includes(persisted.bookingStatus)) return null;
 
     // فحص عمر الجلسة (2 ساعة)
     const ageMs = Date.now() - new Date(persisted.lastActivityAt).getTime();
