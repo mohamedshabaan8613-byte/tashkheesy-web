@@ -8,7 +8,6 @@
  * directly from useConsultationBooking() — this hook is for components
  * that need to observe the raw machine state (e.g. debug panels, tests).
  */
-
 import { useCallback, useSyncExternalStore } from "react";
 import type { BookingSessionStateMachine, SessionMachineState } from "./BookingSessionStateMachine";
 
@@ -18,12 +17,12 @@ export interface SessionLifecycleSnapshot {
   isActive: boolean;
 }
 
-const TERMINAL_STATES: ReadonlySet<SessionMachineState> = new Set([
+const TERMINAL_STATES: ReadonlySet<SessionMachineState> = new Set<SessionMachineState>([
   "CANCELLED",
   "EXPIRED",
 ]);
 
-const ACTIVE_STATES: ReadonlySet<SessionMachineState> = new Set([
+const ACTIVE_STATES: ReadonlySet<SessionMachineState> = new Set<SessionMachineState>([
   "CREATED",
   "SPECIALIST_SELECTION",
   "SLOT_SELECTION",
@@ -34,23 +33,21 @@ const ACTIVE_STATES: ReadonlySet<SessionMachineState> = new Set([
 ]);
 
 export function useSessionLifecycle(
-  machine: BookingSessionStateMachine,
+  machine: BookingSessionStateMachine
 ): SessionLifecycleSnapshot {
   const subscribe = useCallback(
-    (cb: () => void) => machine.subscribe(() => cb()),
-    [machine],
+    (onStoreChange: () => void) => machine.subscribe(onStoreChange),
+    [machine]
   );
 
-  const getSnapshot = useCallback(
-    (): SessionMachineState => machine.state,
-    [machine],
-  );
+  const getSnapshot = useCallback((): SessionLifecycleSnapshot => {
+    const machineState = machine.getState();
+    return {
+      machineState,
+      isTerminal: TERMINAL_STATES.has(machineState),
+      isActive: ACTIVE_STATES.has(machineState),
+    };
+  }, [machine]);
 
-  const machineState = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-
-  return {
-    machineState,
-    isTerminal: TERMINAL_STATES.has(machineState),
-    isActive:   ACTIVE_STATES.has(machineState),
-  };
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
