@@ -41,11 +41,32 @@ import type {
   BookingRecoveryState,
   ConsultationBookingSession,
   ConsultationEntryPoint,
+  BookingEntitlementType,
 } from "../types/consultationBookingTypes";
 import {
   BOOKING_RECOVERABLE_PHASES,
   BOOKING_TERMINAL_PHASES,
 } from "../types/consultationBookingTypes";
+
+function toBookingEntitlementType(
+  entitlement: ActiveBookingEntitlement
+): BookingEntitlementType {
+  switch (entitlement) {
+    case "FREE_FIRST_CONSULTATION":
+      return "free_first_consultation";
+
+    case "PAID_CONSULTATION":
+      return "paid_consultation";
+
+    case "FOLLOW_UP":
+      return "follow_up";
+
+    default: {
+      const exhaustive: never = entitlement;
+      return exhaustive;
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Storage Key
@@ -166,7 +187,7 @@ export function createConsultationBookingRepository() {
       consultationIntentId: intentId,
       entryPoint,
       assessmentSessionId,
-      entitlementType,
+      entitlementType: toBookingEntitlementType(entitlementType),
       bookingStatus: "CREATED",
       createdAt: now,
       lastActivityAt: now,
