@@ -64,11 +64,11 @@ function getSessionAgeMs(session: ConsultationBookingSession): number {
 
 /**
  * هل الاستحقاق يسمح بالـ auto-resume؟
- * FREE_FIRST_CONSULTATION / FOLLOW_UP → نعم (لا دفع مطلوب)
- * PAID_CONSULTATION / package_session  → بحذر (قد يكون الدفع pending)
+ * free_first_consultation / follow_up → نعم (لا دفع مطلوب)
+ * paid_consultation / package_session  → بحذر (قد يكون الدفع pending)
  */
 function entitlementAllowsAutoResume(entitlement: BookingEntitlementType): boolean {
-  return entitlement === "FREE_FIRST_CONSULTATION" || entitlement === "FOLLOW_UP";
+  return entitlement === "free_first_consultation" || entitlement === "follow_up";
 }
 
 // ─── Core Policy Resolver ─────────────────────────────────────────────────────
