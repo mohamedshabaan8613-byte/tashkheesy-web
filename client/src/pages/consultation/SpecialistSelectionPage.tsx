@@ -33,6 +33,7 @@ import {
   resolveAvailableSpecialists,
 } from "../../utils/specialistAvailability";
 import type { SpecialistProfile } from "../../types/specialistAvailabilityTypes";
+import { CONSULTATION_ROUTES } from "../../constants/consultationRoutes";
 
 // ─── Recovery Screen ─────────────────────────────────────────────────────────
 // inline — لا يُنقل خارج هذا الملف حتى Sprint 3.3
@@ -304,6 +305,19 @@ export default function SpecialistSelectionPage() {
 
   if (hydration.status === "missing") {
     return <RecoveryScreen reason="missing" onRetry={() => setLocation("/consultation/start")} />;
+  }
+
+  // ── TRACK 2.1: Stale Re-entry Recovery ──────────────────────────────
+  // CANONICAL_RECOVERY_RULE: Explicit, deterministic, phase-authoritative.
+  // Condition: stale status AND phase === SLOT_SELECTION
+  //   → user navigated back from SlotSelectionPage
+  //   → redirect to BOOKING_SLOTS (navigation recovery ONLY — no phase mutation)
+  if (
+    hydration.status === "stale" &&
+    hydration.currentPhase === "SLOT_SELECTION"
+  ) {
+    setLocation(CONSULTATION_ROUTES.BOOKING_SLOTS);
+    return null;
   }
 
   // ── Happy Path ───────────────────────────────────────────────────────
