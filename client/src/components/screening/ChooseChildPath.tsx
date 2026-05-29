@@ -1,19 +1,15 @@
 /*
  * ChooseChildPath — اختيار مسار الفحص للطفل
  *
- * يظهر بعد اختيار الطفل من ChildrenPage
- * يسمح للوالد باختيار:
- *   A. كشف أولي لمؤشرات صعوبات التعلم (learning)
- *   B. كشف أولي لمؤشرات فرط الحركة وتشتت الانتباه (adhd)
- *
- * يمرر: mode=child, childId, pathType, childName, childAge, ageGroup
- * إلى: /screening-intro/:childId?pathType=...&name=...&age=...&mode=child
- *
- * التصميم: Editorial Healthcare Calm
- * اللوحة اللونية: #F4EFE8 | #1E4E8C | #2BBDB6 | #F4C46A
+ * AUDIT FIXES (2026-05-18):
+ *   #2 — Abandonment guard: لا إرسال abandonment إذا لم يتم اختيار مسار بعد
+ *         (session لم تُكتب في DB — isRealIdAttached = false)
+ *         هذا مُعالَج الآن في trackFunnelAbandonment نفسها (FunnelSession.isRealIdAttached)
+ *   #4 — session_id: trackFunnelPathSelected يستخدم buildChildFunnelSessionId(childId)
+ *         لذا يتطابق مع session_id في useChildAssessmentState و ScreeningPage.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ArrowLeft,
@@ -24,12 +20,32 @@ import {
   Shield,
   ChevronLeft,
 } from "lucide-react";
+import type { PathType } from "./assessmentTypes";
+import {
+  FunnelSession,
+  trackFunnelPathSelected,
+  trackFunnelAbandonment,
+} from "@/lib/screeningAnalytics";
 
 interface ChooseChildPathProps {
   childId: string;
 }
 
-const PATHS = [
+const PATHS: Array<{
+  id: PathType;
+  title: string;
+  subtitle: string;
+  description: string;
+  areas: string[];
+  icon: typeof BookOpen;
+  color: string;
+  bg: string;
+  border: string;
+  badge: string;
+  badgeBg: string;
+  badgeColor: string;
+  duration: string;
+}> = [
   {
     id: "learning",
     title: "كشف أولي لمؤشرات صعوبات التعلم",
@@ -67,20 +83,59 @@ const PATHS = [
 export default function ChooseChildPath({ childId }: ChooseChildPathProps) {
   const [, navigate] = useLocation();
   const [visible, setVisible] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<PathType | null>(null);
 
   const searchParams = new URLSearchParams(window.location.search);
   const childName = searchParams.get("name") ?? "طفلك";
-  const childAge = searchParams.get("age") ?? "";
-  const ageGroup = searchParams.get("ageGroup") ?? "school";
+  const childAge  = searchParams.get("age")  ?? "";
+  const ageGroup  = searchParams.get("ageGroup") ?? "school";
+
+  // ─── FunnelSession (path_choose entry point) ─────────────────────────────────
+  // FIX #2: session تبدأ بـ pending حتى يختار المستخدم مساراً.
+  // trackFunnelAbandonment تتحقق من isRealIdAttached قبل الإرسال.
+  const funnelSessionRef = useRef<FunnelSession | null>(null);
+  if (!funnelSessionRef.current) {
+    funnelSessionRef.current = new FunnelSession(
+      `pending-${Date.now()}`,
+      "choose"
+    );
+  }
+  const funnelSession = funnelSessionRef.current;
+
+  // ─── abandonment dual fallback ───────────────────────────────────────────────
+  // FIX #2: trackFunnelAbandonment ترفض الإرسال إذا !isRealIdAttached
+  // → لا garbage rows لو غادر المستخدم قبل اختيار مسار
+  useEffect(() => {
+    const abandonedRef = { sent: false };
+
+    async function fireAbandonment() {
+      if (abandonedRef.sent) return;
+      if (funnelSession.submittedAt !== null) return;
+      abandonedRef.sent = true;
+      void trackFunnelAbandonment(funnelSession, "choose_child_path");
+    }
+
+    function onBeforeUnload() { void fireAbandonment(); }
+    function onVisibilityChange() { if (document.hidden) void fireAbandonment(); }
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [funnelSession]);
 
   useEffect(() => {
     document.title = `اختر مسار الفحص — ${childName} — تشخيصي`;
     setTimeout(() => setVisible(true), 80);
   }, [childName]);
 
-  function handleChoose(pathType: string) {
+  function handleChoose(pathType: PathType) {
     setSelected(pathType);
+    // trackFunnelPathSelected يستدعي attachRealSessionId(buildChildFunnelSessionId(childId))
+    void trackFunnelPathSelected(funnelSession, pathType, childId);
+
     setTimeout(() => {
       navigate(
         `/screening-intro/${childId}?pathType=${pathType}&mode=child&name=${encodeURIComponent(childName)}&age=${childAge}&ageGroup=${ageGroup}`

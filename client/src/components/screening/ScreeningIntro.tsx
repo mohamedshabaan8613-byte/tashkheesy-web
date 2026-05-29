@@ -9,7 +9,7 @@
  * Receives: childId via route param, childName + age via query string (same as ScreeningPage)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import {
   BookOpen,
@@ -26,6 +26,10 @@ import {
   CheckCircle2,
   Info,
 } from "lucide-react";
+import {
+  FunnelSession,
+  trackFunnelStart,
+} from "@/lib/screeningAnalytics";
 
 // ─── محاور الفحص الستة ────────────────────────────────────────────────────────
 const SCREENING_AREAS = [
@@ -94,6 +98,7 @@ interface ScreeningIntroProps {
 export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
   const [, navigate] = useLocation();
   const [visible, setVisible] = useState(false);
+  const funnelSessionRef = useRef<FunnelSession | null>(null);
 
   // قراءة اسم الطفل والعمر والمسار من query string
   const searchParams = new URLSearchParams(window.location.search);
@@ -118,10 +123,18 @@ export default function ScreeningIntro({ childId }: ScreeningIntroProps) {
   ];
   const activeAreas = pathType === "adhd" ? ADHD_AREAS : SCREENING_AREAS;
 
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 80);
-    return () => clearTimeout(t);
-  }, []);
+ useEffect(() => {
+  funnelSessionRef.current = new FunnelSession(
+    childId,
+    pathType === "adhd" ? "adhd" : "learning"
+  );
+
+  void trackFunnelStart(funnelSessionRef.current);
+
+  const t = setTimeout(() => setVisible(true), 80);
+
+  return () => clearTimeout(t);
+}, []);
 
   // بناء رابط الفحص مع نفس الـ query params بما فيها pathType
   const screeningHref = `/screening/${childId}?name=${encodeURIComponent(childName || "الطفل")}&age=${childAge || "8"}&pathType=${pathType}${mode ? `&mode=${mode}` : ""}`;

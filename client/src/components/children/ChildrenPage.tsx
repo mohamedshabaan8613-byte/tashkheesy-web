@@ -62,6 +62,9 @@ interface ScreeningResult {
 
 export interface Child {
   id: string;
+  /** Supabase UUID — populated only when the record was loaded from Supabase.
+   * Used exclusively for updateRemoteChild() which filters by .eq("id", ...) */
+  supabaseId?: string;
   name: string;
   dateOfBirth: string;
   gender: "male" | "female";
@@ -107,6 +110,7 @@ function remoteToLocal(r: RemoteChild): Child {
   const { years, ageGroup } = calculateAge((r.date_of_birth ?? "") as string);
   return {
     id: (r.local_child_id || r.id) as string,
+    supabaseId: r.id as string,
     name: r.name as string,
     dateOfBirth: r.date_of_birth as string,
     gender: r.gender as "male" | "female",
@@ -246,7 +250,10 @@ export default function ChildrenPage() {
 
     // Supabase sync (fire-and-forget)
     if (isLoggedIn && isSupabaseConfigured) {
-      updateRemoteChild(childData.id, {
+      // R1 FIX: use supabaseId (Supabase UUID) not id (local_child_id)
+      // updateRemoteChild filters by .eq("id", ...) which matches the Supabase UUID column
+      const remoteId = children.find((c) => c.id === childData.id)?.supabaseId ?? childData.id;
+      updateRemoteChild(remoteId, {
         name: childData.name,
         date_of_birth: childData.dateOfBirth,
         gender: childData.gender,

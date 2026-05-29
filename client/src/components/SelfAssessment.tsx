@@ -11,58 +11,40 @@
  *
  * الأسلوب: دافئ، شامل، غير حكمي، عربي أولاً
  * الضمانات: ليس تشخيصاً رسمياً | الذكاء الاصطناعي للفهم الأولي | المتخصص الخطوة التالية
+ *
+ * Sprint 2.2 — Step 5: AssessmentForm منقولة إلى AssessmentForm.tsx
+ * Sprint 2.2 — Step 6: AssessmentHistory منقولة إلى AssessmentHistory.tsx
+ *
+ * هذا الملف يقوم بـ:
+ *   - orchestration + routing
+ *   - Supabase fetch + history merge
+ *   - state coordination (name, age, errors, history, visible, showAllHistory)
+ *   - تمرير كل القيم والـ handlers إلى AssessmentForm + AssessmentHistory عبر props
  */
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useSupabaseAuth } from "@/context/AuthContext";
 import { fetchRemoteSelfAssessmentResults } from "@/lib/screeningResults";
+import { SelfAssessmentSummary } from "@/types/assessment";
+import { formatArabicDate as _formatArabicDate } from "@/lib/formatDate";
 import {
   User,
   ArrowLeft,
-  Shield,
   Brain,
-  CheckCircle2,
   Sparkles,
-  BookOpen,
-  Pencil,
-  Zap,
-  Hand,
-  Users,
-  Info,
-  Clock,
-  ChevronDown,
-  ChevronUp,
   Lock,
   LogIn,
 } from "lucide-react";
+import AssessmentForm from "./screening/AssessmentForm";
+import AssessmentHistory from "./screening/AssessmentHistory";
 
-// ─── ثابت مفتاح localStorage ─────────────────────────────────────────────────
+// formatArabicDate re-exported locally for any inline use still needed here
+const formatArabicDate = _formatArabicDate;
+
+// ─── ثابت مفتاح localStorage ──────────────────────────────────────────────────
 const SELF_ASSESSMENTS_KEY = "tashkheesy_self_assessments";
 
-// ─── نوع ملخص التقييم الذاتي ─────────────────────────────────────────────────
-interface SelfAssessmentSummary {
-  id: string;
-  sessionId: string;
-  name: string;
-  age: string | number;
-  mode?: string;
-  pathType: "learning" | "adhd";
-  screeningType?: string;
-  completedAt: string;
-  resultKey: string;
-}
-
-// ─── محاور الفحص الستة ────────────────────────────────────────────────────────
-const SCREENING_AREAS = [
-  { icon: BookOpen, label: "القراءة والفهم", color: "#1E4E8C", bg: "#DFF3F1" },
-  { icon: Pencil,   label: "الكتابة والإملاء", color: "#2BBDB6", bg: "#DFF3F1" },
-  { icon: Zap,      label: "الانتباه والتركيز", color: "#F4C46A", bg: "#FFFBEB" },
-  { icon: Brain,    label: "الذاكرة والمعالجة", color: "#8B5CF6", bg: "#F5F3FF" },
-  { icon: Users,    label: "المهارات الاجتماعية", color: "#059669", bg: "#ECFDF5" },
-  { icon: Hand,     label: "المهارات الحركية", color: "#DC2626", bg: "#FEF2F2" },
-];
-
-// ─── قراءة سجل التقييمات الذاتية من localStorage ─────────────────────────────
+// ─── قراءة سجل التقييمات الذاتية من localStorage ────────────────────────────────
 function loadSelfHistory(): SelfAssessmentSummary[] {
   try {
     const raw = localStorage.getItem(SELF_ASSESSMENTS_KEY);
@@ -75,29 +57,18 @@ function loadSelfHistory(): SelfAssessmentSummary[] {
   }
 }
 
-// ─── تنسيق التاريخ بالعربية ──────────────────────────────────────────────────
-function formatArabicDate(isoString: string): string {
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleDateString("ar-SA", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  } catch {
-    return isoString;
-  }
-}
-
 export default function SelfAssessment() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading } = useSupabaseAuth();
-  const [visible, setVisible] = useState(false);
+
+  // ─── Form state (يُمَرَّر إلى AssessmentForm عبر props) ─────────────────────────
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
-  const [ageError, setAgeError] = useState("");
   const [nameError, setNameError] = useState("");
+  const [ageError, setAgeError] = useState("");
+
+  // ─── UI + history state ──────────────────────────────────────────────────────
+  const [visible, setVisible] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [history, setHistory] = useState<SelfAssessmentSummary[]>([]);
   const remoteFetchedRef = useRef(false);
@@ -110,15 +81,14 @@ export default function SelfAssessment() {
   useEffect(() => {
     document.title = "التقييم الذاتي — تشخيصي | Tashkheesy";
     setTimeout(() => setVisible(true), 80);
-    // تحميل السجل المحلي أولاً (فوري)
     const localHistory = loadSelfHistory();
-    localHistory.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+    localHistory.sort(
+      (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+    );
     setHistory(localHistory);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Sprint 5: دمج النتائج البعيدة من Supabase مع المحلية ───────────────────────────────
-  // يعمل فقط عند تسجيل الدخول، لا يُظهر loading state مطوّل
-  // النتائج المحلية تظهر فوراً، البعيدة تُضاف لاحقاً بصمت
+  // ─── دمج النتائج البعيدة من Supabase مع المحلية ────────────────────────────
   useEffect(() => {
     if (!user || remoteFetchedRef.current) return;
     remoteFetchedRef.current = true;
@@ -143,14 +113,16 @@ export default function SelfAssessment() {
           }));
 
         if (newRemote.length === 0) return prev;
-
         const merged = [...prev, ...newRemote];
-        merged.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+        merged.sort(
+          (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+        );
         return merged;
       });
     });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ─── Form submission handler (orchestration يبقى هنا) ──────────────────────────
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     let valid = true;
@@ -167,7 +139,9 @@ export default function SelfAssessment() {
       setAgeError("يرجى إدخال عمرك");
       valid = false;
     } else if (ageNum < 16) {
-      setAgeError("هذا المسار مخصص للأعمار ١٦ سنة فأكثر — لتقييم الأطفال استخدم مسار 'أقيّم طفلي'");
+      setAgeError(
+        "هذا المسار مخصص للأعمار ١٦ سنة فأكثر — لتقييم الأطفال استخدم مسار 'أقيّم طفلي'"
+      );
       valid = false;
     } else if (ageNum > 80) {
       setAgeError("يرجى إدخال عمر صحيح");
@@ -178,56 +152,64 @@ export default function SelfAssessment() {
 
     if (!valid) return;
 
-    // إنشاء معرّف فريد للتقييم الذاتي
     const selfId = `self_${Date.now()}`;
-
-    // حفظ بيانات المستخدم في localStorage
-    localStorage.setItem(`self_profile_${selfId}`, JSON.stringify({
-      id: selfId,
-      name: name.trim(),
-      age: ageNum,
-      mode,
-      pathType,
-      createdAt: new Date().toISOString(),
-    }));
-
-    // الانتقال إلى صفحة المقدمة مع تمرير pathType وmode
-    navigate(`/screening-intro/${selfId}?name=${encodeURIComponent(name.trim())}&age=${ageNum}&mode=${mode}&pathType=${pathType}`);
+    localStorage.setItem(
+      `self_profile_${selfId}`,
+      JSON.stringify({
+        id: selfId,
+        name: name.trim(),
+        age: ageNum,
+        mode,
+        pathType,
+        createdAt: new Date().toISOString(),
+      })
+    );
+    navigate(
+      `/screening-intro/${selfId}?name=${encodeURIComponent(name.trim())}&age=${ageNum}&mode=${mode}&pathType=${pathType}`
+    );
   }
 
-  // عنوان المسار المختار
-  const pathLabel = pathType === "adhd"
-    ? "فرط الحركة وتشتت الانتباه"
-    : "صعوبات التعلم";
+  // ─── مشتقات (view logic فقط) ───────────────────────────────────────────
+  const pathLabel =
+    pathType === "adhd" ? "فرط الحركة وتشتت الانتباه" : "صعوبات التعلم";
 
-  // ─── تصفية النتائج حسب pathType الحالي ──────────────────────────────────
-  // النتائج التي تطابق المسار الحالي (learning أو adhd) فقط
-  const currentPathResults = history.filter(
-    (item) => item.pathType === pathType
-  );
-  // النتائج التي تنتمي لمسار آخر أو لا تحتوي على pathType صالح
-  const otherPathResults = history.filter(
-    (item) => item.pathType !== pathType
-  );
-  // أحدث نتيجة للمسار الحالي فقط — لا تُستخدم نتيجة مسار آخر كـ fallback
-  const latestResult = currentPathResults.length > 0 ? currentPathResults[0] : null;
-  // النتائج الأقدم للمسار الحالي (بعد الأولى)
-  const olderResults = currentPathResults.length > 1 ? currentPathResults.slice(1) : [];
+  const currentPathResults = history.filter((item) => item.pathType === pathType);
+  const otherPathResults   = history.filter((item) => item.pathType !== pathType);
+  const latestResult       = currentPathResults.length > 0 ? currentPathResults[0] : null;
+  const olderResults       = currentPathResults.length > 1 ? currentPathResults.slice(1) : [];
 
-  // ─── بناء رابط redirect الآمن ──────────────────────────────────────────────
   const currentPath = window.location.pathname + window.location.search;
-  const safeRedirect = currentPath.startsWith("/") && !currentPath.startsWith("//")
-    ? currentPath
-    : "/self-assessment";
+  const safeRedirect =
+    currentPath.startsWith("/") && !currentPath.startsWith("//")
+      ? currentPath
+      : "/self-assessment";
   const loginUrl = `/login?redirect=${encodeURIComponent(safeRedirect)}`;
+
+  // ─── AssessmentHistory handlers (orchestration يبقى هنا) ───────────────────────
+  function handleViewResult(sessionId: string, name: string, pathType: string) {
+    navigate(
+      `/screening-result/${sessionId}?name=${encodeURIComponent(name)}&pathType=${pathType}`
+    );
+  }
+
+  function handleStartNew() {
+    document
+      .getElementById("self-assessment-form")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // suppress unused warning — formatArabicDate is exported for external use
+  void formatArabicDate;
 
   return (
     <div
       className="min-h-screen flex flex-col"
       dir="rtl"
-      style={{ background: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%)" }}
+      style={{
+        background: "linear-gradient(160deg, #F4EFE8 0%, #DFF3F1 50%, #DFF3F1 100%)",
+      }}
     >
-      {/* ─── شريط التنقل ─────────────────────────────────────────────────── */}
+      {/* ─── شريط التنقل ─────────────────────────────────────────────────────── */}
       <header
         className="sticky top-0 z-30 flex items-center justify-between px-5 sm:px-8"
         style={{
@@ -251,7 +233,13 @@ export default function SelfAssessment() {
         <a
           href="/"
           className="flex items-center gap-2"
-          style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 800, fontSize: "1.1rem", color: "#1e3a8a", textDecoration: "none" }}
+          style={{
+            fontFamily: "'Cairo', sans-serif",
+            fontWeight: 800,
+            fontSize: "1.1rem",
+            color: "#1e3a8a",
+            textDecoration: "none",
+          }}
           aria-label="تشخيصي — الصفحة الرئيسية"
         >
           <span
@@ -265,7 +253,7 @@ export default function SelfAssessment() {
         </a>
       </header>
 
-      {/* ─── المحتوى الرئيسي ─────────────────────────────────────────────── */}
+      {/* ─── المحتوى الرئيسي ──────────────────────────────────────────────────── */}
       <main
         className="flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14"
         style={{
@@ -276,7 +264,7 @@ export default function SelfAssessment() {
       >
         <div className="w-full max-w-lg">
 
-          {/* ─── بطاقة تسجيل الدخول (تظهر فقط إذا لم يكن المستخدم مسجلاً) ─── */}
+          {/* ─── بطاقة تسجيل الدخول (غير مسجَّل) ──────────────────────────── */}
           {!authLoading && !user && (
             <div
               className="rounded-3xl p-6 sm:p-8 mb-6"
@@ -286,7 +274,6 @@ export default function SelfAssessment() {
                 boxShadow: "0 8px 40px rgba(30,78,140,0.08)",
               }}
             >
-              {/* أيقونة القفل */}
               <div className="flex justify-center mb-5">
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center"
@@ -296,7 +283,6 @@ export default function SelfAssessment() {
                 </div>
               </div>
 
-              {/* العنوان */}
               <h2
                 className="text-xl font-black text-slate-900 text-center mb-3"
                 style={{ fontFamily: "'Cairo', sans-serif" }}
@@ -304,7 +290,6 @@ export default function SelfAssessment() {
                 احفظ نتيجتك بأمان
               </h2>
 
-              {/* النص التوضيحي */}
               <p
                 className="text-sm text-slate-600 text-center leading-relaxed mb-2"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
@@ -312,7 +297,6 @@ export default function SelfAssessment() {
                 قبل بدء الفحص، سجّل دخولك بالبريد الإلكتروني حتى تتمكن من الرجوع إلى نتيجتك لاحقًا ومتابعة خطواتك بسهولة.
               </p>
 
-              {/* طمأنينة */}
               <p
                 className="text-xs text-slate-400 text-center mb-6"
                 style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
@@ -320,7 +304,6 @@ export default function SelfAssessment() {
                 لن نطلب كلمة مرور. سنرسل لك رابط دخول آمن إلى بريدك الإلكتروني.
               </p>
 
-              {/* زر تسجيل الدخول */}
               <a
                 href={loginUrl}
                 className="w-full flex items-center justify-center gap-2.5 rounded-2xl font-bold text-base transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] mb-3"
@@ -339,7 +322,6 @@ export default function SelfAssessment() {
                 تسجيل الدخول ومتابعة الفحص
               </a>
 
-              {/* رابط العودة */}
               <button
                 onClick={() => navigate("/choose-self-path")}
                 className="w-full text-center text-sm text-slate-400 hover:text-slate-600 transition-colors py-2"
@@ -350,467 +332,75 @@ export default function SelfAssessment() {
             </div>
           )}
 
-          {/* ─── محتوى التقييم (يظهر فقط إذا كان المستخدم مسجلاً) ────────── */}
+          {/* ─── محتوى التقييم (مسجَّل الدخول) ────────────────────────────────── */}
           {(authLoading || user) && (
             <>
+              {/* ─── AssessmentHistory (Step 6) ───────────────────────────────────────────── */}
+              <AssessmentHistory
+                latestResult={latestResult}
+                olderResults={olderResults}
+                otherPathResults={otherPathResults}
+                showAllHistory={showAllHistory}
+                onToggleHistory={() => setShowAllHistory((v) => !v)}
+                onViewResult={handleViewResult}
+                onStartNew={handleStartNew}
+              />
 
-            {/* ─── النتائج السابقة (تظهر فقط إذا وُجدت) ──────────────────── */}
-            {latestResult && (
-            <div
-              className="rounded-3xl p-5 sm:p-6 mb-6"
-              style={{
-                background: "white",
-                border: "1.5px solid rgba(30,78,140,0.15)",
-                boxShadow: "0 8px 32px rgba(30,78,140,0.07)",
-              }}
-            >
-              {/* عنوان القسم */}
-              <div className="flex items-center gap-2 mb-1">
-                <Clock size={15} style={{ color: "#1E4E8C" }} aria-hidden="true" />
-                <h2
-                  className="text-sm font-bold text-slate-800"
-                  style={{ fontFamily: "'Cairo', sans-serif" }}
-                >
-                  نتائجك السابقة على هذا الجهاز
-                </h2>
-              </div>
-              <p
-                className="text-xs text-slate-400 mb-4"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-              >
-                يمكنك عرض آخر نتيجة أو بدء تقييم جديد.
-              </p>
-
-              {/* بطاقة آخر نتيجة */}
-              <div
-                className="rounded-2xl p-4 mb-3"
-                style={{
-                  background: latestResult.pathType === "adhd" ? "#F5F3FF" : "#DFF3F1",
-                  border: `1px solid ${latestResult.pathType === "adhd" ? "rgba(139,92,246,0.2)" : "rgba(20,184,166,0.2)"}`,
-                }}
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <span
-                      className="inline-block text-xs font-bold px-2.5 py-1 rounded-full mb-1"
-                      style={{
-                        background: latestResult.pathType === "adhd" ? "rgba(139,92,246,0.12)" : "rgba(20,184,166,0.12)",
-                        color: latestResult.pathType === "adhd" ? "#7C3AED" : "#0D9488",
-                        fontFamily: "'Cairo', sans-serif",
-                      }}
-                    >
-                      {latestResult.pathType === "adhd" ? "فرط الحركة وتشتت الانتباه" : "صعوبات التعلم"}
-                    </span>
-                    <p
-                      className="text-xs text-slate-500"
-                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                    >
-                      {latestResult.name} · {formatArabicDate(latestResult.completedAt)}
-                    </p>
-                  </div>
-                  <CheckCircle2 size={18} style={{ color: latestResult.pathType === "adhd" ? "#7C3AED" : "#0D9488", flexShrink: 0 }} />
-                </div>
-
-                {/* أزرار آخر نتيجة */}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() =>
-                      navigate(
-                        `/screening-result/${latestResult.sessionId}?name=${encodeURIComponent(latestResult.name)}&pathType=${latestResult.pathType}`
-                      )
-                    }
-                    className="w-full sm:flex-1 flex items-center justify-center gap-2 rounded-xl font-bold text-sm transition-all duration-200 hover:-translate-y-0.5"
-                    style={{
-                      background: latestResult.pathType === "adhd"
-                        ? "linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)"
-                        : "linear-gradient(135deg, #2BBDB6 0%, #0D9488 100%)",
-                      color: "white",
-                      fontFamily: "'Cairo', sans-serif",
-                      padding: "0.6rem 1rem",
-                      boxShadow: latestResult.pathType === "adhd"
-                        ? "0 3px 12px rgba(124,58,237,0.25)"
-                        : "0 3px 12px rgba(20,184,166,0.25)",
-                    }}
-                  >
-                    <CheckCircle2 size={14} />
-                    عرض آخر نتيجة
-                  </button>
-                  <button
-                    onClick={() => {
-                      // التمرير إلى نموذج البدء
-                      document.getElementById("self-assessment-form")?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl text-sm font-medium transition-colors duration-200"
-                    style={{
-                      background: "transparent",
-                      border: "1.5px solid #D8E8E7",
-                      color: "#4A6278",
-                      fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                      padding: "0.6rem 1rem",
-                    }}
-                  >
-                    <Sparkles size={13} />
-                    بدء تقييم جديد
-                  </button>
-                </div>
-              </div>
-
-              {/* النتائج الأقدم */}
-              {olderResults.length > 0 && (
-                <div>
-                  <button
-                    onClick={() => setShowAllHistory((v) => !v)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors mb-2"
-                    style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                  >
-                    {showAllHistory ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                    {showAllHistory ? "إخفاء النتائج السابقة" : `عرض كل النتائج السابقة (${olderResults.length})`}
-                  </button>
-
-                  {showAllHistory && (
-                    <div className="flex flex-col gap-2">
-                      {olderResults.map((item) => (
-                        <div
-                          key={item.sessionId}
-                          className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5"
-                          style={{
-                            background: "#F8FAFC",
-                            border: "1px solid #E2E8F0",
-                          }}
-                        >
-                          <div>
-                            <span
-                              className="text-xs font-semibold"
-                              style={{
-                                color: item.pathType === "adhd" ? "#7C3AED" : "#0D9488",
-                                fontFamily: "'Cairo', sans-serif",
-                              }}
-                            >
-                              {item.pathType === "adhd" ? "فرط الحركة" : "صعوبات التعلم"}
-                            </span>
-                            <p
-                              className="text-xs text-slate-400"
-                              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                            >
-                              {formatArabicDate(item.completedAt)}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() =>
-                              navigate(
-                                `/screening-result/${item.sessionId}?name=${encodeURIComponent(item.name)}&pathType=${item.pathType}`
-                              )
-                            }
-                            className="text-xs font-medium rounded-lg px-3 py-1.5 transition-colors"
-                            style={{
-                              background: "rgba(30,78,140,0.07)",
-                              color: "#1E4E8C",
-                              fontFamily: "'Cairo', sans-serif",
-                              border: "1px solid rgba(30,78,140,0.12)",
-                            }}
-                          >
-                            عرض النتيجة
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ملاحظة الخصوصية */}
-              <p
-                className="mt-3 text-xs text-slate-400 leading-relaxed"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
-              >
-                يتم حفظ هذه النتائج على هذا الجهاز فقط. لتخزينها بشكل دائم لاحقًا، سنوفر ربطها بحسابك.
-              </p>
-
-              {/* ─── نتائج مسارات أخرى (ثانوية ومخففة) ────────────────────── */}
-              {otherPathResults.length > 0 && (
+              {/* ─── العنوان ────────────────────────────────────────────────────────── */}
+              <div className="text-center mb-8">
                 <div
-                  className="mt-4 rounded-xl p-3"
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
                   style={{
-                    background: "rgba(148,163,184,0.06)",
-                    border: "1px solid rgba(148,163,184,0.15)",
+                    background: "linear-gradient(135deg, #DFF3F1 0%, #CCFBF1 100%)",
+                    border: "1px solid rgba(20,184,166,0.2)",
+                  }}
+                  aria-hidden="true"
+                >
+                  <User size={28} style={{ color: "#2BBDB6" }} />
+                </div>
+
+                <div
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
+                  style={{
+                    background: "rgba(20,184,166,0.08)",
+                    border: "1px solid rgba(20,184,166,0.18)",
                   }}
                 >
-                  <p
-                    className="text-xs font-medium mb-2"
-                    style={{ color: "#94A3B8", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                  >
-                    نتائج أخرى محفوظة على هذا الجهاز
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {otherPathResults.slice(0, 3).map((item) => (
-                      <div
-                        key={item.sessionId}
-                        className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
-                        style={{ background: "rgba(148,163,184,0.08)", border: "1px solid rgba(148,163,184,0.12)" }}
-                      >
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                          <span
-                            className="text-xs font-medium truncate"
-                            style={{ color: "#64748B", fontFamily: "'Cairo', sans-serif" }}
-                          >
-                            {item.pathType === "adhd" ? "فرط الحركة وتشتت الانتباه" : "صعوبات التعلم"}
-                          </span>
-                          <span
-                            className="text-xs"
-                            style={{ color: "#94A3B8", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-                          >
-                            {formatArabicDate(item.completedAt)}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/screening-result/${item.sessionId}?name=${encodeURIComponent(item.name)}&pathType=${item.pathType}`
-                            )
-                          }
-                          className="text-xs rounded-lg px-2.5 py-1 transition-colors flex-shrink-0"
-                          style={{
-                            background: "rgba(148,163,184,0.12)",
-                            color: "#64748B",
-                            fontFamily: "'Cairo', sans-serif",
-                            border: "1px solid rgba(148,163,184,0.18)",
-                          }}
-                        >
-                          عرض
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ─── العنوان ─────────────────────────────────────────────────── */}
-          <div className="text-center mb-8">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-              style={{
-                background: "linear-gradient(135deg, #DFF3F1 0%, #CCFBF1 100%)",
-                border: "1px solid rgba(20,184,166,0.2)",
-              }}
-              aria-hidden="true"
-            >
-              <User size={28} style={{ color: "#2BBDB6" }} />
-            </div>
-
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4"
-              style={{
-                background: "rgba(20,184,166,0.08)",
-                border: "1px solid rgba(20,184,166,0.18)",
-              }}
-            >
-              <Sparkles size={12} style={{ color: "#0D9488" }} aria-hidden="true" />
-              <span
-                className="text-xs font-medium"
-                style={{ color: "#0D9488", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
-              >
-                {pathLabel} — تقييم ذاتي مجاني
-              </span>
-            </div>
-
-            <h1
-              className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
-              style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.3 }}
-            >
-              {latestResult ? "بدء تقييم جديد" : "أقيّم نفسي"}
-            </h1>
-            <p
-              className="text-sm text-slate-500 leading-relaxed"
-              style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
-            >
-              فحص أولي لفهم أنماط تعلمك وانتباهك — الخطوة الأولى نحو فهم أعمق لنفسك
-            </p>
-          </div>
-
-          {/* ─── نموذج البيانات ───────────────────────────────────────────── */}
-          <form
-            id="self-assessment-form"
-            onSubmit={handleSubmit}
-            className="rounded-3xl p-5 sm:p-7 lg:p-8 mb-6"
-            style={{
-              background: "white",
-              border: "1.5px solid rgba(20,184,166,0.12)",
-              boxShadow: "0 8px 40px rgba(20,184,166,0.07)",
-            }}
-            noValidate
-          >
-            <h2
-              className="text-base font-bold text-slate-800 mb-5"
-              style={{ fontFamily: "'Cairo', sans-serif" }}
-            >
-              بعض المعلومات الأساسية
-            </h2>
-
-            {/* حقل الاسم */}
-            <div className="mb-5">
-              <label
-                htmlFor="self-name"
-                className="block text-sm font-semibold text-slate-700 mb-2"
-                style={{ fontFamily: "'Cairo', sans-serif" }}
-              >
-                اسمك (أو اسم مستعار)
-              </label>
-              <input
-                id="self-name"
-                type="text"
-                value={name}
-                onChange={(e) => { setName(e.target.value); setNameError(""); }}
-                placeholder="مثال: أحمد أو مستخدم"
-                className="w-full rounded-xl px-4 py-3 text-sm text-slate-800 outline-none transition-all duration-200"
-                style={{
-                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  border: nameError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7",
-                  background: "#F4EFE8",
-                  boxShadow: "inset 0 1px 3px rgba(0,0,0,0.04)",
-                }}
-                onFocus={(e) => { e.target.style.border = "1.5px solid #2BBDB6"; e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)"; }}
-                onBlur={(e) => { e.target.style.border = nameError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7"; e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)"; }}
-                autoComplete="off"
-                aria-describedby={nameError ? "name-error" : undefined}
-              />
-              {nameError && (
-                <p id="name-error" className="mt-1.5 text-xs text-red-500" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
-                  {nameError}
-                </p>
-              )}
-            </div>
-
-            {/* حقل العمر */}
-            <div className="mb-6">
-              <label
-                htmlFor="self-age"
-                className="block text-sm font-semibold text-slate-700 mb-2"
-                style={{ fontFamily: "'Cairo', sans-serif" }}
-              >
-                عمرك (بالسنوات)
-              </label>
-              <input
-                id="self-age"
-                type="number"
-                value={age}
-                onChange={(e) => { setAge(e.target.value); setAgeError(""); }}
-                placeholder="مثال: 22"
-                min={16}
-                max={80}
-                className="w-full rounded-xl px-4 py-3 text-sm text-slate-800 outline-none transition-all duration-200"
-                style={{
-                  fontFamily: "'IBM Plex Sans Arabic', sans-serif",
-                  border: ageError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7",
-                  background: "#F4EFE8",
-                  boxShadow: "inset 0 1px 3px rgba(0,0,0,0.04)",
-                }}
-                onFocus={(e) => { e.target.style.border = "1.5px solid #2BBDB6"; e.target.style.boxShadow = "0 0 0 3px rgba(20,184,166,0.1)"; }}
-                onBlur={(e) => { e.target.style.border = ageError ? "1.5px solid #EF4444" : "1.5px solid #D8E8E7"; e.target.style.boxShadow = "inset 0 1px 3px rgba(0,0,0,0.04)"; }}
-                aria-describedby={ageError ? "age-error" : "age-hint"}
-              />
-              {ageError ? (
-                <p id="age-error" className="mt-1.5 text-xs text-red-500" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
-                  {ageError}
-                </p>
-              ) : (
-                <p id="age-hint" className="mt-1.5 text-xs text-slate-400" style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}>
-                  هذا المسار مخصص للأعمار ١٦ سنة فأكثر
-                </p>
-              )}
-            </div>
-
-            {/* إشعار الخصوصية */}
-            <div
-              className="flex items-start gap-3 rounded-xl p-3.5 mb-6"
-              style={{ background: "#DFF3F1", border: "1px solid rgba(20,184,166,0.15)" }}
-            >
-              <Shield size={14} style={{ color: "#0D9488", flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />
-              <p
-                className="text-xs text-teal-700 leading-relaxed"
-                style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.7 }}
-              >
-                بياناتك محمية وسرية تماماً — لا تُشارك مع أي جهة. هذا الفحص لا يُعدّ تشخيصاً رسمياً.
-              </p>
-            </div>
-
-            {/* زر البدء */}
-            <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-2.5 rounded-2xl font-bold text-base transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
-              style={{
-                background: "linear-gradient(135deg, #2BBDB6 0%, #0D9488 100%)",
-                color: "white",
-                fontFamily: "'Cairo', sans-serif",
-                fontWeight: 700,
-                padding: "0.9rem 1.5rem",
-                boxShadow: "0 4px 20px rgba(20,184,166,0.3)",
-              }}
-            >
-              <Sparkles size={16} aria-hidden="true" />
-              {latestResult ? "ابدأ تقييماً جديداً" : "ابدأ التقييم الذاتي"}
-              <ArrowLeft size={16} aria-hidden="true" />
-            </button>
-          </form>
-
-          {/* ─── ما يشمله الفحص ───────────────────────────────────────────── */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              background: "white",
-              border: "1px solid #DFF3F1",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
-            }}
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Info size={14} style={{ color: "#64748B" }} aria-hidden="true" />
-              <h3
-                className="text-sm font-bold text-slate-700"
-                style={{ fontFamily: "'Cairo', sans-serif" }}
-              >
-                ما يشمله هذا الفحص
-              </h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {SCREENING_AREAS.map(({ icon: Icon, label, color, bg }) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-2 rounded-xl px-3 py-2.5"
-                  style={{ background: bg, border: `1px solid ${color}18` }}
-                >
-                  <Icon size={13} style={{ color, flexShrink: 0 }} aria-hidden="true" />
+                  <Sparkles size={12} style={{ color: "#0D9488" }} aria-hidden="true" />
                   <span
                     className="text-xs font-medium"
-                    style={{ color: "#374151", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
+                    style={{ color: "#0D9488", fontFamily: "'IBM Plex Sans Arabic', sans-serif" }}
                   >
-                    {label}
+                    {pathLabel} — تقييم ذاتي مجاني
                   </span>
                 </div>
-              ))}
-            </div>
 
-            {/* ضمانات الثقة */}
-            <div className="mt-4 pt-4" style={{ borderTop: "1px solid #DFF3F1" }}>
-              <div className="flex flex-col gap-2">
-                {[
-                  { icon: CheckCircle2, text: "الفحص لا يستغرق أكثر من ١٠ دقائق", color: "#059669" },
-                  { icon: CheckCircle2, text: "النتيجة فورية مع شرح مفصّل من الذكاء الاصطناعي", color: "#059669" },
-                  { icon: CheckCircle2, text: "ليس تشخيصاً رسمياً — مؤشرات توجيهية أولية فقط", color: "#059669" },
-                ].map(({ icon: Icon, text, color }) => (
-                  <div key={text} className="flex items-start gap-2">
-                    <Icon size={13} style={{ color, flexShrink: 0, marginTop: "2px" }} aria-hidden="true" />
-                    <span
-                      className="text-xs text-slate-500"
-                      style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.6 }}
-                    >
-                      {text}
-                    </span>
-                  </div>
-                ))}
+                <h1
+                  className="text-2xl sm:text-3xl font-black text-slate-900 mb-3"
+                  style={{ fontFamily: "'Cairo', sans-serif", fontWeight: 900, lineHeight: 1.3 }}
+                >
+                  {latestResult ? "بدء تقييم جديد" : "أقيّم نفسي"}
+                </h1>
+                <p
+                  className="text-sm text-slate-500 leading-relaxed"
+                  style={{ fontFamily: "'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.8 }}
+                >
+                  فحص أولي لفهم أنماط تعلمك وانتباهك — الخطوة الأولى نحو فهم أعمق لنفسك
+                </p>
               </div>
-            </div>
-          </div>
+
+              {/* ─── AssessmentForm (Step 5) ──────────────────────────────────────────────── */}
+              <AssessmentForm
+                name={name}
+                age={age}
+                nameError={nameError}
+                ageError={ageError}
+                pathType={pathType}
+                latestResult={latestResult}
+                onNameChange={(v) => { setName(v); setNameError(""); }}
+                onAgeChange={(v) => { setAge(v); setAgeError(""); }}
+                onSubmit={handleSubmit}
+              />
             </>
           )}
         </div>

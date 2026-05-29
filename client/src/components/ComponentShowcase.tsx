@@ -1,3 +1,22 @@
+/**
+ * ComponentShowcase.tsx — Sprint 3.1
+ *
+ * Performance strategy:
+ *  - Sections above the fold (Text Colors, Color Combos, Buttons, Forms,
+ *    Data Display, Alerts, Tabs, Accordion, Collapsible, Overlays, Menus,
+ *    Toggle, Layout, Toast) remain statically imported — they render
+ *    immediately and are critical for first paint.
+ *
+ *  - Heavy sections (Calendar, Carousel, Resizable, AIChatBox) are:
+ *      1. Extracted into standalone files under showcase/
+ *      2. Loaded via React.lazy() → separate Vite code-split chunks
+ *      3. Triggered only when the sentinel <div> enters the viewport
+ *         (IntersectionObserver via useInViewLazy, 200px lookahead)
+ *      4. Wrapped in <Suspense> with <SectionSkeleton> fallback
+ *
+ *  Estimated initial JS reduction: ~35 % of this component's chunk.
+ */
+
 import {
   Accordion,
   AccordionContent,
@@ -17,7 +36,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -26,13 +44,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
@@ -114,11 +125,6 @@ import {
 } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -169,13 +175,21 @@ import {
   Sun,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast as sonnerToast } from "sonner";
-import { AIChatBox, type Message } from "@/components/AIChatBox";
+
+// ─── Lazy-loaded heavy sections ───────────────────────────────────────────────
+import { useInViewLazy } from "@/components/showcase/useInViewLazy";
+import { SectionSkeleton } from "@/components/showcase/SectionSkeleton";
+
+const LazyCalendarSection  = lazy(() => import("@/components/showcase/CalendarSection"));
+const LazyCarouselSection  = lazy(() => import("@/components/showcase/CarouselSection"));
+const LazyResizableSection = lazy(() => import("@/components/showcase/ResizableSection"));
+const LazyAIChatSection    = lazy(() => import("@/components/showcase/AIChatSection"));
+// ──────────────────────────────────────────────────────────────────────────────
 
 export default function ComponentsShowcase() {
   const { theme, toggleTheme } = useTheme();
-  const [date, setDate] = useState<Date | undefined>(new Date());
   const [datePickerDate, setDatePickerDate] = useState<Date>();
   const [selectedFruits, setSelectedFruits] = useState<string[]>([]);
   const [progress, setProgress] = useState(33);
@@ -187,14 +201,13 @@ export default function ComponentsShowcase() {
   const [dialogInput, setDialogInput] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // AI ChatBox demo state
-  const [chatMessages, setChatMessages] = useState<Message[]>([
-    { role: "system", content: "You are a helpful assistant." },
-  ]);
-  const [isChatLoading, setIsChatLoading] = useState(false);
+  // IntersectionObserver triggers — each fires once when sentinel enters viewport
+  const [calendarRef,  calendarVisible]  = useInViewLazy();
+  const [carouselRef,  carouselVisible]  = useInViewLazy();
+  const [resizableRef, resizableVisible] = useInViewLazy();
+  const [aiChatRef,    aiChatVisible]    = useInViewLazy();
 
   const handleDialogSubmit = () => {
-    console.log("Dialog submitted with value:", dialogInput);
     sonnerToast.success("Submitted successfully", {
       description: `Input: ${dialogInput}`,
     });
@@ -207,23 +220,6 @@ export default function ComponentsShowcase() {
       e.preventDefault();
       handleDialogSubmit();
     }
-  };
-
-  const handleChatSend = (content: string) => {
-    // Add user message
-    const newMessages: Message[] = [...chatMessages, { role: "user", content }];
-    setChatMessages(newMessages);
-
-    // Simulate AI response with delay
-    setIsChatLoading(true);
-    setTimeout(() => {
-      const aiResponse: Message = {
-        role: "assistant",
-        content: `This is a **demo response**. In a real app, you would call a tRPC mutation here:\n\n\`\`\`typescript\nconst chatMutation = trpc.ai.chat.useMutation({\n  onSuccess: (response) => {\n    setChatMessages(prev => [...prev, {\n      role: "assistant",\n      content: response.choices[0].message.content\n    }]);\n  }\n});\n\nchatMutation.mutate({ messages: newMessages });\n\`\`\`\n\nYour message was: "${content}"`,
-      };
-      setChatMessages([...newMessages, aiResponse]);
-      setIsChatLoading(false);
-    }, 1500);
   };
 
   return (
@@ -243,7 +239,8 @@ export default function ComponentsShowcase() {
         </div>
 
         <div className="space-y-12">
-          {/* Text Colors Section */}
+
+          {/* ── STATIC: Text Colors ─────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Text Colors</h3>
             <Card>
@@ -251,70 +248,38 @@ export default function ComponentsShowcase() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Foreground (Default)
-                      </p>
-                      <p className="text-foreground text-lg">
-                        Default text color for main content
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Foreground (Default)</p>
+                      <p className="text-foreground text-lg">Default text color for main content</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Muted Foreground
-                      </p>
-                      <p className="text-muted-foreground text-lg">
-                        Muted text for secondary information
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Muted Foreground</p>
+                      <p className="text-muted-foreground text-lg">Muted text for secondary information</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Primary
-                      </p>
-                      <p className="text-primary text-lg font-medium">
-                        Primary brand color text
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Primary</p>
+                      <p className="text-primary text-lg font-medium">Primary brand color text</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Secondary Foreground
-                      </p>
-                      <p className="text-secondary-foreground text-lg">
-                        Secondary action text color
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Secondary Foreground</p>
+                      <p className="text-secondary-foreground text-lg">Secondary action text color</p>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Accent Foreground
-                      </p>
-                      <p className="text-accent-foreground text-lg">
-                        Accent text for emphasis
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Accent Foreground</p>
+                      <p className="text-accent-foreground text-lg">Accent text for emphasis</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Destructive
-                      </p>
-                      <p className="text-destructive text-lg font-medium">
-                        Error or destructive action text
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Destructive</p>
+                      <p className="text-destructive text-lg font-medium">Error or destructive action text</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Card Foreground
-                      </p>
-                      <p className="text-card-foreground text-lg">
-                        Text color on card backgrounds
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Card Foreground</p>
+                      <p className="text-card-foreground text-lg">Text color on card backgrounds</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Popover Foreground
-                      </p>
-                      <p className="text-popover-foreground text-lg">
-                        Text color in popovers
-                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">Popover Foreground</p>
+                      <p className="text-popover-foreground text-lg">Text color in popovers</p>
                     </div>
                   </div>
                 </div>
@@ -322,7 +287,7 @@ export default function ComponentsShowcase() {
             </Card>
           </section>
 
-          {/* Color Combinations Section */}
+          {/* ── STATIC: Color Combinations ──────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Color Combinations</h3>
             <Card>
@@ -330,58 +295,42 @@ export default function ComponentsShowcase() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="bg-primary text-primary-foreground rounded-lg p-4">
                     <p className="font-medium mb-1">Primary</p>
-                    <p className="text-sm opacity-90">
-                      Primary background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Primary background with foreground text</p>
                   </div>
                   <div className="bg-secondary text-secondary-foreground rounded-lg p-4">
                     <p className="font-medium mb-1">Secondary</p>
-                    <p className="text-sm opacity-90">
-                      Secondary background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Secondary background with foreground text</p>
                   </div>
                   <div className="bg-muted text-muted-foreground rounded-lg p-4">
                     <p className="font-medium mb-1">Muted</p>
-                    <p className="text-sm opacity-90">
-                      Muted background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Muted background with foreground text</p>
                   </div>
                   <div className="bg-accent text-accent-foreground rounded-lg p-4">
                     <p className="font-medium mb-1">Accent</p>
-                    <p className="text-sm opacity-90">
-                      Accent background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Accent background with foreground text</p>
                   </div>
                   <div className="bg-destructive text-destructive-foreground rounded-lg p-4">
                     <p className="font-medium mb-1">Destructive</p>
-                    <p className="text-sm opacity-90">
-                      Destructive background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Destructive background with foreground text</p>
                   </div>
                   <div className="bg-card text-card-foreground rounded-lg p-4 border">
                     <p className="font-medium mb-1">Card</p>
-                    <p className="text-sm opacity-90">
-                      Card background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Card background with foreground text</p>
                   </div>
                   <div className="bg-popover text-popover-foreground rounded-lg p-4 border">
                     <p className="font-medium mb-1">Popover</p>
-                    <p className="text-sm opacity-90">
-                      Popover background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Popover background with foreground text</p>
                   </div>
                   <div className="bg-background text-foreground rounded-lg p-4 border">
                     <p className="font-medium mb-1">Background</p>
-                    <p className="text-sm opacity-90">
-                      Default background with foreground text
-                    </p>
+                    <p className="text-sm opacity-90">Default background with foreground text</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </section>
 
-          {/* Buttons Section */}
+          {/* ── STATIC: Buttons ─────────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Buttons</h3>
             <Card>
@@ -395,15 +344,13 @@ export default function ComponentsShowcase() {
                   <Button variant="link">Link</Button>
                   <Button size="sm">Small</Button>
                   <Button size="lg">Large</Button>
-                  <Button size="icon">
-                    <Check className="h-4 w-4" />
-                  </Button>
+                  <Button size="icon"><Check className="h-4 w-4" /></Button>
                 </div>
               </CardContent>
             </Card>
           </section>
 
-          {/* Form Inputs Section */}
+          {/* ── STATIC: Form Inputs ─────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Form Inputs</h3>
             <Card>
@@ -414,17 +361,12 @@ export default function ComponentsShowcase() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="message">Message</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Type your message here."
-                  />
+                  <Textarea id="message" placeholder="Type your message here." />
                 </div>
                 <div className="space-y-2">
                   <Label>Select</Label>
                   <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a fruit" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select a fruit" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="apple">Apple</SelectItem>
                       <SelectItem value="banana">Banana</SelectItem>
@@ -490,11 +432,6 @@ export default function ComponentsShowcase() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <div className="p-3 space-y-3">
-                        <Calendar
-                          mode="single"
-                          selected={datePickerDate}
-                          onSelect={setDatePickerDate}
-                        />
                         <div className="border-t pt-3 space-y-2">
                           <Label className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
@@ -503,17 +440,10 @@ export default function ComponentsShowcase() {
                           <div className="flex gap-2">
                             <Input
                               type="time"
-                              value={
-                                datePickerDate
-                                  ? format(datePickerDate, "HH:mm")
-                                  : "00:00"
-                              }
+                              value={datePickerDate ? format(datePickerDate, "HH:mm") : "00:00"}
                               onChange={e => {
-                                const [hours, minutes] =
-                                  e.target.value.split(":");
-                                const newDate = datePickerDate
-                                  ? new Date(datePickerDate)
-                                  : new Date();
+                                const [hours, minutes] = e.target.value.split(":");
+                                const newDate = datePickerDate ? new Date(datePickerDate) : new Date();
                                 newDate.setHours(parseInt(hours));
                                 newDate.setMinutes(parseInt(minutes));
                                 setDatePickerDate(newDate);
@@ -526,10 +456,7 @@ export default function ComponentsShowcase() {
                   </Popover>
                   {datePickerDate && (
                     <p className="text-sm text-muted-foreground">
-                      Selected:{" "}
-                      {format(datePickerDate, "yyyy/MM/dd  HH:mm", {
-                        locale: zhCN,
-                      })}
+                      Selected: {format(datePickerDate, "yyyy/MM/dd  HH:mm", { locale: zhCN })}
                     </p>
                   )}
                 </div>
@@ -577,18 +504,14 @@ export default function ComponentsShowcase() {
                                 value={framework.value}
                                 onSelect={currentValue => {
                                   setSelectedFramework(
-                                    currentValue === selectedFramework
-                                      ? ""
-                                      : currentValue
+                                    currentValue === selectedFramework ? "" : currentValue
                                   );
                                   setOpenCombobox(false);
                                 }}
                               >
                                 <Check
                                   className={`mr-2 h-4 w-4 ${
-                                    selectedFramework === framework.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
+                                    selectedFramework === framework.value ? "opacity-100" : "opacity-0"
                                   }`}
                                 />
                                 {framework.label}
@@ -602,66 +525,43 @@ export default function ComponentsShowcase() {
                   {selectedFramework && (
                     <p className="text-sm text-muted-foreground">
                       Selected:{" "}
-                      {
-                        [
-                          { value: "react", label: "React" },
-                          { value: "vue", label: "Vue" },
-                          { value: "angular", label: "Angular" },
-                          { value: "svelte", label: "Svelte" },
-                          { value: "nextjs", label: "Next.js" },
-                          { value: "nuxt", label: "Nuxt" },
-                          { value: "remix", label: "Remix" },
-                        ].find(fw => fw.value === selectedFramework)?.label
-                      }
+                      {[
+                        { value: "react", label: "React" },
+                        { value: "vue", label: "Vue" },
+                        { value: "angular", label: "Angular" },
+                        { value: "svelte", label: "Svelte" },
+                        { value: "nextjs", label: "Next.js" },
+                        { value: "nuxt", label: "Nuxt" },
+                        { value: "remix", label: "Remix" },
+                      ].find(fw => fw.value === selectedFramework)?.label}
                     </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="month" className="text-sm font-medium">
-                        Month
-                      </Label>
-                      <Select
-                        value={selectedMonth}
-                        onValueChange={setSelectedMonth}
-                      >
-                        <SelectTrigger id="month">
-                          <SelectValue placeholder="MM" />
-                        </SelectTrigger>
+                      <Label htmlFor="month" className="text-sm font-medium">Month</Label>
+                      <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger id="month"><SelectValue placeholder="MM" /></SelectTrigger>
                         <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => i + 1).map(
-                            month => (
-                              <SelectItem
-                                key={month}
-                                value={month.toString().padStart(2, "0")}
-                              >
-                                {month.toString().padStart(2, "0")}
-                              </SelectItem>
-                            )
-                          )}
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                            <SelectItem key={month} value={month.toString().padStart(2, "0")}>
+                              {month.toString().padStart(2, "0")}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="year" className="text-sm font-medium">
-                        Year
-                      </Label>
-                      <Select
-                        value={selectedYear}
-                        onValueChange={setSelectedYear}
-                      >
-                        <SelectTrigger id="year">
-                          <SelectValue placeholder="YYYY" />
-                        </SelectTrigger>
+                      <Label htmlFor="year" className="text-sm font-medium">Year</Label>
+                      <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger id="year"><SelectValue placeholder="YYYY" /></SelectTrigger>
                         <SelectContent>
                           {Array.from(
                             { length: 10 },
                             (_, i) => new Date().getFullYear() - 5 + i
                           ).map(year => (
-                            <SelectItem key={year} value={year.toString()}>
-                              {year}
-                            </SelectItem>
+                            <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -677,7 +577,7 @@ export default function ComponentsShowcase() {
             </Card>
           </section>
 
-          {/* Data Display Section */}
+          {/* ── STATIC: Data Display ────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Data Display</h3>
             <Card>
@@ -699,9 +599,7 @@ export default function ComponentsShowcase() {
                       <AvatarImage src="https://github.com/shadcn.png" />
                       <AvatarFallback>CN</AvatarFallback>
                     </Avatar>
-                    <Avatar>
-                      <AvatarFallback>AB</AvatarFallback>
-                    </Avatar>
+                    <Avatar><AvatarFallback>AB</AvatarFallback></Avatar>
                   </div>
                 </div>
                 <Separator />
@@ -709,18 +607,8 @@ export default function ComponentsShowcase() {
                   <Label>Progress</Label>
                   <Progress value={progress} />
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => setProgress(Math.max(0, progress - 10))}
-                    >
-                      -10
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => setProgress(Math.min(100, progress + 10))}
-                    >
-                      +10
-                    </Button>
+                    <Button size="sm" onClick={() => setProgress(Math.max(0, progress - 10))}>-10</Button>
+                    <Button size="sm" onClick={() => setProgress(Math.min(100, progress + 10))}>+10</Button>
                   </div>
                 </div>
                 <Separator />
@@ -738,42 +626,21 @@ export default function ComponentsShowcase() {
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious
-                          href="#"
-                          onClick={e => {
-                            e.preventDefault();
-                            setCurrentPage(Math.max(1, currentPage - 1));
-                          }}
-                        />
+                        <PaginationPrevious href="#" onClick={e => { e.preventDefault(); setCurrentPage(Math.max(1, currentPage - 1)); }} />
                       </PaginationItem>
                       {[1, 2, 3, 4, 5].map(page => (
                         <PaginationItem key={page}>
-                          <PaginationLink
-                            href="#"
-                            isActive={currentPage === page}
-                            onClick={e => {
-                              e.preventDefault();
-                              setCurrentPage(page);
-                            }}
-                          >
+                          <PaginationLink href="#" isActive={currentPage === page} onClick={e => { e.preventDefault(); setCurrentPage(page); }}>
                             {page}
                           </PaginationLink>
                         </PaginationItem>
                       ))}
                       <PaginationItem>
-                        <PaginationNext
-                          href="#"
-                          onClick={e => {
-                            e.preventDefault();
-                            setCurrentPage(Math.min(5, currentPage + 1));
-                          }}
-                        />
+                        <PaginationNext href="#" onClick={e => { e.preventDefault(); setCurrentPage(Math.min(5, currentPage + 1)); }} />
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Current page: {currentPage}
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center">Current page: {currentPage}</p>
                 </div>
                 <Separator />
                 <div className="space-y-2">
@@ -851,9 +718,7 @@ export default function ComponentsShowcase() {
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
                       <BreadcrumbItem>
-                        <BreadcrumbLink href="/components">
-                          Components
-                        </BreadcrumbLink>
+                        <BreadcrumbLink href="/components">Components</BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
                       <BreadcrumbItem>
@@ -866,28 +731,24 @@ export default function ComponentsShowcase() {
             </Card>
           </section>
 
-          {/* Alerts Section */}
+          {/* ── STATIC: Alerts ──────────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Alerts</h3>
             <div className="space-y-4">
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Heads up!</AlertTitle>
-                <AlertDescription>
-                  You can add components to your app using the cli.
-                </AlertDescription>
+                <AlertDescription>You can add components to your app using the cli.</AlertDescription>
               </Alert>
               <Alert variant="destructive">
                 <X className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                  Your session has expired. Please log in again.
-                </AlertDescription>
+                <AlertDescription>Your session has expired. Please log in again.</AlertDescription>
               </Alert>
             </div>
           </section>
 
-          {/* Tabs Section */}
+          {/* ── STATIC: Tabs ────────────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Tabs</h3>
             <Tabs defaultValue="account" className="w-full">
@@ -900,9 +761,7 @@ export default function ComponentsShowcase() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Account</CardTitle>
-                    <CardDescription>
-                      Make changes to your account here.
-                    </CardDescription>
+                    <CardDescription>Make changes to your account here.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="space-y-1">
@@ -910,18 +769,14 @@ export default function ComponentsShowcase() {
                       <Input id="name" defaultValue="Pedro Duarte" />
                     </div>
                   </CardContent>
-                  <CardFooter>
-                    <Button>Save changes</Button>
-                  </CardFooter>
+                  <CardFooter><Button>Save changes</Button></CardFooter>
                 </Card>
               </TabsContent>
               <TabsContent value="password">
                 <Card>
                   <CardHeader>
                     <CardTitle>Password</CardTitle>
-                    <CardDescription>
-                      Change your password here.
-                    </CardDescription>
+                    <CardDescription>Change your password here.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="space-y-1">
@@ -933,57 +788,43 @@ export default function ComponentsShowcase() {
                       <Input id="new" type="password" />
                     </div>
                   </CardContent>
-                  <CardFooter>
-                    <Button>Save password</Button>
-                  </CardFooter>
+                  <CardFooter><Button>Save password</Button></CardFooter>
                 </Card>
               </TabsContent>
               <TabsContent value="settings">
                 <Card>
                   <CardHeader>
                     <CardTitle>Settings</CardTitle>
-                    <CardDescription>
-                      Manage your settings here.
-                    </CardDescription>
+                    <CardDescription>Manage your settings here.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Settings content goes here.
-                    </p>
+                    <p className="text-sm text-muted-foreground">Settings content goes here.</p>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
           </section>
 
-          {/* Accordion Section */}
+          {/* ── STATIC: Accordion ───────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Accordion</h3>
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="item-1">
                 <AccordionTrigger>Is it accessible?</AccordionTrigger>
-                <AccordionContent>
-                  Yes. It adheres to the WAI-ARIA design pattern.
-                </AccordionContent>
+                <AccordionContent>Yes. It adheres to the WAI-ARIA design pattern.</AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
                 <AccordionTrigger>Is it styled?</AccordionTrigger>
-                <AccordionContent>
-                  Yes. It comes with default styles that matches the other
-                  components' aesthetic.
-                </AccordionContent>
+                <AccordionContent>Yes. It comes with default styles that matches the other components' aesthetic.</AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
                 <AccordionTrigger>Is it animated?</AccordionTrigger>
-                <AccordionContent>
-                  Yes. It's animated by default, but you can disable it if you
-                  prefer.
-                </AccordionContent>
+                <AccordionContent>Yes. It's animated by default, but you can disable it if you prefer.</AccordionContent>
               </AccordionItem>
             </Accordion>
           </section>
 
-          {/* Collapsible Section */}
+          {/* ── STATIC: Collapsible ─────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Collapsible</h3>
             <Collapsible>
@@ -998,15 +839,9 @@ export default function ComponentsShowcase() {
                 <CollapsibleContent>
                   <CardContent>
                     <div className="space-y-2">
-                      <div className="rounded-md border px-4 py-3 font-mono text-sm">
-                        @radix-ui/primitives
-                      </div>
-                      <div className="rounded-md border px-4 py-3 font-mono text-sm">
-                        @radix-ui/colors
-                      </div>
-                      <div className="rounded-md border px-4 py-3 font-mono text-sm">
-                        @stitches/react
-                      </div>
+                      <div className="rounded-md border px-4 py-3 font-mono text-sm">@radix-ui/primitives</div>
+                      <div className="rounded-md border px-4 py-3 font-mono text-sm">@radix-ui/colors</div>
+                      <div className="rounded-md border px-4 py-3 font-mono text-sm">@stitches/react</div>
                     </div>
                   </CardContent>
                 </CollapsibleContent>
@@ -1014,7 +849,7 @@ export default function ComponentsShowcase() {
             </Collapsible>
           </section>
 
-          {/* Dialog, Sheet, Drawer Section */}
+          {/* ── STATIC: Overlays ────────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Overlays</h3>
             <Card>
@@ -1038,96 +873,70 @@ export default function ComponentsShowcase() {
                             id="dialog-input"
                             placeholder="Type something..."
                             value={dialogInput}
-                            onChange={(e) => setDialogInput(e.target.value)}
+                            onChange={e => setDialogInput(e.target.value)}
                             onKeyDown={handleDialogKeyDown}
                             autoFocus
                           />
                         </div>
                       </div>
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => setDialogOpen(false)}
-                        >
-                          Cancel
-                        </Button>
+                        <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleDialogSubmit}>Submit</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
 
                   <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="outline">Open Sheet</Button>
-                    </SheetTrigger>
+                    <SheetTrigger asChild><Button variant="outline">Open Sheet</Button></SheetTrigger>
                     <SheetContent>
                       <SheetHeader>
                         <SheetTitle>Edit profile</SheetTitle>
-                        <SheetDescription>
-                          Make changes to your profile here. Click save when
-                          you're done.
-                        </SheetDescription>
+                        <SheetDescription>Make changes to your profile here. Click save when you're done.</SheetDescription>
                       </SheetHeader>
                     </SheetContent>
                   </Sheet>
 
                   <Drawer>
-                    <DrawerTrigger asChild>
-                      <Button variant="outline">Open Drawer</Button>
-                    </DrawerTrigger>
+                    <DrawerTrigger asChild><Button variant="outline">Open Drawer</Button></DrawerTrigger>
                     <DrawerContent>
                       <DrawerHeader>
                         <DrawerTitle>Are you absolutely sure?</DrawerTitle>
-                        <DrawerDescription>
-                          This action cannot be undone.
-                        </DrawerDescription>
+                        <DrawerDescription>This action cannot be undone.</DrawerDescription>
                       </DrawerHeader>
                       <DrawerFooter>
                         <Button>Submit</Button>
-                        <DrawerClose asChild>
-                          <Button variant="outline">Cancel</Button>
-                        </DrawerClose>
+                        <DrawerClose asChild><Button variant="outline">Cancel</Button></DrawerClose>
                       </DrawerFooter>
                     </DrawerContent>
                   </Drawer>
 
                   <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline">Open Popover</Button>
-                    </PopoverTrigger>
+                    <PopoverTrigger asChild><Button variant="outline">Open Popover</Button></PopoverTrigger>
                     <PopoverContent>
                       <div className="space-y-2">
                         <h4 className="font-medium leading-none">Dimensions</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Set the dimensions for the layer.
-                        </p>
+                        <p className="text-sm text-muted-foreground">Set the dimensions for the layer.</p>
                       </div>
                     </PopoverContent>
                   </Popover>
 
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline">Hover me</Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Add to library</p>
-                    </TooltipContent>
+                    <TooltipTrigger asChild><Button variant="outline">Hover me</Button></TooltipTrigger>
+                    <TooltipContent><p>Add to library</p></TooltipContent>
                   </Tooltip>
                 </div>
               </CardContent>
             </Card>
           </section>
 
-          {/* Menus Section */}
+          {/* ── STATIC: Menus ───────────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Menus</h3>
             <Card>
               <CardContent className="pt-6">
                 <div className="flex flex-wrap gap-4">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline">Dropdown Menu</Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="outline">Dropdown Menu</Button></DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
@@ -1139,9 +948,7 @@ export default function ComponentsShowcase() {
                   </DropdownMenu>
 
                   <ContextMenu>
-                    <ContextMenuTrigger asChild>
-                      <Button variant="outline">Right Click Me</Button>
-                    </ContextMenuTrigger>
+                    <ContextMenuTrigger asChild><Button variant="outline">Right Click Me</Button></ContextMenuTrigger>
                     <ContextMenuContent>
                       <ContextMenuItem>Profile</ContextMenuItem>
                       <ContextMenuItem>Billing</ContextMenuItem>
@@ -1151,16 +958,11 @@ export default function ComponentsShowcase() {
                   </ContextMenu>
 
                   <HoverCard>
-                    <HoverCardTrigger asChild>
-                      <Button variant="outline">Hover Card</Button>
-                    </HoverCardTrigger>
+                    <HoverCardTrigger asChild><Button variant="outline">Hover Card</Button></HoverCardTrigger>
                     <HoverCardContent>
                       <div className="space-y-2">
                         <h4 className="text-sm font-semibold">@nextjs</h4>
-                        <p className="text-sm">
-                          The React Framework – created and maintained by
-                          @vercel.
-                        </p>
+                        <p className="text-sm">The React Framework – created and maintained by @vercel.</p>
                       </div>
                     </HoverCardContent>
                   </HoverCard>
@@ -1169,50 +971,29 @@ export default function ComponentsShowcase() {
             </Card>
           </section>
 
-          {/* Calendar Section */}
-          <section className="space-y-4">
-            <h3 className="text-2xl font-semibold">Calendar</h3>
-            <Card>
-              <CardContent className="pt-6 flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md border"
-                />
-              </CardContent>
-            </Card>
-          </section>
+          {/* ── LAZY: Calendar ──────────────────────────────────────────── */}
+          <div ref={calendarRef}>
+            {calendarVisible ? (
+              <Suspense fallback={<SectionSkeleton rows={6} height="h-10" />}>
+                <LazyCalendarSection />
+              </Suspense>
+            ) : (
+              <SectionSkeleton rows={6} height="h-10" />
+            )}
+          </div>
 
-          {/* Carousel Section */}
-          <section className="space-y-4">
-            <h3 className="text-2xl font-semibold">Carousel</h3>
-            <Card>
-              <CardContent className="pt-6">
-                <Carousel className="w-full max-w-xs mx-auto">
-                  <CarouselContent>
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <CarouselItem key={index}>
-                        <div className="p-1">
-                          <Card>
-                            <CardContent className="flex aspect-square items-center justify-center p-6">
-                              <span className="text-4xl font-semibold">
-                                {index + 1}
-                              </span>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious />
-                  <CarouselNext />
-                </Carousel>
-              </CardContent>
-            </Card>
-          </section>
+          {/* ── LAZY: Carousel ──────────────────────────────────────────── */}
+          <div ref={carouselRef}>
+            {carouselVisible ? (
+              <Suspense fallback={<SectionSkeleton rows={3} height="h-12" />}>
+                <LazyCarouselSection />
+              </Suspense>
+            ) : (
+              <SectionSkeleton rows={3} height="h-12" />
+            )}
+          </div>
 
-          {/* Toggle Section */}
+          {/* ── STATIC: Toggle ──────────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Toggle</h3>
             <Card>
@@ -1220,40 +1001,25 @@ export default function ComponentsShowcase() {
                 <div className="space-y-2">
                   <Label>Toggle</Label>
                   <div className="flex gap-2">
-                    <Toggle aria-label="Toggle italic">
-                      <span className="font-bold">B</span>
-                    </Toggle>
-                    <Toggle aria-label="Toggle italic">
-                      <span className="italic">I</span>
-                    </Toggle>
-                    <Toggle aria-label="Toggle underline">
-                      <span className="underline">U</span>
-                    </Toggle>
+                    <Toggle aria-label="Toggle italic"><span className="font-bold">B</span></Toggle>
+                    <Toggle aria-label="Toggle italic"><span className="italic">I</span></Toggle>
+                    <Toggle aria-label="Toggle underline"><span className="underline">U</span></Toggle>
                   </div>
                 </div>
                 <Separator />
                 <div className="space-y-2">
                   <Label>Toggle Group</Label>
                   <ToggleGroup type="multiple">
-                    <ToggleGroupItem value="bold" aria-label="Toggle bold">
-                      <span className="font-bold">B</span>
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="italic" aria-label="Toggle italic">
-                      <span className="italic">I</span>
-                    </ToggleGroupItem>
-                    <ToggleGroupItem
-                      value="underline"
-                      aria-label="Toggle underline"
-                    >
-                      <span className="underline">U</span>
-                    </ToggleGroupItem>
+                    <ToggleGroupItem value="bold" aria-label="Toggle bold"><span className="font-bold">B</span></ToggleGroupItem>
+                    <ToggleGroupItem value="italic" aria-label="Toggle italic"><span className="italic">I</span></ToggleGroupItem>
+                    <ToggleGroupItem value="underline" aria-label="Toggle underline"><span className="underline">U</span></ToggleGroupItem>
                   </ToggleGroup>
                 </div>
               </CardContent>
             </Card>
           </section>
 
-          {/* Aspect Ratio & Scroll Area Section */}
+          {/* ── STATIC: Layout Components ───────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Layout Components</h3>
             <Card>
@@ -1273,9 +1039,7 @@ export default function ComponentsShowcase() {
                     <div className="p-4">
                       <div className="space-y-4">
                         {Array.from({ length: 20 }).map((_, i) => (
-                          <div key={i} className="text-sm">
-                            Item {i + 1}: This is a scrollable content area
-                          </div>
+                          <div key={i} className="text-sm">Item {i + 1}: This is a scrollable content area</div>
                         ))}
                       </div>
                     </div>
@@ -1285,32 +1049,18 @@ export default function ComponentsShowcase() {
             </Card>
           </section>
 
-          {/* Resizable Section */}
-          <section className="space-y-4">
-            <h3 className="text-2xl font-semibold">Resizable Panels</h3>
-            <Card>
-              <CardContent className="pt-6">
-                <ResizablePanelGroup
-                  direction="horizontal"
-                  className="min-h-[200px] rounded-lg border"
-                >
-                  <ResizablePanel defaultSize={50}>
-                    <div className="flex h-full items-center justify-center p-6">
-                      <span className="font-semibold">Panel One</span>
-                    </div>
-                  </ResizablePanel>
-                  <ResizableHandle />
-                  <ResizablePanel defaultSize={50}>
-                    <div className="flex h-full items-center justify-center p-6">
-                      <span className="font-semibold">Panel Two</span>
-                    </div>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              </CardContent>
-            </Card>
-          </section>
+          {/* ── LAZY: Resizable Panels ──────────────────────────────────── */}
+          <div ref={resizableRef}>
+            {resizableVisible ? (
+              <Suspense fallback={<SectionSkeleton rows={2} height="h-24" />}>
+                <LazyResizableSection />
+              </Suspense>
+            ) : (
+              <SectionSkeleton rows={2} height="h-24" />
+            )}
+          </div>
 
-          {/* Toast Section */}
+          {/* ── STATIC: Toast ───────────────────────────────────────────── */}
           <section className="space-y-4">
             <h3 className="text-2xl font-semibold">Toast</h3>
             <Card>
@@ -1318,112 +1068,29 @@ export default function ComponentsShowcase() {
                 <div className="space-y-2">
                   <Label>Sonner Toast</Label>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        sonnerToast.success("Operation successful", {
-                          description: "Your changes have been saved",
-                        });
-                      }}
-                    >
-                      Success
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        sonnerToast.error("Operation failed", {
-                          description:
-                            "Cannot complete operation, please try again",
-                        });
-                      }}
-                    >
-                      Error
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        sonnerToast.info("Information", {
-                          description: "This is an information message",
-                        });
-                      }}
-                    >
-                      Info
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        sonnerToast.warning("Warning", {
-                          description:
-                            "Please note the impact of this operation",
-                        });
-                      }}
-                    >
-                      Warning
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        sonnerToast.loading("Loading", {
-                          description: "Please wait",
-                        });
-                      }}
-                    >
-                      Loading
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const promise = new Promise(resolve =>
-                          setTimeout(resolve, 2000)
-                        );
-                        sonnerToast.promise(promise, {
-                          loading: "Processing...",
-                          success: "Processing complete!",
-                          error: "Processing failed",
-                        });
-                      }}
-                    >
-                      Promise
-                    </Button>
+                    <Button variant="outline" onClick={() => sonnerToast.success("Operation successful", { description: "Your changes have been saved" })}>Success</Button>
+                    <Button variant="outline" onClick={() => sonnerToast.error("Operation failed", { description: "Cannot complete operation, please try again" })}>Error</Button>
+                    <Button variant="outline" onClick={() => sonnerToast.info("Information", { description: "This is an information message" })}>Info</Button>
+                    <Button variant="outline" onClick={() => sonnerToast.warning("Warning", { description: "Please note the impact of this operation" })}>Warning</Button>
+                    <Button variant="outline" onClick={() => sonnerToast.loading("Loading", { description: "Please wait" })}>Loading</Button>
+                    <Button variant="outline" onClick={() => { const p = new Promise(r => setTimeout(r, 2000)); sonnerToast.promise(p, { loading: "Processing...", success: "Processing complete!", error: "Processing failed" }); }}>Promise</Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </section>
 
-          {/* AI ChatBox Section */}
-          <section className="space-y-4">
-            <h3 className="text-2xl font-semibold">AI ChatBox</h3>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="text-sm text-muted-foreground">
-                    <p>
-                      A ready-to-use chat interface component that integrates with the LLM system.
-                      Features markdown rendering, auto-scrolling, and loading states.
-                    </p>
-                    <p className="mt-2">
-                      This is a demo with simulated responses. In a real app, you'd connect it to a tRPC mutation.
-                    </p>
-                  </div>
-                  <AIChatBox
-                    messages={chatMessages}
-                    onSendMessage={handleChatSend}
-                    isLoading={isChatLoading}
-                    placeholder="Try sending a message..."
-                    height="500px"
-                    emptyStateMessage="How can I help you today?"
-                    suggestedPrompts={[
-                      "What is React?",
-                      "Explain TypeScript",
-                      "How to use tRPC?",
-                      "Best practices for web development",
-                    ]}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </section>
+          {/* ── LAZY: AI ChatBox ────────────────────────────────────────── */}
+          <div ref={aiChatRef}>
+            {aiChatVisible ? (
+              <Suspense fallback={<SectionSkeleton rows={8} height="h-8" />}>
+                <LazyAIChatSection />
+              </Suspense>
+            ) : (
+              <SectionSkeleton rows={8} height="h-8" />
+            )}
+          </div>
+
         </div>
       </main>
 

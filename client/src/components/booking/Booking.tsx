@@ -1832,7 +1832,7 @@ export default function Booking() {
       // urlSessionId is the sessionId from URL params (set above in payload build).
       // If user is not authenticated or sessionId is missing, returns silently.
       if (urlSessionId) {
-        void markScreeningBookedAfterResult(urlSessionId);
+        void markScreeningBookedAfterResult(urlSessionId, "", "");
       }
       // ─── Sprint 6A: Persist booking request to Supabase (fire-and-forget) ────────────────
       // Only runs after Formspree success (res.ok). Never blocks UI.
