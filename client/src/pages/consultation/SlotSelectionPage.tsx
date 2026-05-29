@@ -32,6 +32,7 @@ import {
   resolveAvailableSlots,
   resolveSpecialistById,
 } from "../../utils/specialistAvailability";
+import { CONSULTATION_ROUTES } from "../../constants/consultationRoutes";
 import type { AvailableSlot } from "../../types/specialistAvailabilityTypes";
 
 // ─── Recovery Screen ─────────────────────────────────────────────────────────
@@ -252,7 +253,7 @@ export default function SlotSelectionPage() {
       selectSlot(slotId);
       const advanced = advancePhase("SLOT_SELECTION");
       if (advanced) {
-        setLocation("/consultation/booking/review");
+        setLocation(CONSULTATION_ROUTES.REVIEW);
       }
     },
     [selectSlot, advancePhase, setLocation]
