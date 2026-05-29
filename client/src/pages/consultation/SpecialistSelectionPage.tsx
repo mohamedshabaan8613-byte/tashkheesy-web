@@ -273,7 +273,8 @@ export default function SpecialistSelectionPage() {
   const handleSelectSpecialist = useCallback(
     (specialistId: string) => {
       selectSpecialist(specialistId);
-      const advanced = advancePhase("SPECIALIST_SELECTION");
+      // TRANSITION_NAMING_RULE: الاسم يصف الحالة الناتجة — بعد اختيار specialist ننتقل إلى SLOT_SELECTION
+      const advanced = advancePhase("SLOT_SELECTION");
       if (advanced) {
         setLocation(`/consultation/booking/slots?specialistId=${specialistId}`);
       }

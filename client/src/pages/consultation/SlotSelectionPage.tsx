@@ -251,7 +251,8 @@ export default function SlotSelectionPage() {
   const handleSelectSlot = useCallback(
     (slotId: string) => {
       selectSlot(slotId);
-      const advanced = advancePhase("SLOT_SELECTION");
+      // TRANSITION_NAMING_RULE: الاسم يصف الحالة الناتجة — بعد اختيار slot ننتقل إلى REVIEW
+      const advanced = advancePhase("REVIEW");
       if (advanced) {
         setLocation(CONSULTATION_ROUTES.REVIEW);
       }

@@ -85,7 +85,8 @@ export default function BookingReviewPage() {
   const isValidForReview =
     hasActiveSession &&
     session !== null &&
-    (currentPhase === "REVIEW" || currentPhase === "SLOT_SELECTION") &&
+    // CANONICAL_WORKFLOW: صفحة المراجعة تقبل REVIEW phase فقط — TRACK 2 semantic fix
+    currentPhase === "REVIEW" &&
     Boolean(session.selectedSpecialistId) &&
     Boolean(session.selectedSlotId);
 
