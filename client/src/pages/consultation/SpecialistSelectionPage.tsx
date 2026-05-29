@@ -25,6 +25,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useConsultationBooking } from "../../contexts/ConsultationBookingContext";
+import { orchestrateSpecialistConfirmed } from "../../orchestrators/BookingWorkflowOrchestrator";
 import { useBookingOwnershipGuard } from "../../utils/bookingOwnership";
 import { useRuntimeSafetyCheck } from "../../utils/runtimeSafety";
 import { useBookingSessionHydration } from "../../hooks/useBookingSessionHydration";
@@ -236,7 +237,7 @@ function EmptySpecialistsState() {
 
 export default function SpecialistSelectionPage() {
   const [, setLocation] = useLocation();
-  const { session, selectSpecialist, advancePhase } = useConsultationBooking();
+  const { session, selectSpecialist, transitionTo } = useConsultationBooking();
 
   // ── Guard 1: Ownership ───────────────────────────────────────────────
   // GUARD_HOOK_BOUNDARY:
@@ -274,13 +275,13 @@ export default function SpecialistSelectionPage() {
   const handleSelectSpecialist = useCallback(
     (specialistId: string) => {
       selectSpecialist(specialistId);
-      // TRANSITION_NAMING_RULE: الاسم يصف الحالة الناتجة — بعد اختيار specialist ننتقل إلى SLOT_SELECTION
-      const advanced = advancePhase("SLOT_SELECTION");
+      // GOVERNANCE: UI → orchestrator → transitionTo
+      const advanced = orchestrateSpecialistConfirmed(transitionTo);
       if (advanced) {
         setLocation(`/consultation/booking/slots?specialistId=${specialistId}`);
       }
     },
-    [selectSpecialist, advancePhase, setLocation]
+    [selectSpecialist, transitionTo, setLocation]
   );
 
   // ── Recovery States ──────────────────────────────────────────────────

@@ -24,6 +24,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useConsultationBooking } from "../../contexts/ConsultationBookingContext";
+import { orchestrateSlotConfirmed } from "../../orchestrators/BookingWorkflowOrchestrator";
 import { useBookingOwnershipGuard } from "../../utils/bookingOwnership";
 import { useRuntimeSafetyCheck } from "../../utils/runtimeSafety";
 import { consultationBookingRepository } from "../../repositories/ConsultationBookingRepository";
@@ -212,7 +213,7 @@ export default function SlotSelectionPage() {
   const searchParams = new URLSearchParams(searchString);
   const specialistId = searchParams.get("specialistId");
 
-  const { session, selectSlot, advancePhase } = useConsultationBooking();
+  const { session, selectSlot, transitionTo } = useConsultationBooking();
 
   // ── Guard 1: Ownership ───────────────────────────────────────────────
   const ownershipGuard = useBookingOwnershipGuard(
@@ -251,13 +252,13 @@ export default function SlotSelectionPage() {
   const handleSelectSlot = useCallback(
     (slotId: string) => {
       selectSlot(slotId);
-      // TRANSITION_NAMING_RULE: الاسم يصف الحالة الناتجة — بعد اختيار slot ننتقل إلى REVIEW
-      const advanced = advancePhase("REVIEW");
+      // GOVERNANCE: UI → orchestrator → transitionTo
+      const advanced = orchestrateSlotConfirmed(transitionTo);
       if (advanced) {
         setLocation(CONSULTATION_ROUTES.REVIEW);
       }
     },
-    [selectSlot, advancePhase, setLocation]
+    [selectSlot, transitionTo, setLocation]
   );
 
   const handleBack = useCallback(() => {
