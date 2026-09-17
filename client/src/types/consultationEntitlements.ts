@@ -4,6 +4,32 @@
  * Sprint 3.1 — Business Layer Foundation
  * Priority 1: Entitlement Architecture (Patched)
  *
+ * ─── fix/entitlement-type-separation ────────────────────────────────────────
+ *
+ * ARCHITECTURE FIX: فصل نوعَي الـ entitlement
+ *
+ * المشكلة:
+ *   consultationBookingRepository.create() كان يقبل ConsultationEntitlement
+ *   مباشرةً كنوع لـ entitlementType داخل ConsultationBookingSession.
+ *   هذا خطأ معماري لأن ConsultationEntitlement تحتوي "EXPIRED" و"BLOCKED"
+ *   اللتين لا معنى لهما داخل session نشطة.
+ *
+ * الحل:
+ *   ConsultationEntitlement  = حالة الـ entitlement الكاملة (تشمل EXPIRED/BLOCKED)
+ *                               تُستخدم في: فحص الأهلية، policy decisions
+ *
+ *   ActiveBookingEntitlement = subset من ConsultationEntitlement
+ *                               القيم الصالحة للحجز فقط (بدون EXPIRED/BLOCKED)
+ *                               تُستخدم في: repository.create(), session creation
+ *
+ *   isActiveBookingEntitlement() = type guard
+ *                               يُستخدم قبل كل create() call للتحقق
+ *
+ * المستهلكون بعد الإصلاح:
+ *   - consultationBookingRepository.ts → يستخدم ActiveBookingEntitlement
+ *   - lib/consultationEntitlements.ts  → يُخرج ConsultationEntitlement (كما كان)
+ *   - ConsultationBookingContext       → يُمرر ActiveBookingEntitlement فقط
+ *
  * الترتيب المعماري:
  *   types (هنا) → lib/consultationEntitlements.ts → context → UI
  *
@@ -16,13 +42,18 @@
 // ---------------------------------------------------------------------------
 
 /**
- * الحالات الممكنة لاستحقاق المستخدم في الاستشارة.
+ * ConsultationEntitlement — الحالات الكاملة الممكنة لاستحقاق المستخدم.
  *
- * FREE_CONSULTATION  — حق في استشارة مجانية (أول مرة / عرض)
- * PAID_CONSULTATION  — دفع مسبق، الاستشارة متاحة
- * FOLLOW_UP         — متابعة لاستشارة سابقة
- * EXPIRED           — انتهت صلاحية الاستحقاق
- * BLOCKED           — محظور مؤقتاً أو دائماً
+ * ⚠️  IMPORTANT: هذا النوع يصف حالة الـ entitlement — ليس نوع الحجز.
+ *
+ *   FREE_CONSULTATION  — حق في استشارة مجانية (أول مرة / عرض)
+ *   PAID_CONSULTATION  — دفع مسبق، الاستشارة متاحة
+ *   FOLLOW_UP          — متابعة لاستشارة سابقة
+ *   EXPIRED            — ❌ انتهت صلاحية الاستحقاق — لا يجوز حجز جديد
+ *   BLOCKED            — ❌ محظور مؤقتاً أو دائماً — لا يجوز حجز جديد
+ *
+ * للحجز: استخدم ActiveBookingEntitlement بدلاً من هذا النوع مباشرة.
+ * @see ActiveBookingEntitlement
  */
 export type ConsultationEntitlement =
   | "FREE_CONSULTATION"
@@ -30,6 +61,56 @@ export type ConsultationEntitlement =
   | "FOLLOW_UP"
   | "EXPIRED"
   | "BLOCKED";
+
+// ---------------------------------------------------------------------------
+// Active Booking Entitlement — subset صالح للحجز فقط
+// ---------------------------------------------------------------------------
+
+/**
+ * ActiveBookingEntitlement — القيم الصالحة لإنشاء جلسة حجز جديدة.
+ *
+ * هذا النوع هو subset صارم من ConsultationEntitlement:
+ *   ✅  FREE_CONSULTATION  — مسموح بالحجز
+ *   ✅  PAID_CONSULTATION  — مسموح بالحجز
+ *   ✅  FOLLOW_UP          — مسموح بالحجز
+ *   ❌  EXPIRED            — محذوف — لا يجوز تمريره لـ session
+ *   ❌  BLOCKED            — محذوف — لا يجوز تمريره لـ session
+ *
+ * يُستخدم حصراً في:
+ *   - consultationBookingRepository.create()
+ *   - ConsultationBookingContext session initialization
+ *
+ * للحصول على ActiveBookingEntitlement من ConsultationEntitlement:
+ *   @see isActiveBookingEntitlement
+ */
+export type ActiveBookingEntitlement = Exclude<
+  ConsultationEntitlement,
+  "EXPIRED" | "BLOCKED"
+>;
+
+// ---------------------------------------------------------------------------
+// Type Guard
+// ---------------------------------------------------------------------------
+
+/**
+ * isActiveBookingEntitlement — type guard للتحقق قبل إنشاء session.
+ *
+ * يجب استدعاؤه في كل مكان يُحوَّل فيه ConsultationEntitlement
+ * إلى ActiveBookingEntitlement.
+ *
+ * @example
+ * const entitlement = resolveEntitlement(user);
+ * if (!isActiveBookingEntitlement(entitlement)) {
+ *   // وجّه المستخدم — لا يمكن الحجز
+ *   return;
+ * }
+ * repository.create(intentId, entryPoint, entitlement);
+ */
+export function isActiveBookingEntitlement(
+  value: ConsultationEntitlement
+): value is ActiveBookingEntitlement {
+  return value !== "EXPIRED" && value !== "BLOCKED";
+}
 
 // ---------------------------------------------------------------------------
 // Entitlement Status
