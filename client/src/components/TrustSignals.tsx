@@ -13,11 +13,15 @@
  * - شريط الطمأنة السفلي
  * - الخطوط الفاصلة العلوية والسفلية
  * - RTL + Arabic only
+ *
+ * fix(ts): add explicit Variants type annotation on fadeUp
+ *   — resolves TS2322 / [Gate] TypeScript failure in CI
  */
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { Lock, BadgeCheck, AlertCircle } from "lucide-react";
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 12 },
   visible: (i: number) => ({
     opacity: 1,

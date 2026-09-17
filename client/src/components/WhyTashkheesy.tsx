@@ -28,18 +28,17 @@
  *   - Unified vertical spacing: pt-24/pt-32 pb-20/pb-28 (matches sprint3 sections)
  *   - All inline font-family overrides removed → let global CSS cascade
  *
- * Design direction: "Controlled Premium Calmness"
- * Motion: fade + y:10→0, stagger 100ms, duration 0.6s, easeOut, once
- * Palette: slate-800/600/500/400 + existing brand accents (#1E4E8C / #2BBDB6)
- * RTL: dir="rtl" on section root
+ * fix(ts): add explicit Variants type annotation on fadeUp
+ *   — resolves TS2322 / [Gate] TypeScript failure in CI
  * ─────────────────────────────────────────────────────────────────
  */
 
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { Brain, BookOpen, Languages, Compass, Info, Focus, Shield } from "lucide-react";
 
 // ─── Animation variant ────────────────────────────────────────────────────────
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: (i: number) => ({
     opacity: 1,

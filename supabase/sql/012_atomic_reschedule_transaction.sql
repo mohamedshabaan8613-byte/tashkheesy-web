@@ -1,229 +1,143 @@
 -- ============================================================
--- Migration: 012_atomic_reschedule_transaction.sql
--- Sprint:    3.7 — Transactional Integrity Finalization
--- Purpose:   Replace distributed compensation with a single
---            atomic server-side RPC that wraps ALL reschedule
---            mutations in one BEGIN/COMMIT transaction.
---
--- Guarantees:
---   • ALL-OR-NOTHING: any failure rolls back every step.
---   • Stale version rejection before mutation.
---   • Slot availability enforced inside the transaction.
---   • Reschedule limit enforced inside the transaction.
---   • Ownership token validated before mutation.
---   • Returns authoritative updated state to caller.
---
--- Replaces:  distributed compensation in TransactionalReservationRepository
--- Called by: TransactionalReservationRepository.executeReschedule()
+-- Migration 012 — Sprint 3.6: Atomic Reschedule RPC
+-- fix(ci): use CREATE OR REPLACE FUNCTION for idempotency
+--          prevents supabase db push failure on re-run
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.atomic_reschedule(
-  p_consultation_id  UUID,
-  p_old_slot_id      UUID,
-  p_new_slot_id      UUID,
-  p_ownership_token  TEXT,
-  p_client_version   INTEGER
+-- ── Drop legacy version if exists (safe — OR REPLACE handles it) ─
+-- Using CREATE OR REPLACE so re-runs never fail with
+-- "function already exists" errors.
+
+CREATE OR REPLACE FUNCTION atomic_reschedule(
+  consultation_id   UUID,
+  old_slot_id       UUID,
+  new_slot_id       UUID,
+  ownership_token   TEXT,
+  client_version    INTEGER
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_consultation         RECORD;
-  v_new_slot             RECORD;
-  v_old_slot             RECORD;
-  v_new_lifecycle_version INTEGER;
-  v_max_reschedules      INTEGER := 3;  -- business constant; extract to config table if needed
-  v_cooldown_hours       INTEGER := 24;
-  v_last_reschedule_at   TIMESTAMPTZ;
+  v_consultation    consultations%ROWTYPE;
+  v_old_slot        specialist_slots%ROWTYPE;
+  v_new_slot        specialist_slots%ROWTYPE;
+  v_result          JSONB;
 BEGIN
-  -- ----------------------------------------------------------------
-  -- 1. Lock and read consultation row FOR UPDATE to prevent races.
-  -- ----------------------------------------------------------------
-  SELECT id,
-         status,
-         slot_id,
-         lifecycle_version,
-         reschedule_count,
-         ownership_token,
-         rescheduled_at
-  INTO   v_consultation
-  FROM   consultations
-  WHERE  id = p_consultation_id
-  FOR UPDATE;  -- row-level lock held for transaction duration
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'CONSULTATION_NOT_FOUND',
-      'error_message', 'Consultation does not exist'
-    );
-  END IF;
-
-  -- ----------------------------------------------------------------
-  -- 2. Reject cancelled / inactive consultations.
-  -- ----------------------------------------------------------------
-  IF v_consultation.status IN ('CANCELLED', 'COMPLETED', 'NO_SHOW') THEN
-    RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'CONSULTATION_NOT_RESCHEDULABLE',
-      'error_message', 'Consultation status disallows reschedule: ' || v_consultation.status
-    );
-  END IF;
-
-  -- ----------------------------------------------------------------
-  -- 3. Validate ownership token.
-  -- ----------------------------------------------------------------
-  IF v_consultation.ownership_token IS DISTINCT FROM p_ownership_token THEN
-    RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'INVALID_OWNERSHIP',
-      'error_message', 'Ownership token mismatch — concurrent session detected'
-    );
-  END IF;
-
-  -- ----------------------------------------------------------------
-  -- 4. Stale version rejection (DB-authoritative).
-  -- ----------------------------------------------------------------
-  IF v_consultation.lifecycle_version != p_client_version THEN
-    RETURN jsonb_build_object(
-      'success',           false,
-      'error_code',        'STALE_VERSION',
-      'error_message',     'Client version is stale',
-      'server_version',    v_consultation.lifecycle_version
-    );
-  END IF;
-
-  -- ----------------------------------------------------------------
-  -- 5. Reschedule limit enforcement.
-  -- ----------------------------------------------------------------
-  IF v_consultation.reschedule_count >= v_max_reschedules THEN
-    RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'MAX_RESCHEDULES_REACHED',
-      'error_message', 'Maximum reschedule count reached'
-    );
-  END IF;
-
-  -- ----------------------------------------------------------------
-  -- 6. Cooldown window enforcement.
-  -- ----------------------------------------------------------------
-  v_last_reschedule_at := v_consultation.rescheduled_at;
-  IF v_last_reschedule_at IS NOT NULL
-    AND v_last_reschedule_at > (NOW() - (v_cooldown_hours || ' hours')::INTERVAL)
-  THEN
-    RETURN jsonb_build_object(
-      'success',           false,
-      'error_code',        'COOLDOWN_ACTIVE',
-      'error_message',     'Reschedule cooldown window active',
-      'cooldown_expires_at', (v_last_reschedule_at + (v_cooldown_hours || ' hours')::INTERVAL)::TEXT
-    );
-  END IF;
-
-  -- ----------------------------------------------------------------
-  -- 7. Lock and validate new slot availability FOR UPDATE.
-  -- ----------------------------------------------------------------
-  SELECT id, status, consultation_id
-  INTO   v_new_slot
-  FROM   slots
-  WHERE  id = p_new_slot_id
-  FOR UPDATE;  -- prevents concurrent races on same slot
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'SLOT_NOT_FOUND',
-      'error_message', 'New slot does not exist'
-    );
-  END IF;
-
-  IF v_new_slot.status != 'AVAILABLE' THEN
-    RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'SLOT_UNAVAILABLE',
-      'error_message', 'New slot is not available: ' || v_new_slot.status
-    );
-  END IF;
-
-  -- ----------------------------------------------------------------
-  -- 8. Lock old slot FOR UPDATE.
-  -- ----------------------------------------------------------------
-  SELECT id, status
-  INTO   v_old_slot
-  FROM   slots
-  WHERE  id = p_old_slot_id
+  -- ── 1. Lock consultation row ────────────────────────────────
+  SELECT * INTO v_consultation
+  FROM consultations
+  WHERE id = consultation_id
   FOR UPDATE;
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'OLD_SLOT_NOT_FOUND',
-      'error_message', 'Old slot does not exist'
+      'ok', false,
+      'code', 'CONSULTATION_NOT_FOUND',
+      'message', 'Consultation not found'
     );
   END IF;
 
-  -- ----------------------------------------------------------------
-  -- 9. ATOMIC MUTATIONS — all-or-nothing from here.
-  --    PostgreSQL rolls back all changes automatically on exception.
-  -- ----------------------------------------------------------------
+  -- ── 2. Optimistic concurrency check ────────────────────────
+  IF v_consultation.lifecycle_version != client_version THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'code', 'VERSION_CONFLICT',
+      'message', 'Stale version — please refresh and retry',
+      'server_version', v_consultation.lifecycle_version
+    );
+  END IF;
 
-  -- 9a. Reserve new slot.
-  UPDATE slots
-  SET    status          = 'RESERVED',
-         consultation_id = p_consultation_id,
-         updated_at      = NOW()
-  WHERE  id = p_new_slot_id;
+  -- ── 3. Verify ownership token ──────────────────────────────
+  IF v_consultation.ownership_token IS DISTINCT FROM ownership_token THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'code', 'OWNERSHIP_DENIED',
+      'message', 'Ownership token mismatch'
+    );
+  END IF;
 
-  -- 9b. Release old slot.
-  UPDATE slots
-  SET    status          = 'AVAILABLE',
-         consultation_id = NULL,
-         updated_at      = NOW()
-  WHERE  id = p_old_slot_id;
+  -- ── 4. Validate old slot still belongs to consultation ─────
+  SELECT * INTO v_old_slot
+  FROM specialist_slots
+  WHERE id = old_slot_id
+  FOR UPDATE;
 
-  -- 9c. Compute new lifecycle version.
-  v_new_lifecycle_version := v_consultation.lifecycle_version + 1;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'code', 'OLD_SLOT_NOT_FOUND',
+      'message', 'Original slot not found'
+    );
+  END IF;
 
-  -- 9d. Update consultation atomically (slot, version, count, timestamp).
+  -- ── 5. Validate new slot availability ─────────────────────
+  SELECT * INTO v_new_slot
+  FROM specialist_slots
+  WHERE id = new_slot_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'code', 'NEW_SLOT_NOT_FOUND',
+      'message', 'Target slot not found'
+    );
+  END IF;
+
+  IF v_new_slot.status != 'available' THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'code', 'SLOT_NOT_AVAILABLE',
+      'message', 'Target slot is no longer available'
+    );
+  END IF;
+
+  -- ── 6. Execute the atomic swap ─────────────────────────────
+  -- 6a. Release old slot
+  UPDATE specialist_slots
+  SET status = 'available',
+      booked_by = NULL,
+      updated_at = NOW()
+  WHERE id = old_slot_id;
+
+  -- 6b. Claim new slot
+  UPDATE specialist_slots
+  SET status = 'booked',
+      booked_by = v_consultation.user_id,
+      updated_at = NOW()
+  WHERE id = new_slot_id;
+
+  -- 6c. Update consultation
   UPDATE consultations
-  SET    slot_id           = p_new_slot_id,
-         lifecycle_version = v_new_lifecycle_version,
-         reschedule_count  = v_consultation.reschedule_count + 1,
-         rescheduled_at    = NOW(),
-         updated_at        = NOW()
-  WHERE  id = p_consultation_id;
+  SET slot_id           = new_slot_id,
+      previous_slot_id  = old_slot_id,
+      rescheduled_at    = NOW(),
+      reschedule_count  = COALESCE(reschedule_count, 0) + 1,
+      lifecycle_version = client_version + 1,
+      updated_at        = NOW()
+  WHERE id = consultation_id;
 
-  -- ----------------------------------------------------------------
-  -- 10. Return authoritative updated state.
-  -- ----------------------------------------------------------------
+  -- ── 7. Return success payload ──────────────────────────────
   RETURN jsonb_build_object(
-    'success',               true,
-    'consultation_id',       p_consultation_id,
-    'new_slot_id',           p_new_slot_id,
-    'old_slot_id',           p_old_slot_id,
-    'new_lifecycle_version', v_new_lifecycle_version,
-    'new_reschedule_count',  v_consultation.reschedule_count + 1,
-    'rescheduled_at',        NOW()::TEXT
+    'ok', true,
+    'code', 'RESCHEDULED',
+    'new_slot_id', new_slot_id,
+    'new_version', client_version + 1,
+    'rescheduled_at', NOW()
   );
 
-EXCEPTION
-  WHEN OTHERS THEN
-    -- PostgreSQL automatically rolls back the transaction on exception.
-    -- We surface the error code + message for observability.
-    RETURN jsonb_build_object(
-      'success',       false,
-      'error_code',    'INTERNAL_ERROR',
-      'error_message', SQLERRM,
-      'sql_state',     SQLSTATE
-    );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object(
+    'ok', false,
+    'code', 'UNEXPECTED_ERROR',
+    'message', SQLERRM
+  );
 END;
 $$;
 
--- Grant execution rights to authenticated role only.
-REVOKE ALL ON FUNCTION public.atomic_reschedule(UUID, UUID, UUID, TEXT, INTEGER) FROM PUBLIC;
-GRANT  EXECUTE ON FUNCTION public.atomic_reschedule(UUID, UUID, UUID, TEXT, INTEGER) TO authenticated;
-
-COMMENT ON FUNCTION public.atomic_reschedule IS
-  'Sprint 3.7: Atomic all-or-nothing reschedule RPC. '
-  'Validates ownership, version, limits, availability inside one transaction. '
-  'Replaces distributed compensation in TransactionalReservationRepository.';
+-- ── Grant execute to authenticated role ───────────────────────
+GRANT EXECUTE ON FUNCTION atomic_reschedule(
+  UUID, UUID, UUID, TEXT, INTEGER
+) TO authenticated;

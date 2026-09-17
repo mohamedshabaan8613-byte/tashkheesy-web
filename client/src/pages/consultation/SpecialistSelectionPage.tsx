@@ -1,5 +1,5 @@
 /**
- * SpecialistSelectionPage.tsx — Sprint 3.2
+ * SpecialistSelectionPage.tsx — Sprint 3.2 / Phase-4 hardened
  *
  * ─── SPECIALIST_SELECTION_BOUNDARY ─────────────────────────────────────────
  *
@@ -11,18 +11,23 @@
  *   ✅ recovery UI عند انتهاء الجلسة أو خطأ ownership
  *
  * هذه الصفحة لا تملك:
- *   ❌ entitlement logic — من يحق له الحجز ليس هنا
- *   ❌ pricing logic — سعر الجلسة ليس هنا
- *   ❌ clinical severity — درجة الخطورة ليست هنا
- *   ❌ recommendation ranking — ترتيب الأخصائيين ليس هنا
+ *   ❌ entitlement logic
+ *   ❌ pricing logic
+ *   ❌ clinical severity
+ *   ❌ recommendation ranking
  *
  * Guards المدمجة:
  *   useBookingOwnershipGuard() — يتحقق من ownership قبل الـ render
  *   useRuntimeSafetyCheck()    — يكتشف orphaned/mismatch/expired sessions
  *   useBookingSessionHydration() — يتحقق من صلاحية الـ phase
+ *
+ * Phase-4 fixes:
+ *   ✅ Fix 1: useState imported at top (hook order violation resolved)
+ *   ✅ Fix 2: advancePhase target corrected to "SLOT_SELECTION"
+ *   ✅ Fix 4: guardCheck() pre-flight added before advancePhase()
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useConsultationBooking } from "../../contexts/ConsultationBookingContext";
 import { useBookingOwnershipGuard } from "../../utils/bookingOwnership";
@@ -34,7 +39,6 @@ import {
 import type { SpecialistProfile } from "../../types/specialistAvailabilityTypes";
 
 // ─── Recovery Screen ─────────────────────────────────────────────────────────
-// inline — لا يُنقل خارج هذا الملف حتى Sprint 3.3
 
 interface RecoveryScreenProps {
   reason: "expired" | "missing" | "ownership_failed" | "safety_violation";
@@ -234,7 +238,7 @@ function EmptySpecialistsState() {
 
 export default function SpecialistSelectionPage() {
   const navigate = useNavigate();
-  const { session, selectSpecialist, advancePhase } = useConsultationBooking();
+  const { session, selectSpecialist, advancePhase, guardCheck } = useConsultationBooking();
 
   // ── Guard 1: Ownership ───────────────────────────────────────────────
   // GUARD_HOOK_BOUNDARY:
@@ -266,15 +270,26 @@ export default function SpecialistSelectionPage() {
   }, [session]);
 
   // ── Select Handler ───────────────────────────────────────────────────
+  // Fix 2: target phase is SLOT_SELECTION (phase the session enters AFTER specialist chosen)
+  // Fix 4: guardCheck() pre-flight prevents advancing from an invalid phase
   const handleSelectSpecialist = useCallback(
     (specialistId: string) => {
+      // PRE-FLIGHT: verify the machine allows this transition before any side-effects
+      const allowed = guardCheck("SLOT_SELECTION");
+      if (!allowed) {
+        // session is in a phase that cannot transition to SLOT_SELECTION — bail silently
+        // the hydration/ownership guards above will show the appropriate recovery UI
+        return;
+      }
+
       selectSpecialist(specialistId);
-      const advanced = advancePhase("SPECIALIST_SELECTION");
+
+      const advanced = advancePhase("SLOT_SELECTION");
       if (advanced) {
         navigate(`/consultation/booking/slots?specialistId=${specialistId}`);
       }
     },
-    [selectSpecialist, advancePhase, navigate]
+    [selectSpecialist, advancePhase, guardCheck, navigate]
   );
 
   // ── Recovery States ──────────────────────────────────────────────────
@@ -372,6 +387,3 @@ export default function SpecialistSelectionPage() {
     </div>
   );
 }
-
-// ─── Missing import fix ───────────────────────────────────────────────────────
-import { useState } from "react";

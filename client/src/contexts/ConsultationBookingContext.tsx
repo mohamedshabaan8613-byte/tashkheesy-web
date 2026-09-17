@@ -1,136 +1,49 @@
 /**
- * ConsultationBookingContext.tsx — Sprint 3.3 PHASE 1 (Fix N2 docs)
- * ConsultationBookingContext.tsx
+ * ConsultationBookingContext.tsx — Sprint 3.7.1 PHASE 2
  *
- * Pre-Sprint 3.3 — Stabilization Phase
+ * ─── Phase 2 additions ──────────────────────────────────────────────────────
  *
- * ─── Runtime Coordinator Contract ──────────────────────────────────────────
+ * ✅ useSessionLifecycle is now wired into the Provider:
  *
- * ConsultationBookingProvider هو المنسق الوحيد لـ booking runtime:
+ *   - sessionMachine (BookingSessionStateMachine) lives as a singleton ref.
+ *   - sessionGuard (SessionGuard) wraps every mutation.
+ *   - Every PHASE_TRANSITIONED action auto-syncs the state machine.
+ *   - guardCheck() is exposed on the context value for consumers that need
+ *     pre-flight checks (e.g. UI buttons that want to know if an action is
+ *     allowed before triggering it).
+ *   - SESSION_STALE is dispatched when a guard returns STALE — triggers
+ *     forceRefresh flow in useSessionLifecycle consumers.
  *
- * ✅ يملك Provider:
- *   - hydration lifecycle (مرة واحدة فقط — hydrateOnce guard)
+ * ─── Mutation guard contract ────────────────────────────────────────────────
+ *
+ *   selectSpecialist / selectSlot  →  guard.check('SELECT_SPECIALIST' | 'SELECT_SLOT')
+ *   transitionTo(phase)            →  guard.check('CONFIRM' | 'RESCHEDULE' | ...)
+ *
+ *   Blocked reason  │  Effect
+ *   ────────────────┼──────────────────────────────────────────
+ *   STALE           │  SESSION_STALE dispatched, returns false
+ *   CONCURRENT      │  silent no-op, returns false
+ *   EXPIRED         │  SESSION_TERMINATED dispatched
+ *   INVALID_STATE   │  console.warn, returns false
+ *
+ * ─── Pre-Phase-2 contract (unchanged) ──────────────────────────────────────
+ *
+ * ConsultationBookingProvider is the single runtime coordinator:
+ *   - hydration lifecycle (hydrateOnce guard)
  *   - runtime safety validation (runtimeSafetyCheck)
  *   - active booking recovery (recovery on mount)
- *   - expiration monitoring (polling كل 60 ثانية)
+ *   - expiration monitoring (polling every 60 s)
  *   - ownership state (ownershipToken)
  *   - transition dispatching (transitionTo)
  *   - booking runtime cache (sessionRef)
  *
- * ❌ يبقى خارج Provider:
- *   - navigation
- *   - UI rendering
- *   - denial presentation
- *   - analytics
- *   - emotional copy
- *   - toasts
- *
  * ─── advancePhase — محذوف نهائيًا ─────────────────────────────────────────
  *   advancePhase() أُزيل كليًا — لم يعد موجودًا كـ alias أو deprecated.
  *   استخدم transitionTo(nextPhase) حصرًا.
- *   السبب: advancePhase("SPECIALIST_SELECTION") يصف الحدث السابق (ambiguous).
- *           transitionTo("SLOT_SELECTION") يصف الحالة الناتجة (deterministic).
  *
- * ─── Sprint 3.3 Changes ──────────────────────────────────────────────────────
- *
- * ADDED: transitionTo() — المسار الوحيد لتغيير الـ lifecycle phase.
- *   - يُصدر domain event BOOKING_PHASE_TRANSITIONED عند كل transition ناجح.
- *   - الـ UI يستدعي orchestrator الذي يستدعي transitionTo().
- *   - لا تستدعي transitionTo() مباشرة من الـ UI.
- *
- * PRESERVED: advancePhase() — محفوظ للتوافق مع الكود القائم.
- *   - سيُزال في Sprint 3.4 بعد ترحيل جميع المستدعيين إلى transitionTo().
- *
- * ADDED: hydrateOnce guard — يمنع double-recovery في React StrictMode.
- *
- * sourceIntentId — immutable linkage:
- *   startBookingSession يقبل consultationIntentId ويُخزنه في sourceIntentId.
- *   المعرفان identicals في v1 — sourceIntentId هو الاسم الكنسي.
- *
- * الفرق المعماري:
- *   ConsultationContext          → WHY + WHERE (لماذا + من أين)
- *   ConsultationBookingContext   → HOW         (كيف + تتبع الحجز)
- *
- * ─── Fix N2: توضيح الفرق بين PHASE mutations و PAYLOAD mutations ───────────
- *
- * هذا الـ context يحتوي نوعين من الـ mutations — وهما مختلفان تمامًا:
- *
- * ── النوع الأول: PHASE mutations ────────────────────────────────────────────
- *
- *   الدوال: transitionTo() — وهي المصدر الوحيد والكامل لهذا النوع.
- *
- *   ماذا تفعل:
- *     - تُغيّر bookingFlowPhase في الـ session
- *     - تُغيّر bookingStatus
- *     - تُصدر BOOKING_PHASE_TRANSITIONED domain event
- *     - تتحقق من صحة الـ transition عبر isValidTransition()
- *     - تحفظ الـ session بالـ repository
- *
- *   قاعدة الاستخدام:
- *     transitionTo() لا تُستدعى من الـ UI مباشرة.
- *     المسار الصحيح: UI → orchestrator → transitionTo()
- *
- *   لماذا هذا مهم:
- *     PHASE mutations هي التي تُنتج domain events.
- *     إذا حدثت خارج transitionTo() → لا domain event → recovery corruption.
- *
- * ── النوع الثاني: PAYLOAD mutations ─────────────────────────────────────────
- *
- *   الدوال: selectSpecialist() + selectSlot()
- *
- *   ماذا تفعل:
- *     - تُعدّل payload fields فقط: selectedSpecialistId, selectedSlotId
- *     - لا تُغيّر bookingFlowPhase
- *     - لا تُصدر domain event (هذا مقصود)
- *     - تحفظ الـ session بالـ repository مباشرة
- *
- *   قاعدة الاستخدام:
- *     يمكن استدعاؤها من الـ UI مباشرة.
- *     لا تمر عبر transitionTo() لأنها لا تُغيّر lifecycle phase.
- *
- *   لماذا لا تمر عبر transitionTo():
- *     transitionTo() مصمم لتغيير الـ phase + إصدار domain event.
- *     اختيار الأخصائي أو الموعد لا يُشكّل phase transition في الـ lifecycle.
- *     هو تحديث لبيانات الحجز فقط داخل نفس الـ phase.
- *
- * ── الخلاصة ─────────────────────────────────────────────────────────────────
- *
- *   transitionTo() = مصدر وحيد لتغيير lifecycle phase
- *   selectSpecialist/selectSlot = payload mutations فقط، لا تغير الـ phase
- *
- *   إذا احتجت لتغيير phase + payload في نفس الوقت:
- *     1. استدعي selectSpecialist() أو selectSlot() أولاً
- *     2. ثم استدعي transitionTo() عبر orchestrator
- * ─── sourceIntentId Migration ──────────────────────────────────────────────
- *   sourceIntentId هو الحقل الكنسي الرسمي (immutable linkage).
- *   consultationIntentId محفوظ كـ readonly alias في النوع فقط.
- *   جميع العمليات الداخلية تستخدم sourceIntentId حصرًا.
- *
- * ─── hydrateOnce Guard ──────────────────────────────────────────────────────
- *   useRef(false) يمنع double-recovery في React StrictMode.
- *   بدونه: StrictMode يُشغّل useEffect مرتين → recovery مزدوج.
- *
- * ─── الفصل المعماري ────────────────────────────────────────────────────────
- *   ConsultationContext          → WHY + WHERE (لماذا + من أين)
- *   ConsultationBookingContext   → HOW         (كيف + runtime + lifecycle)
- *
- * ❌❌❌ تحذير صريح ❌❌❌
- *   لا تُضف داخل هذا الملف:
- *     useConsultationContext()
- *     useConsultation()
- *     import ... from ConsultationContext
- *   الفصل يجب أن يكون كاملاً على مستوى الكود.
- *
- * ─── Audit Fixes (Sprint 3.3 Audit) ────────────────────────────────────────
- *
- * Fix C3: SESSION_TERMINATED يُصفَّر isRecovering
- *   المشكلة: reducer كان يحتفظ بـ isRecovering من state السابق عند termination.
- *   الخطر: إذا انتهت الجلسة أثناء recovery → isRecovering يبقى true → infinite skeleton.
- *   الحل: SESSION_TERMINATED يُعيد { session: null, hasActiveSession: false, isRecovering: false }
- *
- * Fix M1: startBookingSession() guard ضد الجلسات المتعددة
- *   المشكلة: استدعاء مزدوج (double-click) يُنشئ جلستين — الأولى orphan.
- *   الحل: إذا توجد جلسة نشطة غير منتهية، لا تُنشئ جلسة جديدة — أعد الموجودة.
+ * ─── Fix N2: PHASE vs PAYLOAD mutations (unchanged) ────────────────────────
+ *   transitionTo()              = PHASE mutation (emits domain event)
+ *   selectSpecialist/selectSlot = PAYLOAD mutations (no phase change)
  */
 
 import {
@@ -170,9 +83,14 @@ import type {
   BookingSessionCreatedEvent,
   BookingRecoveredEvent,
 } from "../types/bookingDomainEvents";
+import {
+  BookingSessionStateMachine,
+  type SessionMutationType,
+} from "../session/BookingSessionStateMachine";
+import { SessionGuard } from "../session/SessionGuard";
+import type { GuardCheckResult } from "../session/SessionGuard";
 
 // ─── Expiration Poll Interval ─────────────────────────────────────────────────
-/** كل 60 ثانية — يكفي لأن TTL الجلسة هو 2 ساعة */
 const EXPIRATION_POLL_MS = 60_000;
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -180,12 +98,14 @@ interface BookingState {
   session: ConsultationBookingSession | null;
   isRecovering: boolean;
   hasActiveSession: boolean;
+  isStale: boolean;
 }
 
 const initialState: BookingState = {
   session: null,
   isRecovering: false,
   hasActiveSession: false,
+  isStale: false,
 };
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -196,6 +116,8 @@ type BookingAction =
   | { type: "SPECIALIST_SELECTED"; specialistId: string; session: ConsultationBookingSession }
   | { type: "SLOT_SELECTED";       slotId: string; session: ConsultationBookingSession }
   | { type: "SESSION_TERMINATED";  reason: "CANCELLED" | "EXPIRED" | "ABANDONED" }
+  | { type: "SESSION_STALE" }
+  | { type: "SESSION_REFRESHED" }
   | { type: "RECOVERY_STARTED" }
   | { type: "RECOVERY_FAILED" }
   | { type: "SESSION_CLEARED" };
@@ -204,15 +126,17 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
   switch (action.type) {
     case "SESSION_STARTED":
     case "SESSION_RECOVERED":
-      return { session: action.session, isRecovering: false, hasActiveSession: true };
+      return { session: action.session, isRecovering: false, hasActiveSession: true, isStale: false };
     case "PHASE_TRANSITIONED":
     case "SPECIALIST_SELECTED":
     case "SLOT_SELECTED":
-      return { ...state, session: action.session };
+      return { ...state, session: action.session, isStale: false };
     case "SESSION_TERMINATED":
-      // Fix C3: isRecovering يُصفَّر صراحةً — يمنع infinite skeleton
-      // إذا انتهت الجلسة أثناء recovery (edge case)، الـ UI لا يبقى في skeleton إلى الأبد.
-      return { session: null, hasActiveSession: false, isRecovering: false };
+      return { session: null, hasActiveSession: false, isRecovering: false, isStale: false };
+    case "SESSION_STALE":
+      return { ...state, isStale: true };
+    case "SESSION_REFRESHED":
+      return { ...state, isStale: false };
     case "RECOVERY_STARTED":
       return { ...state, isRecovering: true };
     case "RECOVERY_FAILED":
@@ -230,14 +154,24 @@ interface ConsultationBookingContextValue {
   currentPhase: BookingPhase | null;
   isRecovering: boolean;
   hasActiveSession: boolean;
+  isStale: boolean;
 
   /**
    * ownershipToken — sessionId الجلسة النشطة.
-   *
-   * للصفحات التي تحتاج التحقق من ownership بدون قراءة session كاملة.
-   * null إذا لم تكن هناك جلسة نشطة.
    */
   ownershipToken: string | null;
+
+  /**
+   * guardCheck() — pre-flight check for UI.
+   *
+   * يُمكّن الـ UI من التحقق قبل تنفيذ mutation.
+   * لا تُنفذ أي تغيير — فحص فقط.
+   *
+   * @example
+   * const result = guardCheck('CONFIRM');
+   * if (!result.allowed) { showBlockedReason(result.reason); return; }
+   */
+  guardCheck(mutation: SessionMutationType): GuardCheckResult;
 
   startBookingSession(params: {
     consultationIntentId: string;
@@ -249,64 +183,25 @@ interface ConsultationBookingContextValue {
 
   /**
    * transitionTo() — PHASE mutation.
-   *
-   * المصدر الوحيد لتغيير lifecycle phase في الـ session.
-   *
-   * RULE 2: الـ UI لا يستدعي هذا مباشرة.
-   *         يستدعيه orchestrator بعد validation + persistence.
-   *
-   * يُصدر BOOKING_PHASE_TRANSITIONED domain event عند كل transition ناجح.
-   *
-   * TRANSITION_NAMING_RULE:
-   *   الاسم يصف الحالة الناتجة وليس الحدث السابق.
-   *   transitionTo("SLOT_SELECTION")  ← بعد اختيار specialist ✅
-   *   transitionTo("REVIEW")          ← بعد اختيار slot ✅
-   *   transitionTo("RESCHEDULED")     ← من CONFIRMED عند إعادة الجدولة ✅
-   *
-   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
-   *
-   * @returns true إذا نجح الانتقال، false إذا كان invalid
+   * الـ UI لا يستدعي هذا مباشرة — يمر عبر orchestrator.
    */
   transitionTo(to: BookingPhase, triggeredBy?: "orchestrator" | "recovery" | "expiration"): boolean;
 
   /**
    * @deprecated استخدم transitionTo() بدلاً منه.
-   * محفوظ للتوافق مع الكود القائم — سيُزال في Sprint 3.4.
    */
   advancePhase(to: BookingPhase): boolean;
 
-  /**
-   * selectSpecialist() — PAYLOAD mutation.
-   *
-   * تُعدّل selectedSpecialistId فقط — لا تُغيّر lifecycle phase.
-   * يمكن استدعاؤها من الـ UI مباشرة.
-   *
-   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
-   */
+  /** PAYLOAD mutation — يمكن استدعاؤها من الـ UI مباشرة */
   selectSpecialist(specialistId: string): void;
 
-  /**
-   * selectSlot() — PAYLOAD mutation.
-   *
-   * تُعدّل selectedSlotId فقط — لا تُغيّر lifecycle phase.
-   * يمكن استدعاؤها من الـ UI مباشرة.
-   *
-   * انظر Fix N2 في أعلى الملف للفرق الكامل بين PHASE و PAYLOAD mutations.
-   */
+  /** PAYLOAD mutation — يمكن استدعاؤها من الـ UI مباشرة */
   selectSlot(slotId: string): void;
 
   cancelBooking(reason?: BookingRecoveryReason): void;
   expireBooking(reason: BookingRecoveryReason): void;
   recoverSession(): ConsultationBookingSession | null;
   isSessionRecoverable(): boolean;
-
-  /**
-   * runtimeSafetyCheck — تحقق من صحة الجلسة الحالية.
-   *
-   * PROVIDER_RUNTIME_CONSOLIDATION:
-   *   هذه الدالة داخل Provider — لا تُعيد تنفيذها في الصفحات.
-   *   تستخدمها الصفحات للتحقق قبل أي عملية حساسة.
-   */
   runtimeSafetyCheck(): RuntimeSafetyResult;
 }
 
@@ -321,10 +216,23 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   const sessionRef = useRef<ConsultationBookingSession | null>(null);
   sessionRef.current = state.session;
 
-  /**
-   * hydrateOnce guard — Sprint 3.1 hardening
-   * يمنع double-recovery في React StrictMode.
-   */
+  // ── Phase 2: State Machine + Guard singletons ──────────────────────────────
+  //
+  // كلاهما singleton — لا يُعاد إنشاؤهما في كل render.
+  // sessionMachine يتتبع الـ state الحالي للـ machine.
+  // sessionGuard يستخدم sessionMachine لفحص كل mutation قبل تنفيذه.
+  //
+  const sessionMachineRef = useRef<BookingSessionStateMachine | null>(null);
+  const sessionGuardRef   = useRef<SessionGuard | null>(null);
+
+  if (sessionMachineRef.current === null) {
+    sessionMachineRef.current = new BookingSessionStateMachine();
+  }
+  if (sessionGuardRef.current === null) {
+    sessionGuardRef.current = new SessionGuard(sessionMachineRef.current);
+  }
+
+  // hydrateOnce guard — يمنع double-recovery في React StrictMode
   const hydratedRef = useRef(false);
 
   // ── Recovery عند mount — مرة واحدة فقط ─────────────────────────────────
@@ -355,7 +263,9 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       consultationBookingRepository.save(updatedSession);
       dispatch({ type: "SESSION_RECOVERED", session: updatedSession });
 
-      // Domain event: BOOKING_RECOVERED
+      // Sync machine to recovered phase
+      sessionMachineRef.current!.syncToPhase(updatedSession.bookingFlowPhase);
+
       const recoveryEvent: BookingRecoveredEvent = createBookingEvent(
         "BOOKING_RECOVERED",
         updatedSession.sessionId,
@@ -374,17 +284,14 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     }
   }, []);
 
-  // ── Expiration Polling — Provider-level Single Source ───────────────────
-  //
-  // PROVIDER_RUNTIME_CONSOLIDATION:
-  //   Polling يعيش هنا فقط — ليس في الصفحات ولا في hooks.
-  //   الصفحات لا تحتاج إنشاء polling خاص بها.
+  // ── Expiration Polling ───────────────────────────────────────────────────
   useEffect(() => {
     const poll = setInterval(() => {
       const current = sessionRef.current;
       if (!current) return;
       if (isSessionExpired(current)) {
         consultationBookingRepository.invalidate(current.sessionId, "expiration_poll");
+        sessionMachineRef.current!.transition("EXPIRE");
         dispatch({ type: "SESSION_TERMINATED", reason: "EXPIRED" });
       }
     }, EXPIRATION_POLL_MS);
@@ -392,28 +299,32 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     return () => clearInterval(poll);
   }, []);
 
+  // ── guardCheck — pre-flight check exposed to consumers ──────────────────
+  const guardCheck = useCallback((mutation: SessionMutationType): GuardCheckResult => {
+    const current = sessionRef.current;
+    const clientVersion = current?.lastActivityAt ?? null;
+    // server version: repository is source of truth
+    const repoSession = current
+      ? consultationBookingRepository.load(current.sessionId)
+      : null;
+    const serverVersion = repoSession?.lastActivityAt ?? null;
+
+    return sessionGuardRef.current!.check(mutation, clientVersion, serverVersion);
+  }, []);
+
   // ── startBookingSession ──────────────────────────────────────────────────
-  //
-  // Fix M1: Guard ضد إنشاء جلسات متعددة (double-click / fast re-render).
-  //   إذا توجد جلسة نشطة غير منتهية في نفس الـ phase → أعدها بدون إنشاء جديدة.
-  //   هذا يمنع session orphan ويحافظ على consistency.
-  //
   const startBookingSession = useCallback(
     (params: Parameters<ConsultationBookingContextValue["startBookingSession"]>[0]): ConsultationBookingSession => {
-      // Fix M1: تحقق من جلسة نشطة موجودة
       const existing = sessionRef.current;
       if (existing && !isSessionExpired(existing) && !TERMINAL_PHASES.includes(existing.bookingFlowPhase)) {
-        // جلسة نشطة موجودة — أعدها بدون إنشاء جديدة
         return existing;
       }
 
       const now = new Date().toISOString();
-
-      // sourceIntentId = الرابط الثابت مع ConsultationIntent (Rule 4)
       const newSession: ConsultationBookingSession = {
         sessionId:            generateBookingSessionId(),
         sourceIntentId:       params.consultationIntentId,
-        consultationIntentId: params.consultationIntentId, // readonly alias
+        consultationIntentId: params.consultationIntentId,
         bookingFlowPhase:     "CREATED",
         bookingStatus:        "CREATED",
         lifecycleVersion:     "v1",
@@ -429,9 +340,13 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
 
       consultationBookingRepository.save(newSession);
       consultationBookingRepository.setActive(newSession.sessionId);
+
+      // Reset machine to IDLE then advance to CREATED
+      sessionMachineRef.current!.reset();
+      sessionMachineRef.current!.transition("CREATE");
+
       dispatch({ type: "SESSION_STARTED", session: newSession });
 
-      // Domain event: BOOKING_SESSION_CREATED
       const createdEvent: BookingSessionCreatedEvent = createBookingEvent(
         "BOOKING_SESSION_CREATED",
         newSession.sessionId,
@@ -450,13 +365,6 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
   );
 
   // ── transitionTo() — PHASE mutation ─────────────────────────────────────
-  //
-  // المصدر الوحيد لتغيير lifecycle phase.
-  // يُصدر BOOKING_PHASE_TRANSITIONED domain event.
-  // لا يُستدعى من الـ UI مباشرة — يمر عبر orchestrator.
-  //
-  // انظر Fix N2 في أعلى الملف.
-  //
   const transitionTo = useCallback(
     (
       to: BookingPhase,
@@ -472,6 +380,20 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
         return false;
       }
 
+      // Phase 2: guard check before mutating
+      const guardResult = guardCheck("CONFIRM");
+      if (!guardResult.allowed) {
+        if (guardResult.reason === "STALE") {
+          dispatch({ type: "SESSION_STALE" });
+        } else if (guardResult.reason === "EXPIRED") {
+          consultationBookingRepository.invalidate(current.sessionId, "guard_expired");
+          sessionMachineRef.current!.transition("EXPIRE");
+          dispatch({ type: "SESSION_TERMINATED", reason: "EXPIRED" });
+        }
+        console.warn(`[BookingCtx] transitionTo blocked by guard: ${guardResult.reason}`);
+        return false;
+      }
+
       const updated: ConsultationBookingSession = {
         ...current,
         bookingFlowPhase: to,
@@ -480,9 +402,12 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
       };
 
       consultationBookingRepository.save(updated);
+
+      // Sync machine to new phase
+      sessionMachineRef.current!.syncToPhase(to);
+
       dispatch({ type: "PHASE_TRANSITIONED", phase: to, session: updated });
 
-      // Domain event: BOOKING_PHASE_TRANSITIONED
       const transitionEvent: BookingPhaseTransitionedEvent = createBookingEvent(
         "BOOKING_PHASE_TRANSITIONED",
         current.sessionId,
@@ -493,26 +418,28 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
 
       return true;
     },
-    [],
+    [guardCheck],
   );
 
-  // ── advancePhase — @deprecated: delegates to transitionTo ────────────────
+  // ── advancePhase — @deprecated ───────────────────────────────────────────
   const advancePhase = useCallback(
     (to: BookingPhase): boolean => transitionTo(to, "orchestrator"),
     [transitionTo],
   );
 
   // ── selectSpecialist — PAYLOAD mutation ──────────────────────────────────
-  //
-  // تُعدّل selectedSpecialistId فقط.
-  // لا تُغيّر bookingFlowPhase — لا تمر عبر transitionTo().
-  // يمكن استدعاؤها من الـ UI مباشرة.
-  //
-  // انظر Fix N2 في أعلى الملف.
-  //
   const selectSpecialist = useCallback((specialistId: string): void => {
     const current = sessionRef.current;
     if (!current) return;
+
+    // Phase 2: guard check
+    const guardResult = guardCheck("SELECT_SPECIALIST");
+    if (!guardResult.allowed) {
+      if (guardResult.reason === "STALE") dispatch({ type: "SESSION_STALE" });
+      console.warn(`[BookingCtx] selectSpecialist blocked: ${guardResult.reason}`);
+      return;
+    }
+
     const updated: ConsultationBookingSession = {
       ...current,
       selectedSpecialistId: specialistId,
@@ -520,19 +447,21 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     };
     consultationBookingRepository.save(updated);
     dispatch({ type: "SPECIALIST_SELECTED", specialistId, session: updated });
-  }, []);
+  }, [guardCheck]);
 
   // ── selectSlot — PAYLOAD mutation ────────────────────────────────────────
-  //
-  // تُعدّل selectedSlotId فقط.
-  // لا تُغيّر bookingFlowPhase — لا تمر عبر transitionTo().
-  // يمكن استدعاؤها من الـ UI مباشرة.
-  //
-  // انظر Fix N2 في أعلى الملف.
-  //
   const selectSlot = useCallback((slotId: string): void => {
     const current = sessionRef.current;
     if (!current) return;
+
+    // Phase 2: guard check
+    const guardResult = guardCheck("SELECT_SLOT");
+    if (!guardResult.allowed) {
+      if (guardResult.reason === "STALE") dispatch({ type: "SESSION_STALE" });
+      console.warn(`[BookingCtx] selectSlot blocked: ${guardResult.reason}`);
+      return;
+    }
+
     const updated: ConsultationBookingSession = {
       ...current,
       selectedSlotId: slotId,
@@ -540,13 +469,14 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     };
     consultationBookingRepository.save(updated);
     dispatch({ type: "SLOT_SELECTED", slotId, session: updated });
-  }, []);
+  }, [guardCheck]);
 
   // ── cancelBooking ─────────────────────────────────────────────────────────
   const cancelBooking = useCallback((reason: BookingRecoveryReason = "user_cancelled"): void => {
     const current = sessionRef.current;
     if (!current) return;
     consultationBookingRepository.invalidate(current.sessionId, reason);
+    sessionMachineRef.current!.transition("CANCEL");
     dispatch({ type: "SESSION_TERMINATED", reason: "CANCELLED" });
   }, []);
 
@@ -555,6 +485,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     const current = sessionRef.current;
     if (!current) return;
     consultationBookingRepository.invalidate(current.sessionId, reason);
+    sessionMachineRef.current!.transition("EXPIRE");
     dispatch({ type: "SESSION_TERMINATED", reason: "EXPIRED" });
   }, []);
 
@@ -573,15 +504,7 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     return RECOVERABLE_PHASES.includes(active.bookingFlowPhase);
   }, []);
 
-  // ── runtimeSafetyCheck — Provider Single Source ───────────────────────────
-  //
-  // PROVIDER_RUNTIME_CONSOLIDATION:
-  //   لا تُعيد بناء هذا الـ check في الصفحات — استدعِه من الـ context.
-  //
-  //   يتحقق من:
-  //     1. وجود جلسة نشطة
-  //     2. أن الجلسة لم تنتهِ صلاحيتها (TTL)
-  //     3. تناسق sessionId مع repository
+  // ── runtimeSafetyCheck ───────────────────────────────────────────────────
   const runtimeSafetyCheck = useCallback((): RuntimeSafetyResult => {
     const current = sessionRef.current;
 
@@ -633,7 +556,9 @@ export function ConsultationBookingProvider({ children }: { children: ReactNode 
     currentPhase:     state.session?.bookingFlowPhase ?? null,
     isRecovering:     state.isRecovering,
     hasActiveSession: state.hasActiveSession,
+    isStale:          state.isStale,
     ownershipToken:   state.session?.sessionId ?? null,
+    guardCheck,
     startBookingSession,
     transitionTo,
     advancePhase,

@@ -19,7 +19,7 @@
  *   - BookingPage.tsx (Sprint 3.0c)
  */
 
-import type { PathType, AssessmentMode } from "../lib/assessmentTypes";
+import type { PathType, AssessmentMode } from "../components/screening/assessmentTypes";
 
 // ---------------------------------------------------------------------------
 // Route Registry — مصدر وحيد لجميع consultation routes
@@ -124,6 +124,8 @@ export interface AssessmentResultPayload {
 export interface ConsultationIntent {
   /** من أين وصل المستخدم */
   entryPoint: ConsultationEntryPoint;
+    /** معرّف فريد للنية (UUID) */
+  intentId: string;
 
   /** بيانات التقييم إذا كان entryPoint = "assessment_result" */
   assessmentResult?: AssessmentResultPayload;
